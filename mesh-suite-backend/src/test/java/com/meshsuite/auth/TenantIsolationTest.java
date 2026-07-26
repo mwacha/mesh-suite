@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TenantIsolationIT extends AbstractIntegrationTest {
+class TenantIsolationTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
