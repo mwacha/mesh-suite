@@ -1,0 +1,9 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE tenant (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    nome VARCHAR(255) NOT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT true,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
