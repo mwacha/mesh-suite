@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: mesh-suite-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/meshsuite}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  mail:
+    from: ${MAIL_FROM:no-reply@meshsuite.local}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+server:
+  port: 8080

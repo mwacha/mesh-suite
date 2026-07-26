@@ -1,0 +1,4 @@
+.env
+mesh-suite-backend/target/
+mesh-suite-frontend/node_modules/
+mesh-suite-frontend/dist/
