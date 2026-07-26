@@ -15,6 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+// @Transactional here (Spring test rollback) keeps this test's "aurora"/"boreal"
+// fixture rows from persisting after the test -- every other test class in this
+// suite reuses those same literal codes and relies on them being rolled back.
+// Nested @Transactional calls on TenantQueryService still join this outer
+// transaction (default REQUIRED propagation) and TenantContextAspect still fires
+// on each one, issuing its own SET LOCAL before that call's queries run -- so this
+// still genuinely proves that switching app.tenant_id mid-transaction changes what
+// RLS allows to be seen, not just that separate transactions are isolated.
+@Transactional
 class TenantIsolationTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
