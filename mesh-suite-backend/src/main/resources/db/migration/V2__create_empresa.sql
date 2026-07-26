@@ -15,6 +15,10 @@ ALTER TABLE empresa FORCE ROW LEVEL SECURITY;
 
 -- current_setting(..., true) returns NULL instead of raising when the
 -- session var isn't set, so an unset app.tenant_id safely denies all rows
--- (NULL = tenant_id is never true) rather than erroring out.
+-- (NULL = tenant_id is never true) rather than erroring out. NULLIF(...,'')
+-- covers a second case: Postgres custom GUCs that were SET earlier in the
+-- session and then RESET come back as an empty string, not NULL -- without
+-- the NULLIF guard, ::uuid would raise "invalid input syntax for type uuid"
+-- instead of denying the row.
 CREATE POLICY empresa_tenant_isolation ON empresa
-    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);

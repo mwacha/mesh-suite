@@ -91,10 +91,10 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
         empresaRepository.saveAndFlush(empresa);
         entityManager.clear();
 
-        // Switch context to a non-existent tenant ID to verify RLS filters correctly.
-        // With RLS enforced, rows belonging to other tenants are hidden.
-        UUID nonExistentTenantId = new UUID(0L, 0L);
-        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + nonExistentTenantId + "'").executeUpdate();
+        // RESET reverts the SET LOCAL above (back to no value, since it was never set
+        // at session level either), simulating a query with no tenant context — RLS
+        // denies every row.
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
         Long count = ((Number) entityManager
                 .createNativeQuery("SELECT count(*) FROM empresa")
