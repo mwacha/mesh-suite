@@ -5,8 +5,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.sql.Connection;
@@ -17,21 +15,26 @@ import java.sql.Statement;
 @Tag("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-@Testcontainers
 public abstract class AbstractIntegrationTest {
 
     private static final String APP_ROLE = "meshsuite_app";
     private static final String APP_ROLE_PASSWORD = "meshsuite_app";
 
-    @Container
+    // Deliberately NOT @Container/@Testcontainers: that combination stops the
+    // container after EACH test class's tests finish (its documented per-class
+    // lifecycle), which breaks a container meant to be shared across every test
+    // class in the suite -- the next class to run would find it stopped. This is
+    // the standard Testcontainers "singleton container" pattern instead: a plain
+    // static field, started once in a static initializer, never explicitly
+    // stopped (Ryuk cleans it up when the JVM exits).
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"));
+
+    private static boolean roleBootstrapped = false;
 
     static {
         POSTGRES.start();
     }
-
-    private static boolean roleBootstrapped = false;
 
     // Deliberately NOT @ServiceConnection: that would wire Spring's datasource to the
     // container's own POSTGRES_USER, which the postgres image always makes a cluster
