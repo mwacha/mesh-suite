@@ -1,0 +1,69 @@
+package com.meshsuite.auth;
+
+import com.meshsuite.auth.dto.LoginRequest;
+import com.meshsuite.auth.dto.MeResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+
+    private final AuthService authService;
+    private final JwtService jwtService;
+    private final RateLimiter rateLimiter;
+    private final AuthContextService authContextService;
+
+    public AuthController(AuthService authService, JwtService jwtService, RateLimiter rateLimiter,
+                           AuthContextService authContextService) {
+        this.authService = authService;
+        this.jwtService = jwtService;
+        this.rateLimiter = rateLimiter;
+        this.authContextService = authContextService;
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Void> login(@Valid @RequestBody LoginRequest request,
+                                       HttpServletRequest httpRequest,
+                                       HttpServletResponse httpResponse) {
+        String ip = httpRequest.getRemoteAddr();
+        if (rateLimiter.isBlocked(ip, request.email())) {
+            throw new RateLimitExceededException();
+        }
+
+        try {
+            AuthService.LoginResult result = authService.authenticate(request.email(), request.senha());
+            rateLimiter.recordSuccess(ip, request.email());
+
+            String token = jwtService.generateToken(
+                    result.usuario().getId(), result.tenant().getId(), result.empresa().getId(),
+                    result.usuario().getPapel().name(), request.manterConectado());
+
+            long maxAgeSeconds = request.manterConectado() ? 30L * 24 * 3600 : 8L * 3600;
+            ResponseCookie cookie = ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("Strict")
+                    .path("/")
+                    .maxAge(maxAgeSeconds)
+                    .build();
+            httpResponse.addHeader("Set-Cookie", cookie.toString());
+
+            return ResponseEntity.ok().build();
+        } catch (AuthException e) {
+            rateLimiter.recordFailure(ip, request.email());
+            throw e;
+        }
+    }
+
+    @GetMapping("/me")
+    public MeResponse me(@AuthenticationPrincipal AuthContextService.Context principal) {
+        String nome = authContextService.nomeDoUsuario(principal.usuarioId());
+        return new MeResponse(nome, principal.papel());
+    }
+}

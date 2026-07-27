@@ -35,4 +35,12 @@ public class AuthContextService {
             return false;
         }
     }
+
+    @Transactional(readOnly = true)
+    public String nomeDoUsuario(UUID usuarioId) {
+        return entityManager.createQuery(
+                        "SELECT u.nome FROM Usuario u WHERE u.id = :id", String.class)
+                .setParameter("id", usuarioId)
+                .getSingleResult();
+    }
 }
