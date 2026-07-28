@@ -1,7 +1,9 @@
 package com.meshsuite.auth;
 
+import com.meshsuite.auth.dto.ForgotPasswordRequest;
 import com.meshsuite.auth.dto.LoginRequest;
 import com.meshsuite.auth.dto.MeResponse;
+import com.meshsuite.auth.dto.ResetPasswordRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -18,13 +20,15 @@ public class AuthController {
     private final JwtService jwtService;
     private final RateLimiter rateLimiter;
     private final AuthContextService authContextService;
+    private final PasswordResetService passwordResetService;
 
     public AuthController(AuthService authService, JwtService jwtService, RateLimiter rateLimiter,
-                           AuthContextService authContextService) {
+                           AuthContextService authContextService, PasswordResetService passwordResetService) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.rateLimiter = rateLimiter;
         this.authContextService = authContextService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/login")
@@ -65,5 +69,28 @@ public class AuthController {
     public MeResponse me(@AuthenticationPrincipal AuthContextService.Context principal) {
         String nome = authContextService.nomeDoUsuario(principal.usuarioId());
         return new MeResponse(nome, principal.papel());
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request,
+                                                HttpServletRequest httpRequest) {
+        String ip = httpRequest.getRemoteAddr();
+        if (rateLimiter.isBlocked(ip, request.email())) {
+            throw new RateLimitExceededException();
+        }
+
+        boolean found = passwordResetService.requestReset(request.email());
+        if (found) {
+            rateLimiter.recordSuccess(ip, request.email());
+        } else {
+            rateLimiter.recordFailure(ip, request.email());
+        }
+        return ResponseEntity.ok().build(); // same 200 regardless of `found` — no account enumeration
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.confirmReset(request.token(), request.novaSenha());
+        return ResponseEntity.ok().build();
     }
 }
