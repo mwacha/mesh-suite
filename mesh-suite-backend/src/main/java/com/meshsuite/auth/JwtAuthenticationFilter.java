@@ -33,36 +33,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String token = extractCookie(request, COOKIE_NAME);
+        // The whole body -- not just chain.doFilter -- is wrapped in this one
+        // try/finally. usuarioETenantAtivos() below can throw an unexpected runtime
+        // exception (e.g. a DB connectivity issue), not just the JwtException/
+        // IllegalArgumentException the inner catch handles; if that exception
+        // escaped before TenantContext.clear() ran, this pooled servlet thread would
+        // carry this request's tenant into whatever request reuses it next --
+        // exactly the kind of leak a tenant-isolation boundary can't afford.
+        try {
+            String token = extractCookie(request, COOKIE_NAME);
 
-        if (token != null) {
-            try {
-                Claims claims = jwtService.parseClaims(token);
-                UUID usuarioId = UUID.fromString(claims.getSubject());
-                UUID tenantId = UUID.fromString(claims.get("tenant_id", String.class));
-                String papel = claims.get("papel", String.class);
+            if (token != null) {
+                try {
+                    Claims claims = jwtService.parseClaims(token);
+                    UUID usuarioId = UUID.fromString(claims.getSubject());
+                    UUID tenantId = UUID.fromString(claims.get("tenant_id", String.class));
+                    String papel = claims.get("papel", String.class);
 
-                // Set before calling the transactional check so TenantContextAspect
-                // can scope that query to this tenant.
-                TenantContext.set(tenantId);
+                    // Set before calling the transactional check so TenantContextAspect
+                    // can scope that query to this tenant.
+                    TenantContext.set(tenantId);
 
-                if (!authContextService.usuarioETenantAtivos(tenantId, usuarioId)) {
-                    TenantContext.clear();
+                    if (!authContextService.usuarioETenantAtivos(tenantId, usuarioId)) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                        return;
+                    }
+
+                    var principal = new AuthContextService.Context(usuarioId, tenantId, papel);
+                    var auth = new UsernamePasswordAuthenticationToken(
+                            principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + papel)));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                } catch (JwtException | IllegalArgumentException e) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
-
-                var principal = new AuthContextService.Context(usuarioId, tenantId, papel);
-                var auth = new UsernamePasswordAuthenticationToken(
-                        principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + papel)));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            } catch (JwtException | IllegalArgumentException e) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
             }
-        }
 
-        try {
             chain.doFilter(request, response);
         } finally {
             TenantContext.clear();
