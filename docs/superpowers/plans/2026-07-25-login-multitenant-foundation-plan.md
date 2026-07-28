@@ -3293,7 +3293,7 @@ export const useAuthStore = defineStore('auth', {
 - [ ] **Step 5: Write `router/index.ts` with the LoginView/ForgotPasswordView/ResetPasswordView imports (created in Tasks 14-15) already referenced**
 
 ```ts
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/LoginView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
@@ -3310,7 +3310,13 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async (to) => {
+// Exported (not inlined into .beforeEach) so tests can call it directly with a
+// constructed `to` object instead of driving real navigation through the router
+// singleton -- vue-router short-circuits a push that resolves to the same matched
+// record as the current route ("duplicate navigation") without re-running
+// beforeEach, which makes navigation-driven guard tests fragile to execution
+// order. Calling this function directly sidesteps that entirely.
+export async function authGuard(to: Pick<RouteLocationNormalized, 'meta'>) {
   const auth = useAuthStore()
   if (!auth.checked) {
     await auth.checkSession()
@@ -3319,7 +3325,9 @@ router.beforeEach(async (to) => {
     return { name: 'login' }
   }
   return true
-})
+}
+
+router.beforeEach(authGuard)
 
 export default router
 ```
@@ -3397,6 +3405,44 @@ describe('auth store session check', () => {
   })
 })
 ```
+
+The tests above only exercise the auth store in isolation — they never invoke the guard registered on the actual router (`router.beforeEach(...)` in `router/index.ts`), so a bug in the guard's own logic (inverted condition, wrong redirect target, wrong `meta.public` check) wouldn't be caught by them. Add a second `describe` block, in the same file, calling the exported `authGuard` function directly:
+
+```ts
+import { authGuard } from '@/router'
+
+describe('router navigation guard', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('redirects unauthenticated access to a protected route to /login', async () => {
+    vi.mocked(authApi.me).mockRejectedValue(new Error('401'))
+
+    const result = await authGuard({ meta: {} })
+
+    expect(result).toEqual({ name: 'login' })
+  })
+
+  it('allows authenticated access to a protected route', async () => {
+    vi.mocked(authApi.me).mockResolvedValue({ nome: 'Marina', papel: 'ADMINISTRADOR' })
+
+    const result = await authGuard({ meta: {} })
+
+    expect(result).toBe(true)
+  })
+
+  it('allows access to a public route without authentication', async () => {
+    vi.mocked(authApi.me).mockRejectedValue(new Error('401'))
+
+    const result = await authGuard({ meta: { public: true } })
+
+    expect(result).toBe(true)
+  })
+})
+```
+
+This imports the actual `router` singleton from `router/index.ts` rather than reconstructing the guard logic inline — a change to the real guard is what these tests exercise, not a second, potentially-diverging copy of it.
 
 - [ ] **Step 8: Run test to verify it fails, then passes**
 
