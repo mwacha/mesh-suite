@@ -25,7 +25,23 @@
           />
 
           <label class="field-label" for="senha">Senha</label>
-          <input id="senha" type="password" v-model="senha" required autocomplete="current-password" />
+          <div class="password-field">
+            <input
+              id="senha"
+              :type="showSenha ? 'text' : 'password'"
+              v-model="senha"
+              required
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="toggle-senha"
+              @click="showSenha = !showSenha"
+              :aria-label="showSenha ? 'Ocultar senha' : 'Mostrar senha'"
+            >
+              {{ showSenha ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
 
           <div class="row">
             <label class="checkbox-label">
@@ -60,6 +76,7 @@ import { useAuthStore } from '@/stores/auth'
 const email = ref('')
 const senha = ref('')
 const manterConectado = ref(false)
+const showSenha = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
 
@@ -181,8 +198,31 @@ input[type='text'] {
 }
 
 input[type='email']::placeholder,
-input[type='password']::placeholder {
+input[type='password']::placeholder,
+input[type='text']::placeholder {
   color: #5f7d87;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 64px;
+}
+
+.toggle-senha {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #4fc3d9;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
 }
 
 .row {

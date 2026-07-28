@@ -65,4 +65,16 @@ describe('LoginView', () => {
 
     expect(wrapper.text()).toContain('Muitas tentativas')
   })
+
+  it('toggles the senha field between masked and visible text on click', async () => {
+    const wrapper = mountWithRouter()
+
+    expect(wrapper.find('input#senha').attributes('type')).toBe('password')
+
+    await wrapper.find('button.toggle-senha').trigger('click')
+    expect(wrapper.find('input#senha').attributes('type')).toBe('text')
+
+    await wrapper.find('button.toggle-senha').trigger('click')
+    expect(wrapper.find('input#senha').attributes('type')).toBe('password')
+  })
 })
