@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/LoginView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
@@ -15,7 +15,13 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async (to) => {
+// Exported (not inlined into .beforeEach) so tests can call it directly with a
+// constructed `to` object instead of driving real navigation through the router
+// singleton -- vue-router short-circuits a push that resolves to the same matched
+// record as the current route ("duplicate navigation") without re-running
+// beforeEach, which makes navigation-driven guard tests fragile to execution
+// order. Calling this function directly sidesteps that entirely.
+export async function authGuard(to: Pick<RouteLocationNormalized, 'meta'>) {
   const auth = useAuthStore()
   if (!auth.checked) {
     await auth.checkSession()
@@ -24,6 +30,8 @@ router.beforeEach(async (to) => {
     return { name: 'login' }
   }
   return true
-})
+}
+
+router.beforeEach(authGuard)
 
 export default router

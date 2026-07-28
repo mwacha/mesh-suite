@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import * as authApi from '@/api/auth'
-import router from '@/router'
+import { authGuard } from '@/router'
 
 vi.mock('@/api/auth')
 
@@ -32,37 +32,31 @@ describe('auth store session check', () => {
 })
 
 describe('router navigation guard', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     setActivePinia(createPinia())
-    // Router is a module-level singleton (imported once for the whole test file);
-    // each test pushes its own target and asserts where navigation actually lands,
-    // so leftover state from a prior test's current route doesn't affect the result.
   })
 
   it('redirects unauthenticated access to a protected route to /login', async () => {
     vi.mocked(authApi.me).mockRejectedValue(new Error('401'))
 
-    await router.push('/')
-    await router.isReady()
+    const result = await authGuard({ meta: {} })
 
-    expect(router.currentRoute.value.name).toBe('login')
+    expect(result).toEqual({ name: 'login' })
   })
 
   it('allows authenticated access to a protected route', async () => {
     vi.mocked(authApi.me).mockResolvedValue({ nome: 'Marina', papel: 'ADMINISTRADOR' })
 
-    await router.push('/')
-    await router.isReady()
+    const result = await authGuard({ meta: {} })
 
-    expect(router.currentRoute.value.name).toBe('dashboard')
+    expect(result).toBe(true)
   })
 
   it('allows access to a public route without authentication', async () => {
     vi.mocked(authApi.me).mockRejectedValue(new Error('401'))
 
-    await router.push('/login')
-    await router.isReady()
+    const result = await authGuard({ meta: { public: true } })
 
-    expect(router.currentRoute.value.name).toBe('login')
+    expect(result).toBe(true)
   })
 })
