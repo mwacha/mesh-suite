@@ -93,8 +93,10 @@ async function onSubmit() {
   } catch (err: any) {
     if (err?.response?.status === 429) {
       errorMessage.value = 'Muitas tentativas, tente novamente em instantes'
-    } else {
+    } else if (err?.response?.status === 401) {
       errorMessage.value = 'E-mail ou senha inválidos'
+    } else {
+      errorMessage.value = 'Não foi possível conectar. Tente novamente em instantes.'
     }
   } finally {
     loading.value = false

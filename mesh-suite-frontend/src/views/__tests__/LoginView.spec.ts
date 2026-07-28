@@ -66,6 +66,20 @@ describe('LoginView', () => {
     expect(wrapper.text()).toContain('Muitas tentativas')
   })
 
+  it('shows a generic connectivity message when the backend is unreachable or errors with an unhandled status', async () => {
+    vi.mocked(authApi.login).mockRejectedValue(new Error('Network Error'))
+
+    const wrapper = mountWithRouter()
+    await wrapper.find('input[type="email"]').setValue('marina@aurora.com.br')
+    await wrapper.find('input[type="password"]').setValue('senha123')
+    await wrapper.find('form').trigger('submit.prevent')
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Não foi possível conectar')
+    expect(wrapper.text()).not.toContain('E-mail ou senha inválidos')
+  })
+
   it('toggles the senha field between masked and visible text on click', async () => {
     const wrapper = mountWithRouter()
 
