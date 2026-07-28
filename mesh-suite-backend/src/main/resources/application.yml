@@ -2,7 +2,7 @@ spring:
   application:
     name: mesh-suite-backend
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/meshsuite}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/meshsuite}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
   jpa:
@@ -34,7 +34,9 @@ management:
         include: health
 
 server:
-  port: 8080
+  # Not 8080 by default -- chosen to avoid colliding with other local
+  # projects' backends that commonly default to 8080.
+  port: ${SERVER_PORT:8081}
 ---
 spring:
   config:
@@ -42,3 +44,11 @@ spring:
       on-profile: dev,test
   flyway:
     locations: classpath:db/migration,classpath:db/seed
+
+management:
+  health:
+    # SMTP is optional in dev/test (see .env.example) -- without this,
+    # Spring Boot's mail health indicator tries to connect and fails,
+    # dragging /actuator/health to DOWN even though the app itself is fine.
+    mail:
+      enabled: false

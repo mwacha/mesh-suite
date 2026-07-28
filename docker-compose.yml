@@ -8,7 +8,11 @@ services:
       DB_APP_USER: ${DB_APP_USER}
       DB_APP_PASSWORD: ${DB_APP_PASSWORD}
     ports:
-      - "5432:5432"
+      # Host port 5433 (not the default 5432) to avoid colliding with other
+      # local projects' Postgres instances. Container-internal port stays
+      # 5432 — the backend service below talks to it over the docker network
+      # via that internal port, unaffected by this host-side remap.
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
@@ -29,7 +33,10 @@ services:
       DB_USER: ${DB_APP_USER}
       DB_PASSWORD: ${DB_APP_PASSWORD}
     ports:
-      - "8080:8080"
+      # Host port 8081 (not the default 8080), matching application.yml's
+      # SERVER_PORT default -- avoids colliding with other local projects'
+      # backends.
+      - "8081:8081"
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,7 +44,7 @@ services:
   frontend:
     build: ./mesh-suite-frontend
     environment:
-      VITE_API_BASE_URL: http://localhost:8080/api
+      VITE_API_BASE_URL: http://localhost:8081/api
     ports:
       - "5173:5173"
     depends_on:

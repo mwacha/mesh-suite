@@ -6,11 +6,20 @@
 
 set -euo pipefail
 
+# Job control (set -m): cada processo em background abaixo vira líder do seu
+# próprio grupo de processos, então `kill -- -$PID` no cleanup mata a árvore
+# inteira (mvnw -> JVM do Spring Boot; npm -> processo do Vite), não só o
+# processo imediato. Sem isso, `kill $PID` deixa órfãos para trás.
+set -m
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
 BACKEND_DIR="$ROOT_DIR/mesh-suite-backend"
 FRONTEND_DIR="$ROOT_DIR/mesh-suite-frontend"
+BACKEND_PORT=8081
+FRONTEND_PORT=5173
+DB_HOST_PORT=5433
 
 # --- 1. .env ---------------------------------------------------------------
 
@@ -43,9 +52,9 @@ echo "Subindo Postgres..."
 if ! docker compose up -d postgres; then
   echo ""
   echo "Falha ao subir o Postgres. Se o erro acima for 'port is already allocated',"
-  echo "outro processo/projeto já está usando a porta 5432 nesta máquina — pare-o"
-  echo "(ex: docker ps, procure outro container na 5432) ou mude a porta do serviço"
-  echo "postgres em docker-compose.yml (e ajuste DB_URL abaixo para combinar)."
+  echo "outro processo/projeto já está usando a porta ${DB_HOST_PORT} nesta máquina —"
+  echo "pare-o (docker ps) ou mude o mapeamento de porta do serviço postgres em"
+  echo "docker-compose.yml (e ajuste DB_URL abaixo para combinar)."
   exit 1
 fi
 
@@ -58,13 +67,14 @@ echo " ok"
 
 # --- 3. Backend (Spring Boot, nativo) ---------------------------------------
 
-echo "Subindo backend (Spring Boot, http://localhost:8080)..."
+echo "Subindo backend (Spring Boot, http://localhost:${BACKEND_PORT})..."
 (
   cd "$BACKEND_DIR"
   export SPRING_PROFILES_ACTIVE=dev
-  export DB_URL="jdbc:postgresql://localhost:5432/${DB_NAME}"
+  export DB_URL="jdbc:postgresql://localhost:${DB_HOST_PORT}/${DB_NAME}"
   export DB_USER="${DB_APP_USER}"
   export DB_PASSWORD="${DB_APP_PASSWORD}"
+  export SERVER_PORT="${BACKEND_PORT}"
   # JWT_SECRET, SMTP_*, MAIL_FROM já vêm exportados do .env acima.
   exec ./mvnw -q spring-boot:run
 ) &
@@ -77,11 +87,11 @@ if [[ ! -d "$FRONTEND_DIR/node_modules" ]]; then
   (cd "$FRONTEND_DIR" && npm install)
 fi
 
-echo "Subindo frontend (Vite, http://localhost:5173)..."
+echo "Subindo frontend (Vite, http://localhost:${FRONTEND_PORT})..."
 (
   cd "$FRONTEND_DIR"
-  export VITE_API_BASE_URL="http://localhost:8080/api"
-  exec npm run dev
+  export VITE_API_BASE_URL="http://localhost:${BACKEND_PORT}/api"
+  exec npm run dev -- --port "${FRONTEND_PORT}"
 ) &
 FRONTEND_PID=$!
 
@@ -90,17 +100,19 @@ FRONTEND_PID=$!
 cleanup() {
   echo ""
   echo "Encerrando backend e frontend..."
-  kill "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
+  # Sinal para o GRUPO de processos (PID negativo), não só o processo
+  # imediato — pega mvnw+JVM e npm+vite juntos. Ver comentário em `set -m`.
+  kill -- -"$BACKEND_PID" -"$FRONTEND_PID" 2>/dev/null || true
   wait "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
   echo "Postgres continua rodando em background (docker compose down para parar)."
-  echo "Se algum processo do backend/frontend ficar órfão: lsof -ti:8080,5173 | xargs kill"
+  echo "Se algum processo do backend/frontend ficar órfão: lsof -ti:${BACKEND_PORT},${FRONTEND_PORT} | xargs kill"
 }
 trap cleanup EXIT INT TERM
 
 echo ""
 echo "Ambiente no ar:"
-echo "  Backend:  http://localhost:8080"
-echo "  Frontend: http://localhost:5173"
+echo "  Backend:  http://localhost:${BACKEND_PORT}"
+echo "  Frontend: http://localhost:${FRONTEND_PORT}"
 echo "  Login de teste (seed dev): marina@aurora.com.br / MeshSuite@123"
 echo ""
 echo "Ctrl-C para encerrar backend e frontend."
