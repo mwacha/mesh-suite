@@ -16,12 +16,27 @@
 - JWT is stored only in an `HttpOnly`+`Secure`+`SameSite=Strict` cookie, never in `localStorage` or exposed to frontend JS (spec §2 item 7).
 - Auth failures (unknown email, wrong password, inactive user, inactive tenant) all return the same generic message — never reveal which condition failed (spec §5).
 - `usuario.ativo` / `tenant.ativo` are re-checked against the database on every authenticated request, not trusted from JWT claims alone (spec §5).
+- All backend test classes are named `*Test`/`*Tests` (never `*IT`) so Maven Surefire's default include pattern picks them up under plain `./mvnw clean test` — this project never configures the Failsafe plugin, so a `*IT`-suffixed class would silently never run (discovered when `TenantIsolationTest`, the mandatory isolation test, was originally named `TenantIsolationIT` and Surefire skipped it without error).
 
 ## Design decision beyond the spec: RLS bypass for login lookup
 
 The spec requires (a) RLS on `usuario` filtering by `tenant_id`, and (b) login authenticating by **email alone**, with the tenant unknown until *after* the user row is found. Those two requirements conflict: if the login query runs under the normal `usuario_tenant_isolation` policy, `app.tenant_id` is unset at that point, so the policy denies every row and login can never succeed.
 
-Resolution used throughout this plan (see Task 4, Task 10): a second, narrowly-scoped **permissive** RLS policy on `usuario`,`usuario_login_lookup`, allows `SELECT` only when a session flag `app.bypass_tenant_check = 'true'` is set. That flag is set in exactly one place in the codebase — `AuthService.findByEmailForLogin` — for the duration of the login lookup only, and is never set anywhere else. Postgres OR's multiple permissive policies together, so this doesn't weaken the tenant policy for any other query. Once the user's `tenant_id` is known (immediately after this lookup), everything else proceeds through the normal tenant-scoped path.
+Resolution used throughout this plan (see Task 4, Task 10, Task 11): a second, narrowly-scoped **permissive** RLS policy on `usuario`, `usuario_login_lookup`, allows `SELECT` only when a session flag `app.bypass_tenant_check = 'true'` is set. That flag is set in exactly one place in the codebase — `AuthService` (`findByEmailForLogin`, and `findUsuarioByIdBypassingTenant` for the password-reset flow, which also needs to look up a `Usuario` before its tenant is known) — for the duration of the lookup only, and is never set anywhere else. Every other pre-tenant `Usuario` lookup in the codebase routes through one of these two `AuthService` methods rather than calling `UsuarioRepository` directly, so the bypass-setting code stays centralized in one class. Postgres OR's multiple permissive policies together, so this doesn't weaken the tenant policy for any other query. Once the user's `tenant_id` is known (immediately after either lookup), everything else proceeds through the normal tenant-scoped path.
+
+## Design decision beyond the spec: self-invocation breaks `@Transactional`/`TenantContextAspect`
+
+`AuthService.authenticate()` and `PasswordResetService.confirmReset()` are orchestrator methods that call several `@Transactional` steps in sequence, only some of which are known to need `app.tenant_id` set at the time they're called (the tenant isn't known until partway through). Calling those steps as plain `this.method(...)` — ordinary Java self-invocation — bypasses Spring's AOP proxy entirely, silently no-opping their `@Transactional` (and therefore `TenantContextAspect`, which depends on a transaction already being underway) outside of a caller that happens to already have one open. This is easy to miss in tests that wrap everything in one outer `@Transactional` (which incidentally papers over the bug) but breaks in real request handling, where nothing pre-opens a transaction (`open-in-view` is disabled).
+
+Fix used in both places: inject a `@Lazy` self-reference (`AuthService self` / `PasswordResetService self`) and call internal `@Transactional` steps through `self.` instead of bare `this.`, so they go through the real proxy. `AuthService` does this via constructor injection (its only test is a full `@SpringBootTest`, so Spring wires it normally); `PasswordResetService` does it via a package-private `@Autowired @Lazy` field instead, specifically so its plain Mockito unit test can construct the class directly and assign the field manually — see Task 11's test for the exact pattern.
+
+## Design decision beyond the spec: the app must never connect as a Postgres superuser
+
+RLS policies are silently a no-op for a Postgres superuser, regardless of `FORCE ROW LEVEL SECURITY` — "row security is always disabled for superusers" (Postgres docs). The official `postgres` Docker image always makes its bootstrap `POSTGRES_USER` a cluster superuser; there is no env-var-only way around that. So the app (and Flyway, which shares Spring's datasource) must connect as a **separate, non-superuser role** created after the container/database exists, or every RLS policy in this plan does nothing — in tests and in the real `docker-compose` deployment alike.
+
+Task 1's `AbstractIntegrationTest` creates this role (`meshsuite_app`) and points Spring's datasource at it via `@DynamicPropertySource`, instead of using `@ServiceConnection` (which would wire up the container's own superuser credentials). The real `docker-compose.yml`/production setup needs the equivalent: an init script that creates a non-superuser role and points `DB_USER`/`DB_PASSWORD` at it, never at the Postgres bootstrap user. Task 1's steps below reflect this.
+
+A second consequence: the RLS policies on `empresa`/`usuario` have no explicit `WITH CHECK`, so Postgres uses the `USING` expression for `INSERT` too — inserting a row now genuinely requires `app.tenant_id` to already be set to that row's tenant. Every test that inserts an `Empresa` or `Usuario` row (Tasks 3, 4, and any later task whose tests seed these tables) must set `app.tenant_id` first via a raw `SET LOCAL` native query inside a `@Transactional` test method — see Task 3 and Task 4 for the pattern; later tasks with a `seedTenant...`-style fixture helper must follow the same pattern (noted inline where it applies).
 
 ---
 
@@ -45,7 +60,7 @@ Resolution used throughout this plan (see Task 4, Task 10): a second, narrowly-s
 - Modify: `.gitignore`
 
 **Interfaces:**
-- Produces: `com.meshsuite.AbstractIntegrationTest` — an abstract JUnit 5 base class with a shared static `PostgreSQLContainer<?>` wired via `@ServiceConnection`. Every later backend test extends this instead of standing up its own container.
+- Produces: `com.meshsuite.AbstractIntegrationTest` — an abstract JUnit 5 base class with a shared static `PostgreSQLContainer<?>` (singleton-container pattern, started once for the whole suite), datasource wired to a bootstrapped non-superuser role via `@DynamicPropertySource`. Every later backend test extends this instead of standing up its own container.
 - Produces: backend listens on `:8080`, frontend dev server on `:5173`, Postgres on `:5432`.
 
 - [ ] **Step 1: Generate the backend project**
@@ -168,33 +183,75 @@ package com.meshsuite;
 
 import org.junit.jupiter.api.Tag;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 @Tag("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 public abstract class AbstractIntegrationTest {
 
-    @ServiceConnection
+    private static final String APP_ROLE = "meshsuite_app";
+    private static final String APP_ROLE_PASSWORD = "meshsuite_app";
+
+    // Deliberately NOT @Container/@Testcontainers: that combination stops the
+    // container after EACH test class's tests finish (its documented per-class
+    // lifecycle), which breaks a container meant to be shared across every test
+    // class in the suite -- the next class to run would find it stopped. This is
+    // the standard Testcontainers "singleton container" pattern instead: a plain
+    // static field, started once in a static initializer, never explicitly
+    // stopped (Ryuk cleans it up when the JVM exits).
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"));
+
+    private static boolean roleBootstrapped = false;
 
     static {
         POSTGRES.start();
     }
 
+    // Deliberately NOT @ServiceConnection: that would wire Spring's datasource to the
+    // container's own POSTGRES_USER, which the postgres image always makes a cluster
+    // superuser. Superusers bypass Row-Level Security unconditionally, even with FORCE
+    // ROW LEVEL SECURITY ("row security is always disabled for superusers" -- Postgres
+    // docs) -- every RLS policy in this project would silently do nothing. Instead this
+    // bootstraps a separate, non-superuser role and points the datasource at that.
     @DynamicPropertySource
-    static void jwtSecret(DynamicPropertyRegistry registry) {
+    static void datasourceProperties(DynamicPropertyRegistry registry) {
+        bootstrapAppRoleOnce();
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", () -> APP_ROLE);
+        registry.add("spring.datasource.password", () -> APP_ROLE_PASSWORD);
         // application.yml requires JWT_SECRET with no default; tests supply one directly.
         registry.add("app.jwt.secret", () -> "test-secret-test-secret-test-secret-32b");
     }
+
+    private static synchronized void bootstrapAppRoleOnce() {
+        if (roleBootstrapped) {
+            return;
+        }
+        try (Connection admin = DriverManager.getConnection(
+                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+             Statement stmt = admin.createStatement()) {
+            stmt.execute("CREATE ROLE " + APP_ROLE + " LOGIN PASSWORD '" + APP_ROLE_PASSWORD + "'");
+            stmt.execute("ALTER DATABASE " + POSTGRES.getDatabaseName() + " OWNER TO " + APP_ROLE);
+            stmt.execute("GRANT ALL ON SCHEMA public TO " + APP_ROLE);
+            roleBootstrapped = true;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to bootstrap non-superuser app role", e);
+        }
+    }
 }
 ```
+
+`AbstractIntegrationTest` uses plain `PostgreSQLContainer`/`DynamicPropertySource` APIs from `org.testcontainers:postgresql` and `spring-boot-testcontainers` (both added in Step 2) — neither `@ServiceConnection` nor `@Testcontainers`/`@Container` are used, for the reasons in the code comments above. Keep both dependencies in `pom.xml` regardless; `PostgreSQLContainer` itself still needs `org.testcontainers:postgresql`.
 
 - [ ] **Step 5: Write the context-load test**
 
@@ -302,22 +359,44 @@ EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 ```
 
-- [ ] **Step 13: Write the root `docker-compose.yml`**
+- [ ] **Step 13: Write a Postgres init script that creates a non-superuser app role**
+
+The official `postgres` image always makes its bootstrap `POSTGRES_USER` a cluster superuser, and superusers bypass Row-Level Security unconditionally, regardless of `FORCE ROW LEVEL SECURITY` (Postgres docs: "row security is always disabled for superusers"). Every RLS policy this project relies on (starting Task 3) would silently do nothing if the backend connected as that bootstrap user. So the backend must connect as a second, non-superuser role, created here.
+
+Create `db/init/01-create-app-role.sh`:
+
+```sh
+#!/bin/bash
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE ROLE ${DB_APP_USER} LOGIN PASSWORD '${DB_APP_PASSWORD}';
+    ALTER DATABASE ${POSTGRES_DB} OWNER TO ${DB_APP_USER};
+    GRANT ALL ON SCHEMA public TO ${DB_APP_USER};
+EOSQL
+```
+
+Make it executable: `chmod +x db/init/01-create-app-role.sh`. Scripts in `docker-entrypoint-initdb.d/` run once, only against a freshly initialized (empty) data directory — matches this project's dev-only, disposable-volume usage.
+
+- [ ] **Step 14: Write the root `docker-compose.yml`**
 
 ```yaml
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_ADMIN_USER}
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
+      DB_APP_USER: ${DB_APP_USER}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_ADMIN_USER}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -328,6 +407,10 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
+      # The app connects as the non-superuser role from Step 13, never as
+      # DB_ADMIN_USER (which is a cluster superuser and would bypass RLS).
+      DB_USER: ${DB_APP_USER}
+      DB_PASSWORD: ${DB_APP_PASSWORD}
     ports:
       - "8080:8080"
     depends_on:
@@ -347,12 +430,14 @@ volumes:
   postgres_data:
 ```
 
-- [ ] **Step 14: Write `.env.example`**
+- [ ] **Step 15: Write `.env.example`**
 
 ```
-DB_USER=meshsuite
-DB_PASSWORD=changeme
+DB_ADMIN_USER=postgres
+DB_ADMIN_PASSWORD=changeme-admin-only
 DB_NAME=meshsuite
+DB_APP_USER=meshsuite_app
+DB_APP_PASSWORD=changeme-app-role
 JWT_SECRET=changeme-generate-a-long-random-secret-min-32-bytes
 SMTP_HOST=
 SMTP_PORT=587
@@ -361,7 +446,9 @@ SMTP_PASSWORD=
 MAIL_FROM=no-reply@meshsuite.local
 ```
 
-- [ ] **Step 15: Update `.gitignore`**
+`DB_ADMIN_USER`/`DB_ADMIN_PASSWORD` are used only by the `postgres` container itself and the init script in Step 13 — the backend never receives them, only `DB_APP_USER`/`DB_APP_PASSWORD` (wired via `docker-compose.yml`'s `DB_USER`/`DB_PASSWORD` mapping in Step 14).
+
+- [ ] **Step 16: Update `.gitignore`**
 
 Add:
 ```
@@ -371,10 +458,10 @@ mesh-suite-frontend/node_modules/
 mesh-suite-frontend/dist/
 ```
 
-- [ ] **Step 16: Commit**
+- [ ] **Step 17: Commit**
 
 ```bash
-git add mesh-suite-backend mesh-suite-frontend docker-compose.yml .env.example .gitignore
+git add mesh-suite-backend mesh-suite-frontend docker-compose.yml .env.example .gitignore db/init
 git commit -m "chore: scaffold backend and frontend projects with docker-compose"
 ```
 
@@ -563,15 +650,27 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
     EntityManager entityManager;
 
     private Tenant createTenant(String codigo) {
+        // Tenant has no RLS (it's the tenant-defining table), so this insert needs
+        // no app.tenant_id session var.
         Tenant t = new Tenant();
         t.setCodigo(codigo);
         t.setNome(codigo);
         return tenantRepository.saveAndFlush(t);
     }
 
+    // The empresa_tenant_isolation policy has no explicit WITH CHECK, so Postgres
+    // reuses its USING expression for INSERT too: writing a row now requires
+    // app.tenant_id to already equal that row's tenant_id, not just reading one.
+    private void setTenantContext(UUID tenantId) {
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenantId + "'").executeUpdate();
+    }
+
     @Test
+    @Transactional
     void savesEmpresaForTenant() {
         Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+
         Empresa empresa = new Empresa();
         empresa.setTenantId(tenant.getId());
         empresa.setRazaoSocial("Confecção Aurora Ltda");
@@ -584,16 +683,19 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional
     void rejectsDuplicateCnpjAcrossTenants() {
         Tenant tenantA = createTenant("aurora");
         Tenant tenantB = createTenant("boreal");
 
+        setTenantContext(tenantA.getId());
         Empresa a = new Empresa();
         a.setTenantId(tenantA.getId());
         a.setRazaoSocial("Confecção Aurora Ltda");
         a.setCnpj("11222333000144");
         empresaRepository.saveAndFlush(a);
 
+        setTenantContext(tenantB.getId());
         Empresa b = new Empresa();
         b.setTenantId(tenantB.getId());
         b.setRazaoSocial("Confecção Boreal Ltda");
@@ -605,8 +707,11 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional
     void rlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+
         Empresa empresa = new Empresa();
         empresa.setTenantId(tenant.getId());
         empresa.setRazaoSocial("Confecção Aurora Ltda");
@@ -614,7 +719,11 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
         empresaRepository.saveAndFlush(empresa);
         entityManager.clear();
 
-        // No app.tenant_id session var set: RLS policy denies every row.
+        // RESET reverts the SET LOCAL above (back to no value, since it was never set
+        // at session level either), simulating a query with no tenant context — RLS
+        // denies every row.
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
+
         Long count = ((Number) entityManager
                 .createNativeQuery("SELECT count(*) FROM empresa")
                 .getSingleResult()).longValue();
@@ -623,6 +732,8 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
     }
 }
 ```
+
+Add `import java.util.UUID;`, `import jakarta.persistence.EntityManager;` (already present), and `import org.springframework.transaction.annotation.Transactional;` to this test file's imports.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -651,9 +762,13 @@ ALTER TABLE empresa FORCE ROW LEVEL SECURITY;
 
 -- current_setting(..., true) returns NULL instead of raising when the
 -- session var isn't set, so an unset app.tenant_id safely denies all rows
--- (NULL = tenant_id is never true) rather than erroring out.
+-- (NULL = tenant_id is never true) rather than erroring out. NULLIF(...,'')
+-- covers a second case: Postgres custom GUCs that were SET earlier in the
+-- session and then RESET come back as an empty string, not NULL -- without
+-- the NULLIF guard, ::uuid would raise "invalid input syntax for type uuid"
+-- instead of denying the row.
 CREATE POLICY empresa_tenant_isolation ON empresa
-    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
 ```
 
 - [ ] **Step 4: Write the `Empresa` entity**
@@ -769,9 +884,20 @@ class UsuarioRepositoryTest extends AbstractIntegrationTest {
         return tenantRepository.saveAndFlush(t);
     }
 
+    // usuario_tenant_isolation has no explicit WITH CHECK, so its USING expression
+    // also gates INSERT: writing a row requires app.tenant_id to already equal that
+    // row's tenant_id. usuario_login_lookup (bypass flag) is SELECT-only and doesn't
+    // help here.
+    private void setTenantContext(UUID tenantId) {
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenantId + "'").executeUpdate();
+    }
+
     @Test
+    @Transactional
     void savesUsuarioWithPapel() {
         Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+
         Usuario usuario = new Usuario();
         usuario.setTenantId(tenant.getId());
         usuario.setNome("Marina");
@@ -787,10 +913,12 @@ class UsuarioRepositoryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional
     void rejectsDuplicateEmailAcrossTenants() {
         Tenant tenantA = createTenant("aurora");
         Tenant tenantB = createTenant("boreal");
 
+        setTenantContext(tenantA.getId());
         Usuario a = new Usuario();
         a.setTenantId(tenantA.getId());
         a.setNome("Marina");
@@ -799,6 +927,7 @@ class UsuarioRepositoryTest extends AbstractIntegrationTest {
         a.setPapel(Papel.ADMINISTRADOR);
         usuarioRepository.saveAndFlush(a);
 
+        setTenantContext(tenantB.getId());
         Usuario b = new Usuario();
         b.setTenantId(tenantB.getId());
         b.setNome("Marina Outra");
@@ -812,8 +941,11 @@ class UsuarioRepositoryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional
     void loginBypassPolicyAllowsEmailLookupWithoutTenantContext() {
         Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+
         Usuario usuario = new Usuario();
         usuario.setTenantId(tenant.getId());
         usuario.setNome("Marina");
@@ -823,7 +955,8 @@ class UsuarioRepositoryTest extends AbstractIntegrationTest {
         usuarioRepository.saveAndFlush(usuario);
         entityManager.clear();
 
-        // Without the bypass flag, RLS hides the row (no app.tenant_id set).
+        // RESET simulates no tenant context: without the bypass flag, RLS hides the row.
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
         Long withoutBypass = ((Number) entityManager
                 .createNativeQuery("SELECT count(*) FROM usuario WHERE email = 'marina@confeccaoaurora.com.br'")
                 .getSingleResult()).longValue();
@@ -837,6 +970,8 @@ class UsuarioRepositoryTest extends AbstractIntegrationTest {
     }
 }
 ```
+
+Add `import java.util.UUID;` and `import org.springframework.transaction.annotation.Transactional;` to this test file's imports.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -866,8 +1001,10 @@ CREATE INDEX idx_usuario_email ON usuario(email);
 ALTER TABLE usuario ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuario FORCE ROW LEVEL SECURITY;
 
+-- NULLIF guard: see the matching comment on empresa_tenant_isolation in
+-- V2__create_empresa.sql -- a RESET custom GUC comes back as '', not NULL.
 CREATE POLICY usuario_tenant_isolation ON usuario
-    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
 
 -- Login authenticates by email alone, before any tenant is known, so the
 -- lookup can't go through the tenant-scoped policy above. This second
@@ -1022,11 +1159,16 @@ class PasswordResetTokenRepositoryTest extends AbstractIntegrationTest {
     EntityManager entityManager;
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
     void savesAndFindsByTokenHash() {
         Tenant tenant = new Tenant();
         tenant.setCodigo("aurora");
         tenant.setNome("aurora");
         tenantRepository.saveAndFlush(tenant);
+
+        // usuario_tenant_isolation's USING expression also gates INSERT (no explicit
+        // WITH CHECK), so app.tenant_id must be set before writing this row.
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
         Usuario usuario = new Usuario();
         usuario.setTenantId(tenant.getId());
@@ -1290,7 +1432,7 @@ git commit -m "feat: add JwtService for token generation and parsing"
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/auth/TenantContext.java`
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/auth/TenantContextAspect.java`
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/config/TransactionConfig.java`
-- Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/TenantIsolationIT.java`
+- Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/TenantIsolationTest.java`
 
 **Interfaces:**
 - Consumes: `Empresa` (Task 3), `Usuario` (Task 4).
@@ -1407,7 +1549,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TenantIsolationIT extends AbstractIntegrationTest {
+// @Transactional here (Spring test rollback) keeps this test's "aurora"/"boreal"
+// fixture rows from persisting after the test -- every other test class in this
+// suite reuses those same literal codes and relies on them being rolled back.
+// Nested @Transactional calls on TenantQueryService still join this outer
+// transaction (default REQUIRED propagation) and TenantContextAspect still fires
+// on each one, issuing its own SET LOCAL before that call's queries run -- so this
+// still genuinely proves that switching app.tenant_id mid-transaction changes what
+// RLS allows to be seen, not just that separate transactions are isolated.
+@Transactional
+class TenantIsolationTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
@@ -1517,14 +1668,14 @@ Save this as `mesh-suite-backend/src/main/java/com/meshsuite/auth/TenantQuerySer
 - [ ] **Step 5: Run test to verify it fails**
 
 ```bash
-cd mesh-suite-backend && ./mvnw test -Dtest=TenantIsolationIT
+cd mesh-suite-backend && ./mvnw test -Dtest=TenantIsolationTest
 ```
-Expected: FAIL — classes do not exist yet (write Steps 1-3 files if not already present, then re-run to confirm the test itself is meaningful by temporarily commenting out `TenantContext.set(...)` calls and observing the test fail with empty lists — this is the concrete proof RLS is doing the work, not applic­ation-side filtering).
+Expected: FAIL — classes do not exist yet. Once written, confirm the test itself is meaningful by temporarily commenting out the `TenantContext.set(...)` calls and re-running: commenting out the two calls before `saveEmpresa`/`saveUsuario` makes those inserts fail with an RLS policy violation (the `USING`-as-`WITH CHECK` behavior from Task 3/4 — no context means the write itself is rejected, not silently allowed and then hidden); commenting out only the two calls before the `listEmpresas`/`listUsuarios` assertions reproduces empty lists instead. Either failure mode is acceptable proof that RLS — not application-side filtering — is doing the work; restore all four calls before moving on.
 
 - [ ] **Step 6: Run test to verify it passes**
 
 ```bash
-cd mesh-suite-backend && ./mvnw test -Dtest=TenantIsolationIT
+cd mesh-suite-backend && ./mvnw test -Dtest=TenantIsolationTest
 ```
 Expected: PASS. This is the mandatory tenant-isolation test required by PRD-14's Definition of Done.
 
@@ -1535,7 +1686,7 @@ git add mesh-suite-backend/src/main/java/com/meshsuite/auth/TenantContext.java \
         mesh-suite-backend/src/main/java/com/meshsuite/auth/TenantContextAspect.java \
         mesh-suite-backend/src/main/java/com/meshsuite/auth/TenantQueryService.java \
         mesh-suite-backend/src/main/java/com/meshsuite/config/TransactionConfig.java \
-        mesh-suite-backend/src/test/java/com/meshsuite/auth/TenantIsolationIT.java
+        mesh-suite-backend/src/test/java/com/meshsuite/auth/TenantIsolationTest.java
 git commit -m "feat: wire RLS tenant context via AOP, add mandatory isolation test"
 ```
 
@@ -1547,7 +1698,7 @@ git commit -m "feat: wire RLS tenant context via AOP, add mandatory isolation te
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/auth/AuthContextService.java`
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/auth/JwtAuthenticationFilter.java`
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/config/SecurityConfig.java`
-- Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/JwtAuthenticationFilterIT.java`
+- Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/JwtAuthenticationFilterTest.java`
 
 **Interfaces:**
 - Consumes: `JwtService` (Task 6), `TenantContext` (Task 7).
@@ -1693,6 +1844,7 @@ package com.meshsuite.config;
 import com.meshsuite.auth.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -1700,6 +1852,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -1717,6 +1870,13 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // stateless JWT-in-cookie API, no server-rendered forms
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Without formLogin()/httpBasic(), Spring Security's default
+                // AuthenticationEntryPoint is Http403ForbiddenEntryPoint, which sends
+                // 403 for an unauthenticated request instead of 401 -- this API has no
+                // login form/basic-auth challenge to redirect to, so it must say so
+                // explicitly.
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/forgot-password", "/api/auth/reset-password",
                                 "/actuator/health").permitAll()
@@ -1740,12 +1900,11 @@ import com.meshsuite.usuario.Usuario;
 import com.meshsuite.usuario.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-class JwtAuthenticationFilterIT extends AbstractIntegrationTest {
+class JwtAuthenticationFilterTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
@@ -1759,11 +1918,17 @@ class JwtAuthenticationFilterIT extends AbstractIntegrationTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
     void rejectsRequestForDeactivatedUser() throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo("aurora");
         tenant.setNome("Aurora");
         tenantRepository.saveAndFlush(tenant);
+
+        // Fixture insert needs app.tenant_id set (usuario_tenant_isolation gates INSERT
+        // too); RESET afterward so the request under test starts from a clean, no-context
+        // state — otherwise a broken filter could spuriously pass on leftover context.
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
         Usuario usuario = new Usuario();
         usuario.setTenantId(tenant.getId());
@@ -1773,29 +1938,36 @@ class JwtAuthenticationFilterIT extends AbstractIntegrationTest {
         usuario.setPapel(Papel.ADMINISTRADOR);
         usuario.setAtivo(false);
         usuarioRepository.saveAndFlush(usuario);
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
         String token = jwtService.generateToken(usuario.getId(), tenant.getId(), java.util.UUID.randomUUID(), "ADMINISTRADOR", false);
 
+        // .header(HttpHeaders.COOKIE, ...) does NOT populate request.getCookies() in
+        // MockMvc -- only the .cookie(...) builder method does. Using .header() here
+        // would make the filter see no cookie at all and this test would pass for the
+        // wrong reason (indistinguishable from rejectsRequestWithNoCookie above).
         mockMvc.perform(MockMvcRequestBuilders.get("/api/auth/me")
-                        .header(HttpHeaders.COOKIE, JwtAuthenticationFilter.COOKIE_NAME + "=" + token))
+                        .cookie(new jakarta.servlet.http.Cookie(JwtAuthenticationFilter.COOKIE_NAME, token)))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 }
 ```
+
+Add `@Autowired EntityManager entityManager;` (and its `jakarta.persistence.EntityManager` import) to this test class's fields.
 
 Note: `/api/auth/me` doesn't exist yet — that's fine, `MockMvc` will 404 for the *authenticated* case since no controller handles it, but Spring Security's filter still runs first and 401s before routing gets to a missing handler, so both assertions above already hold. Task 10 adds the real handler.
 
 - [ ] **Step 5: Run test to verify it fails**
 
 ```bash
-cd mesh-suite-backend && ./mvnw test -Dtest=JwtAuthenticationFilterIT
+cd mesh-suite-backend && ./mvnw test -Dtest=JwtAuthenticationFilterTest
 ```
 Expected: FAIL — classes don't exist.
 
 - [ ] **Step 6: Run test to verify it passes**
 
 ```bash
-cd mesh-suite-backend && ./mvnw test -Dtest=JwtAuthenticationFilterIT
+cd mesh-suite-backend && ./mvnw test -Dtest=JwtAuthenticationFilterTest
 ```
 Expected: PASS.
 
@@ -1805,7 +1977,7 @@ Expected: PASS.
 git add mesh-suite-backend/src/main/java/com/meshsuite/auth/AuthContextService.java \
         mesh-suite-backend/src/main/java/com/meshsuite/auth/JwtAuthenticationFilter.java \
         mesh-suite-backend/src/main/java/com/meshsuite/config/SecurityConfig.java \
-        mesh-suite-backend/src/test/java/com/meshsuite/auth/JwtAuthenticationFilterIT.java
+        mesh-suite-backend/src/test/java/com/meshsuite/auth/JwtAuthenticationFilterTest.java
 git commit -m "feat: add JWT authentication filter with per-request ativo checks"
 ```
 
@@ -1972,7 +2144,7 @@ git commit -m "feat: add in-memory rate limiter for login and password recovery"
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/auth/GlobalExceptionHandler.java`
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/auth/dto/LoginRequest.java`
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/auth/dto/MeResponse.java`
-- Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/AuthControllerIT.java`
+- Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/AuthControllerTest.java`
 
 **Interfaces:**
 - Consumes: `UsuarioRepository`, `TenantRepository`, `EmpresaRepository`, `JwtService`, `RateLimiter`, `TenantContext`, `PasswordEncoder` (all prior tasks).
@@ -2024,6 +2196,7 @@ import com.meshsuite.tenant.TenantRepository;
 import com.meshsuite.usuario.Usuario;
 import com.meshsuite.usuario.UsuarioRepository;
 import jakarta.persistence.EntityManager;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -2040,18 +2213,35 @@ public class AuthService {
     private final EmpresaRepository empresaRepository;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
+    private final AuthService self;
 
+    // Self-injection: `authenticate()` is called externally (from AuthController,
+    // a different bean) so it goes through this class's real Spring proxy -- but
+    // calling `this.findByEmailForLogin(...)` etc. from inside it would be a plain
+    // Java self-invocation, which bypasses that proxy entirely. @Transactional (and
+    // TenantContextAspect, which relies on @Transactional's own proxying) would
+    // have no effect on such a call outside of an already-active transaction --
+    // which is exactly the case for a real login request (AuthController isn't
+    // @Transactional, and application.yml disables open-in-view, so nothing
+    // pre-opens one). A @Lazy self-reference lets internal calls go through
+    // `self.` instead, routing them through the real proxy so @Transactional
+    // actually applies. @Lazy avoids a circular-construction failure (Spring can't
+    // otherwise build a bean that depends on itself).
     public AuthService(UsuarioRepository usuarioRepository, TenantRepository tenantRepository,
                         EmpresaRepository empresaRepository, PasswordEncoder passwordEncoder,
-                        EntityManager entityManager) {
+                        EntityManager entityManager, @Lazy AuthService self) {
         this.usuarioRepository = usuarioRepository;
         this.tenantRepository = tenantRepository;
         this.empresaRepository = empresaRepository;
         this.passwordEncoder = passwordEncoder;
         this.entityManager = entityManager;
+        this.self = self;
     }
 
     public record LoginResult(Usuario usuario, Tenant tenant, Empresa empresa) {
+    }
+
+    private record TenantAndEmpresa(Tenant tenant, Empresa empresa) {
     }
 
     // Runs before the caller's tenant is known. See plan §"Design decision beyond
@@ -2062,30 +2252,52 @@ public class AuthService {
         return usuarioRepository.findByEmail(email).orElse(null);
     }
 
+    // Used by PasswordResetService.confirmReset (Task 11): a reset token identifies
+    // a usuario_id but not a tenant, so this lookup is also pre-tenant-context and
+    // needs the same bypass. Reuses usuario_login_lookup -- that policy is
+    // unconditional on the flag, not scoped to email lookups specifically.
+    @Transactional(readOnly = true)
+    public Usuario findUsuarioByIdBypassingTenant(UUID usuarioId) {
+        entityManager.createNativeQuery("SET LOCAL app.bypass_tenant_check = 'true'").executeUpdate();
+        return usuarioRepository.findById(usuarioId).orElse(null);
+    }
+
     public LoginResult authenticate(String email, String senha) {
-        Usuario usuario = findByEmailForLogin(email);
+        Usuario usuario = self.findByEmailForLogin(email);
         if (usuario == null || !passwordEncoder.matches(senha, usuario.getSenhaHash()) || !usuario.isAtivo()) {
             throw new AuthException();
         }
 
         TenantContext.set(usuario.getTenantId());
         try {
-            Tenant tenant = tenantRepository.findById(usuario.getTenantId())
-                    .orElseThrow(AuthException::new);
-            if (!tenant.isAtivo()) {
+            TenantAndEmpresa loaded = self.loadTenantAndEmpresa(usuario.getTenantId());
+            if (loaded == null || !loaded.tenant().isAtivo() || loaded.empresa() == null) {
                 throw new AuthException();
             }
 
-            List<Empresa> empresas = empresaRepository.findByTenantId(usuario.getTenantId());
-            if (empresas.isEmpty()) {
-                throw new AuthException();
-            }
-
-            registerAcesso(usuario.getId());
-            return new LoginResult(usuario, tenant, empresas.get(0));
+            self.registerAcesso(usuario.getId());
+            return new LoginResult(usuario, loaded.tenant(), loaded.empresa());
         } finally {
             TenantContext.clear();
         }
+    }
+
+    // Consolidates the tenant+empresa lookups into one plain, hand-written
+    // @Transactional method -- the same pattern TenantQueryService (Task 7)
+    // already uses and is proven to work with TenantContextAspect. Calling
+    // tenantRepository/empresaRepository methods directly from authenticate()
+    // would rely on Spring Data's dynamically-generated repository proxy methods
+    // exposing @Transactional in a way a custom @annotation(...) pointcut reliably
+    // matches, which is less certain than a plain, explicitly-annotated method.
+    @Transactional(readOnly = true)
+    public TenantAndEmpresa loadTenantAndEmpresa(UUID tenantId) {
+        Tenant tenant = tenantRepository.findById(tenantId).orElse(null);
+        if (tenant == null) {
+            return null;
+        }
+        List<Empresa> empresas = empresaRepository.findByTenantId(tenantId);
+        Empresa empresa = empresas.isEmpty() ? null : empresas.get(0);
+        return new TenantAndEmpresa(tenant, empresa);
     }
 
     @Transactional
@@ -2238,28 +2450,40 @@ import com.meshsuite.tenant.TenantRepository;
 import com.meshsuite.usuario.Papel;
 import com.meshsuite.usuario.Usuario;
 import com.meshsuite.usuario.UsuarioRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-class AuthControllerIT extends AbstractIntegrationTest {
+// @Transactional here wraps the whole test method (fixture inserts AND the mockMvc
+// calls) in one connection/transaction, rolled back after — Spring's MockMvc runs
+// in-process on the same thread, so it joins this transaction rather than opening
+// its own. That's what lets seedTenantWithUsuario set app.tenant_id for its own
+// inserts (RLS gates INSERT too, see Task 3/4) and then RESET it before the actual
+// request, so the login flow is exercised from a genuinely clean, no-context state.
+@Transactional
+class AuthControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
     @Autowired UsuarioRepository usuarioRepository;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired EntityManager entityManager;
 
     private void seedTenantWithUsuario(String senhaPlano) {
         Tenant tenant = new Tenant();
         tenant.setCodigo("aurora");
         tenant.setNome("Aurora");
         tenantRepository.saveAndFlush(tenant);
+
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
         Empresa empresa = new Empresa();
         empresa.setTenantId(tenant.getId());
@@ -2274,6 +2498,8 @@ class AuthControllerIT extends AbstractIntegrationTest {
         usuario.setSenhaHash(passwordEncoder.encode(senhaPlano));
         usuario.setPapel(Papel.ADMINISTRADOR);
         usuarioRepository.saveAndFlush(usuario);
+
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
     }
 
     @Test
@@ -2325,14 +2551,14 @@ class AuthControllerIT extends AbstractIntegrationTest {
 - [ ] **Step 7: Run test to verify it fails**
 
 ```bash
-cd mesh-suite-backend && ./mvnw test -Dtest=AuthControllerIT
+cd mesh-suite-backend && ./mvnw test -Dtest=AuthControllerTest
 ```
 Expected: FAIL.
 
 - [ ] **Step 8: Run test to verify it passes**
 
 ```bash
-cd mesh-suite-backend && ./mvnw test -Dtest=AuthControllerIT
+cd mesh-suite-backend && ./mvnw test -Dtest=AuthControllerTest
 ```
 Expected: PASS, both tests.
 
@@ -2340,7 +2566,7 @@ Expected: PASS, both tests.
 
 ```bash
 git add mesh-suite-backend/src/main/java/com/meshsuite/auth \
-        mesh-suite-backend/src/test/java/com/meshsuite/auth/AuthControllerIT.java
+        mesh-suite-backend/src/test/java/com/meshsuite/auth/AuthControllerTest.java
 git commit -m "feat: add login and /me endpoints with generic error handling"
 ```
 
@@ -2355,7 +2581,7 @@ git commit -m "feat: add login and /me endpoints with generic error handling"
 - Create: `mesh-suite-backend/src/main/java/com/meshsuite/auth/dto/ResetPasswordRequest.java`
 - Modify: `mesh-suite-backend/src/main/java/com/meshsuite/auth/AuthController.java`
 - Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/PasswordResetServiceTest.java`
-- Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/PasswordResetControllerIT.java`
+- Test: `mesh-suite-backend/src/test/java/com/meshsuite/auth/PasswordResetControllerTest.java`
 
 **Interfaces:**
 - Consumes: `PasswordResetTokenRepository` (Task 5), `UsuarioRepository` (Task 4).
@@ -2419,13 +2645,20 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PasswordResetServiceTest {
 
+    @Mock AuthService authService;
     @Mock UsuarioRepository usuarioRepository;
     @Mock PasswordResetTokenRepository tokenRepository;
     @Mock MailService mailService;
 
     private PasswordResetService service() {
-        return new PasswordResetService(usuarioRepository, tokenRepository, mailService,
-                org.mockito.Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class));
+        PasswordResetService svc = new PasswordResetService(tokenRepository, usuarioRepository, authService,
+                mailService, org.mockito.Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class));
+        // Plain Mockito test, no Spring proxy in play: `self` (package-private,
+        // @Autowired @Lazy in production -- see PasswordResetService) is simulated
+        // by pointing it back at the same instance. These tests cover business
+        // logic only, not the AOP/transaction behavior self-injection exists to fix.
+        svc.self = svc;
+        return svc;
     }
 
     @Test
@@ -2434,7 +2667,7 @@ class PasswordResetServiceTest {
         usuario.setId(UUID.randomUUID());
         usuario.setEmail("marina@aurora.com.br");
         usuario.setAtivo(true);
-        when(usuarioRepository.findByEmail("marina@aurora.com.br")).thenReturn(Optional.of(usuario));
+        when(authService.findByEmailForLogin("marina@aurora.com.br")).thenReturn(usuario);
 
         service().requestReset("marina@aurora.com.br");
 
@@ -2444,7 +2677,7 @@ class PasswordResetServiceTest {
 
     @Test
     void requestResetDoesNothingSilentlyWhenUsuarioDoesNotExist() {
-        when(usuarioRepository.findByEmail("ninguem@aurora.com.br")).thenReturn(Optional.empty());
+        when(authService.findByEmailForLogin("ninguem@aurora.com.br")).thenReturn(null);
 
         assertDoesNotThrow(() -> service().requestReset("ninguem@aurora.com.br"));
 
@@ -2499,6 +2732,8 @@ package com.meshsuite.auth;
 import com.meshsuite.mail.MailService;
 import com.meshsuite.usuario.Usuario;
 import com.meshsuite.usuario.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -2509,34 +2744,44 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
-import java.util.Optional;
 
 @Service
 public class PasswordResetService {
 
-    private final UsuarioRepository usuarioRepository;
     private final PasswordResetTokenRepository tokenRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final AuthService authService;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public PasswordResetService(UsuarioRepository usuarioRepository, PasswordResetTokenRepository tokenRepository,
-                                 MailService mailService, PasswordEncoder passwordEncoder) {
-        this.usuarioRepository = usuarioRepository;
+    // Field injection (not constructor), specifically so PasswordResetServiceTest
+    // can construct this class directly with mocks and assign `self` manually --
+    // see the test. In production, Spring wires this via @Lazy to avoid a
+    // circular-construction failure. Package-private (no `private`) so the test,
+    // which lives in the same package, can assign it directly. See plan §"Design
+    // decision beyond the spec: self-invocation breaks @Transactional...".
+    @Autowired
+    @Lazy
+    PasswordResetService self;
+
+    public PasswordResetService(PasswordResetTokenRepository tokenRepository, UsuarioRepository usuarioRepository,
+                                 AuthService authService, MailService mailService, PasswordEncoder passwordEncoder) {
         this.tokenRepository = tokenRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.authService = authService;
         this.mailService = mailService;
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Runs pre-auth, same as AuthService.findByEmailForLogin, and needs the same
-    // RLS bypass. Callers of this service must be routed through a request path
-    // that isn't tenant-scoped yet.
+    // Usuario lookups pre-tenant-context always go through AuthService, the one
+    // class that sets app.bypass_tenant_check -- see plan §"Design decision beyond
+    // the spec: RLS bypass for login lookup".
     public void requestReset(String email) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
-        if (usuarioOpt.isEmpty() || !usuarioOpt.get().isAtivo()) {
+        Usuario usuario = authService.findByEmailForLogin(email);
+        if (usuario == null || !usuario.isAtivo()) {
             return; // generic success response regardless — no account enumeration
         }
-        Usuario usuario = usuarioOpt.get();
 
         byte[] randomBytes = new byte[32];
         secureRandom.nextBytes(randomBytes);
@@ -2546,13 +2791,12 @@ public class PasswordResetService {
         token.setUsuarioId(usuario.getId());
         token.setTokenHash(sha256(rawToken));
         token.setExpiraEm(Instant.now().plus(1, ChronoUnit.HOURS));
-        tokenRepository.save(token);
+        tokenRepository.save(token); // PasswordResetToken has no RLS (Task 5) -- no tenant context needed here
 
         String resetLink = "https://app.meshsuite.local/redefinir-senha?token=" + rawToken;
         mailService.sendPasswordResetEmail(email, resetLink);
     }
 
-    @Transactional
     public void confirmReset(String rawToken, String novaSenha) {
         PasswordResetToken token = tokenRepository.findByTokenHash(sha256(rawToken))
                 .orElseThrow(AuthException::new);
@@ -2561,7 +2805,25 @@ public class PasswordResetService {
             throw new AuthException();
         }
 
-        Usuario usuario = usuarioRepository.findById(token.getUsuarioId()).orElseThrow(AuthException::new);
+        Usuario usuario = authService.findUsuarioByIdBypassingTenant(token.getUsuarioId());
+        if (usuario == null) {
+            throw new AuthException();
+        }
+
+        // usuario has RLS: updating senha_hash needs app.tenant_id set to this row's
+        // tenant. The bypass lookup above told us which tenant; route the write
+        // through `self.` so TenantContextAspect actually applies (see the
+        // self-invocation design note).
+        TenantContext.set(usuario.getTenantId());
+        try {
+            self.updateSenhaAndMarkTokenUsed(usuario, novaSenha, token);
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    @Transactional
+    public void updateSenhaAndMarkTokenUsed(Usuario usuario, String novaSenha, PasswordResetToken token) {
         usuario.setSenhaHash(passwordEncoder.encode(novaSenha));
         usuarioRepository.save(usuario);
 
@@ -2616,11 +2878,10 @@ Spec §5 puts login and password recovery under the same 5-attempts/15-minutes l
 ```java
     // in PasswordResetService — replace the existing requestReset signature/body
     public boolean requestReset(String email) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
-        if (usuarioOpt.isEmpty() || !usuarioOpt.get().isAtivo()) {
+        Usuario usuario = authService.findByEmailForLogin(email);
+        if (usuario == null || !usuario.isAtivo()) {
             return false; // caller still returns 200 with the generic message
         }
-        Usuario usuario = usuarioOpt.get();
 
         byte[] randomBytes = new byte[32];
         secureRandom.nextBytes(randomBytes);
@@ -2679,24 +2940,31 @@ import com.meshsuite.tenant.TenantRepository;
 import com.meshsuite.usuario.Papel;
 import com.meshsuite.usuario.Usuario;
 import com.meshsuite.usuario.UsuarioRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class PasswordResetControllerIT extends AbstractIntegrationTest {
+// See AuthControllerTest for why this is @Transactional: it lets the fixture insert in
+// the second test set app.tenant_id (RLS gates INSERT) and RESET it before the actual
+// request, all sharing one connection with the in-process MockMvc call.
+@Transactional
+class PasswordResetControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
     @Autowired UsuarioRepository usuarioRepository;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired EntityManager entityManager;
     @MockBean com.meshsuite.mail.MailService mailService;
 
     @Test
@@ -2715,6 +2983,8 @@ class PasswordResetControllerIT extends AbstractIntegrationTest {
         tenant.setNome("Aurora");
         tenantRepository.saveAndFlush(tenant);
 
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
+
         Usuario usuario = new Usuario();
         usuario.setTenantId(tenant.getId());
         usuario.setNome("Marina");
@@ -2722,6 +2992,8 @@ class PasswordResetControllerIT extends AbstractIntegrationTest {
         usuario.setSenhaHash(passwordEncoder.encode("senha123"));
         usuario.setPapel(Papel.ADMINISTRADOR);
         usuarioRepository.saveAndFlush(usuario);
+
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -2737,7 +3009,7 @@ class PasswordResetControllerIT extends AbstractIntegrationTest {
 - [ ] **Step 9: Run test to verify it passes**
 
 ```bash
-cd mesh-suite-backend && ./mvnw test -Dtest=PasswordResetControllerIT
+cd mesh-suite-backend && ./mvnw test -Dtest=PasswordResetControllerTest
 ```
 Expected: PASS, both tests.
 
@@ -2754,7 +3026,7 @@ Expected: `BUILD SUCCESS`.
 git add mesh-suite-backend/src/main/java/com/meshsuite/mail \
         mesh-suite-backend/src/main/java/com/meshsuite/auth \
         mesh-suite-backend/src/test/java/com/meshsuite/auth/PasswordResetServiceTest.java \
-        mesh-suite-backend/src/test/java/com/meshsuite/auth/PasswordResetControllerIT.java
+        mesh-suite-backend/src/test/java/com/meshsuite/auth/PasswordResetControllerTest.java
 git commit -m "feat: add password recovery flow with SMTP email"
 ```
 
@@ -2765,7 +3037,7 @@ git commit -m "feat: add password recovery flow with SMTP email"
 **Files:**
 - Create: `mesh-suite-backend/src/main/resources/db/migration/V5__seed_dev_tenant.sql`
 - Modify: `mesh-suite-backend/src/main/resources/application.yml` (flyway placeholder config)
-- Test: `mesh-suite-backend/src/test/java/com/meshsuite/DevSeedIT.java`
+- Test: `mesh-suite-backend/src/test/java/com/meshsuite/DevSeedTest.java`
 
 **Interfaces:**
 - Produces: two tenants (`aurora`, `boreal`), one `Empresa` and one `ADMINISTRADOR` `Usuario` each, gated to the `dev`/`test` Spring profiles.
@@ -2785,11 +3057,11 @@ public class HashGen {
 }
 EOF
 ```
-Run it via a scratch JUnit test instead (simpler than wiring a classpath by hand): add a temporary `@Test` in `AuthControllerIT` that prints `new BCryptPasswordEncoder().encode("MeshSuite@123")`, run it once, copy the output hash, then delete the temporary test.
+Run it via a scratch JUnit test instead (simpler than wiring a classpath by hand): add a temporary `@Test` in `AuthControllerTest` that prints `new BCryptPasswordEncoder().encode("MeshSuite@123")`, run it once, copy the output hash, then delete the temporary test.
 
 - [ ] **Step 2: Write migration `V5__seed_dev_tenant.sql`**
 
-Flyway doesn't support profile-gating a migration file directly; gate it via a separate migration location enabled only for `dev`/`test`. Add to `application.yml`:
+Flyway doesn't support profile-gating a migration file directly; gate it via a separate migration location enabled only for `dev`/`test`. The seed file must live OUTSIDE `db/migration` entirely, as a sibling directory (`db/seed/`, not `db/migration/seed/`) — Flyway's `classpath:db/migration` location scans recursively, so a seed folder nested underneath it would still be picked up by the base, always-active location regardless of profile, defeating the gate. Add to `application.yml`:
 
 ```yaml
 spring:
@@ -2802,23 +3074,36 @@ spring:
     activate:
       on-profile: dev,test
   flyway:
-    locations: classpath:db/migration,classpath:db/migration/seed
+    locations: classpath:db/migration,classpath:db/seed
 ```
 
-Create the file at `mesh-suite-backend/src/main/resources/db/migration/seed/V5__seed_dev_tenant.sql` (note the `seed/` subfolder — this path is only on Flyway's `locations` list for the `dev`/`test` profiles, so it never runs in production):
+Create the file at `mesh-suite-backend/src/main/resources/db/seed/V5__seed_dev_tenant.sql` (a sibling of `db/migration`, not nested inside it — only on Flyway's `locations` list for the `dev`/`test` profiles, so it never runs in production):
 
 ```sql
 INSERT INTO tenant (id, codigo, nome, ativo) VALUES
     ('11111111-1111-1111-1111-111111111111', 'aurora', 'Confecção Aurora', true),
     ('22222222-2222-2222-2222-222222222222', 'boreal', 'Confecção Boreal', true);
 
+-- Flyway shares Spring's datasource, which connects as the non-superuser app role
+-- (see AbstractIntegrationTest / Task 1's design note), so these INSERTs are subject
+-- to RLS like any other write: each row needs app.tenant_id set to its own tenant_id
+-- first. Flyway runs a whole migration script in one transaction, so SET LOCAL here
+-- stays in effect until superseded by the next one, statement by statement.
+SET LOCAL app.tenant_id = '11111111-1111-1111-1111-111111111111';
+
 INSERT INTO empresa (id, tenant_id, razao_social, cnpj, ativo) VALUES
-    ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Confecção Aurora Ltda', '11222333000144', true),
-    ('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222', 'Confecção Boreal Ltda', '55666777000188', true);
+    ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Confecção Aurora Ltda', '11222333000144', true);
 
 -- Password for both seeded users: MeshSuite@123
 INSERT INTO usuario (id, tenant_id, nome, email, senha_hash, papel, ativo) VALUES
-    ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', 'Marina Aurora', 'marina@aurora.com.br', '$2a$10$REPLACE_WITH_HASH_FROM_STEP_1', 'ADMINISTRADOR', true),
+    ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', 'Marina Aurora', 'marina@aurora.com.br', '$2a$10$REPLACE_WITH_HASH_FROM_STEP_1', 'ADMINISTRADOR', true);
+
+SET LOCAL app.tenant_id = '22222222-2222-2222-2222-222222222222';
+
+INSERT INTO empresa (id, tenant_id, razao_social, cnpj, ativo) VALUES
+    ('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222', 'Confecção Boreal Ltda', '55666777000188', true);
+
+INSERT INTO usuario (id, tenant_id, nome, email, senha_hash, papel, ativo) VALUES
     ('66666666-6666-6666-6666-666666666666', '22222222-2222-2222-2222-222222222222', 'Carlos Boreal', 'carlos@boreal.com.br', '$2a$10$REPLACE_WITH_HASH_FROM_STEP_1', 'ADMINISTRADOR', true);
 ```
 
@@ -2838,7 +3123,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
-class DevSeedIT extends AbstractIntegrationTest {
+class DevSeedTest extends AbstractIntegrationTest {
 
     @Autowired UsuarioRepository usuarioRepository;
     @Autowired PasswordEncoder passwordEncoder;
@@ -2876,16 +3161,16 @@ Note: `usuarioRepository.findByEmail` runs under the default `usuario_tenant_iso
 - [ ] **Step 4: Run test to verify it fails, then passes**
 
 ```bash
-cd mesh-suite-backend && ./mvnw test -Dtest=DevSeedIT
+cd mesh-suite-backend && ./mvnw test -Dtest=DevSeedTest
 ```
 Expected: FAIL before the migration file has the real hash substituted in (or before the `dev,test` flyway locations profile block exists), PASS after.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mesh-suite-backend/src/main/resources/db/migration/seed/V5__seed_dev_tenant.sql \
+git add mesh-suite-backend/src/main/resources/db/seed/V5__seed_dev_tenant.sql \
         mesh-suite-backend/src/main/resources/application.yml \
-        mesh-suite-backend/src/test/java/com/meshsuite/DevSeedIT.java
+        mesh-suite-backend/src/test/java/com/meshsuite/DevSeedTest.java
 git commit -m "feat: add dev/test seed data for two example tenants"
 ```
 
@@ -3047,19 +3332,35 @@ Since `LoginView.vue`/`ForgotPasswordView.vue`/`ResetPasswordView.vue` don't exi
 ```
 Duplicate the same one-line placeholder for `ForgotPasswordView.vue` and `ResetPasswordView.vue`.
 
-- [ ] **Step 6: Wire Pinia and the router into `main.ts`**
+- [ ] **Step 6: Wire Pinia and the router into `main.ts`, and replace `App.vue`'s default content with `<router-view />`**
+
+`App.vue` still has the default Vite scaffold's `<HelloWorld />` template from Task 1 — nothing in this plan otherwise touches it, so without this step the router built in this task would compile and unit-test correctly but never actually render anything route-dependent in a real browser (every URL would keep showing the Vite starter page). Replace `App.vue` entirely:
+
+```vue
+<template>
+  <router-view />
+</template>
+
+<script setup lang="ts">
+</script>
+```
+
+Keep `App.vue`'s existing `<style>` block if Vite's scaffold added any page-level resets there (check the file before deleting content) — remove only the `<template>` markup and the `<script setup>` imports/refs tied to the old `HelloWorld` demo content (e.g. an unused `msg` ref), not global styles.
 
 ```ts
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import './style.css'
 
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.mount('#app')
 ```
+
+(`import './style.css'` is the pre-existing global stylesheet import from Task 1's Vite scaffold — keep it; dropping it would silently lose global styling.)
 
 - [ ] **Step 7: Write the failing router guard test**
 
@@ -3110,7 +3411,8 @@ Expected: FAIL before `stores/auth.ts` exists, PASS after.
 git add mesh-suite-frontend/src/api mesh-suite-frontend/src/stores \
         mesh-suite-frontend/src/router mesh-suite-frontend/src/views/DashboardView.vue \
         mesh-suite-frontend/src/views/LoginView.vue mesh-suite-frontend/src/views/ForgotPasswordView.vue \
-        mesh-suite-frontend/src/views/ResetPasswordView.vue mesh-suite-frontend/src/main.ts
+        mesh-suite-frontend/src/views/ResetPasswordView.vue mesh-suite-frontend/src/main.ts \
+        mesh-suite-frontend/src/App.vue
 git commit -m "feat: add auth store, api client, and router guard"
 ```
 
