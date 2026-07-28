@@ -1785,36 +1785,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String token = extractCookie(request, COOKIE_NAME);
+        // The whole body -- not just chain.doFilter -- is wrapped in this one
+        // try/finally. usuarioETenantAtivos() below can throw an unexpected runtime
+        // exception (e.g. a DB connectivity issue), not just the JwtException/
+        // IllegalArgumentException the inner catch handles; if that exception
+        // escaped before TenantContext.clear() ran, this pooled servlet thread would
+        // carry this request's tenant into whatever request reuses it next --
+        // exactly the kind of leak a tenant-isolation boundary can't afford.
+        try {
+            String token = extractCookie(request, COOKIE_NAME);
 
-        if (token != null) {
-            try {
-                Claims claims = jwtService.parseClaims(token);
-                UUID usuarioId = UUID.fromString(claims.getSubject());
-                UUID tenantId = UUID.fromString(claims.get("tenant_id", String.class));
-                String papel = claims.get("papel", String.class);
+            if (token != null) {
+                try {
+                    Claims claims = jwtService.parseClaims(token);
+                    UUID usuarioId = UUID.fromString(claims.getSubject());
+                    UUID tenantId = UUID.fromString(claims.get("tenant_id", String.class));
+                    String papel = claims.get("papel", String.class);
 
-                // Set before calling the transactional check so TenantContextAspect
-                // can scope that query to this tenant.
-                TenantContext.set(tenantId);
+                    // Set before calling the transactional check so TenantContextAspect
+                    // can scope that query to this tenant.
+                    TenantContext.set(tenantId);
 
-                if (!authContextService.usuarioETenantAtivos(tenantId, usuarioId)) {
-                    TenantContext.clear();
+                    if (!authContextService.usuarioETenantAtivos(tenantId, usuarioId)) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                        return;
+                    }
+
+                    var principal = new AuthContextService.Context(usuarioId, tenantId, papel);
+                    var auth = new UsernamePasswordAuthenticationToken(
+                            principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + papel)));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                } catch (JwtException | IllegalArgumentException e) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
-
-                var principal = new AuthContextService.Context(usuarioId, tenantId, papel);
-                var auth = new UsernamePasswordAuthenticationToken(
-                        principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + papel)));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            } catch (JwtException | IllegalArgumentException e) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
             }
-        }
 
-        try {
             chain.doFilter(request, response);
         } finally {
             TenantContext.clear();
@@ -3035,7 +3041,7 @@ git commit -m "feat: add password recovery flow with SMTP email"
 ### Task 12: Dev/test seed migration
 
 **Files:**
-- Create: `mesh-suite-backend/src/main/resources/db/migration/V5__seed_dev_tenant.sql`
+- Create: `mesh-suite-backend/src/main/resources/db/seed/R__seed_dev_tenant.sql`
 - Modify: `mesh-suite-backend/src/main/resources/application.yml` (flyway placeholder config)
 - Test: `mesh-suite-backend/src/test/java/com/meshsuite/DevSeedTest.java`
 
@@ -3059,7 +3065,7 @@ EOF
 ```
 Run it via a scratch JUnit test instead (simpler than wiring a classpath by hand): add a temporary `@Test` in `AuthControllerTest` that prints `new BCryptPasswordEncoder().encode("MeshSuite@123")`, run it once, copy the output hash, then delete the temporary test.
 
-- [ ] **Step 2: Write migration `V5__seed_dev_tenant.sql`**
+- [ ] **Step 2: Write migration `R__seed_dev_tenant.sql`**
 
 Flyway doesn't support profile-gating a migration file directly; gate it via a separate migration location enabled only for `dev`/`test`. The seed file must live OUTSIDE `db/migration` entirely, as a sibling directory (`db/seed/`, not `db/migration/seed/`) — Flyway's `classpath:db/migration` location scans recursively, so a seed folder nested underneath it would still be picked up by the base, always-active location regardless of profile, defeating the gate. Add to `application.yml`:
 
@@ -3077,7 +3083,7 @@ spring:
     locations: classpath:db/migration,classpath:db/seed
 ```
 
-Create the file at `mesh-suite-backend/src/main/resources/db/seed/V5__seed_dev_tenant.sql` (a sibling of `db/migration`, not nested inside it — only on Flyway's `locations` list for the `dev`/`test` profiles, so it never runs in production):
+Create the file at `mesh-suite-backend/src/main/resources/db/seed/R__seed_dev_tenant.sql` (a sibling of `db/migration`, not nested inside it — only on Flyway's `locations` list for the `dev`/`test` profiles, so it never runs in production). Note the `R__` prefix (repeatable migration), not `V5__` (versioned): Flyway merges every active `locations` entry into one shared version sequence, so a versioned seed file would claim `V5` and collide the first time a real business migration (e.g. the next slice, Pedidos/Vendas) also needs to be `V5__...` in `db/migration` — Flyway refuses to start with two migrations claiming the same version. Repeatable migrations don't participate in the version sequence at all; they just run once (by content checksum) after all versioned migrations in each `flyway migrate`, which is exactly what a seed needs:
 
 ```sql
 INSERT INTO tenant (id, codigo, nome, ativo) VALUES
@@ -3168,7 +3174,7 @@ Expected: FAIL before the migration file has the real hash substituted in (or be
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mesh-suite-backend/src/main/resources/db/seed/V5__seed_dev_tenant.sql \
+git add mesh-suite-backend/src/main/resources/db/seed/R__seed_dev_tenant.sql \
         mesh-suite-backend/src/main/resources/application.yml \
         mesh-suite-backend/src/test/java/com/meshsuite/DevSeedTest.java
 git commit -m "feat: add dev/test seed data for two example tenants"
