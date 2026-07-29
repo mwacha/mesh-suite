@@ -12,7 +12,7 @@
 
 - User-facing only. Backend package names (`com.meshsuite.*`), directory names (`mesh-suite-backend/`, `mesh-suite-frontend/`), the database name, and the git repository name are unchanged — this plan touches only `mesh-suite-frontend/`.
 - No backend changes. `/api/auth/me` keeps returning `{ nome, papel }` only — nothing in this plan reads or displays data the backend doesn't already provide (see spec §1, §7).
-- Every color in new/touched styles comes from a `--pm-*` custom property defined in Task 1 — no new hardcoded hex values in component `<style>` blocks.
+- Every color in new/touched styles comes from a `--pm-*` custom property defined in Task 1 — no new hardcoded hex values in component `<style>` blocks. Exception: neutral `rgba(0, 0, 0, X)` in `box-shadow` (elevation, not brand color) doesn't need a token — this matches how most tokenized design systems treat shadows, and appears as-is in the plan's own code for the topbar dropdown (Task 3) and the auth-screen cards (Tasks 6-7). Don't flag it as a constraint violation.
 - Nav items other than Home are visually present but inert (no `@click` navigation, `cursor: not-allowed`) — their domains (Pedidos, Produtos, etc.) aren't implemented yet.
 - "Sair" (logout) is client-side only this slice: clears the Pinia auth store and navigates to `/login`. No backend logout endpoint exists yet (spec §7, risk 2) — do not add one as part of this plan.
 
