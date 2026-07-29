@@ -141,7 +141,7 @@ git commit -m "feat: add PediMais design tokens, load Inter, update page title"
 
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
@@ -167,10 +167,14 @@ describe('AppSidebar', () => {
   it('navigates to / when Home is clicked', async () => {
     const { router, wrapper } = mountWithRouter()
     await router.push('/outra')
-    await router.isReady()
 
+    // router.isReady() only ever waits for the router's FIRST navigation --
+    // once resolved, later calls return an already-resolved promise, so it
+    // does NOT wait for this click's push('/'). flushPromises() drains the
+    // microtask queue instead, letting the click handler's router.push()
+    // actually settle before the assertion runs.
     await wrapper.find('[data-test="nav-Home"]').trigger('click')
-    await router.isReady()
+    await flushPromises()
 
     expect(router.currentRoute.value.path).toBe('/')
   })
@@ -178,10 +182,9 @@ describe('AppSidebar', () => {
   it('does not navigate when an inert item (Pedidos) is clicked', async () => {
     const { router, wrapper } = mountWithRouter()
     await router.push('/outra')
-    await router.isReady()
 
     await wrapper.find('[data-test="nav-Pedidos"]').trigger('click')
-    await router.isReady()
+    await flushPromises()
 
     expect(router.currentRoute.value.path).toBe('/outra')
   })
@@ -491,7 +494,7 @@ git commit -m "feat: add AppSidebar with PediMais nav and inert future-domain it
 
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import AppTopbar from '@/components/AppTopbar.vue'
@@ -538,7 +541,10 @@ describe('AppTopbar', () => {
 
     await wrapper.find('[data-test="avatar-button"]').trigger('click')
     await wrapper.find('[data-test="logout"]').trigger('click')
-    await router.isReady()
+    // router.isReady() only waits for the router's initial navigation, not
+    // this click-triggered one -- see the same note in AppSidebar.spec.ts
+    // (Task 2). flushPromises() lets the pending router.push() settle first.
+    await flushPromises()
 
     expect(authStore.usuario).toBeNull()
     expect(router.currentRoute.value.name).toBe('login')
