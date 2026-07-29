@@ -1,0 +1,32 @@
+:root {
+  /* Dark surfaces (sidebar, login's left branding panel) */
+  --pm-sidebar-bg: #1e293b;
+  --pm-sidebar-border: #334155;
+  --pm-text-light: #f1f5f9;
+
+  /* Text on light surfaces */
+  --pm-text-dark: #1e293b;
+  --pm-text-mid: #475569;
+  --pm-text-muted: #94a3b8;
+
+  /* Light surfaces */
+  --pm-border: #374151;
+  --pm-border-light: #e2e8f0;
+  --pm-bg: #f1f5f9;
+  --pm-white: #ffffff;
+
+  /* Accent (buttons, active nav item, links) */
+  --pm-accent: #2563eb;
+  --pm-accent-bg: #eff6ff;
+  --pm-accent-text: #1d4ed8;
+
+  /* Status */
+  --pm-success: #15803d;
+  --pm-success-bg: #dcfce7;
+  --pm-warning: #d97706;
+  --pm-warning-bg: #fef3c7;
+  --pm-error: #dc2626;
+  --pm-error-bg: #fee2e2;
+
+  --pm-font: 'Inter', system-ui, sans-serif;
+}
