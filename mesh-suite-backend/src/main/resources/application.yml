@@ -26,6 +26,7 @@ app:
     secret: ${JWT_SECRET}
   mail:
     from: ${MAIL_FROM:no-reply@meshsuite.local}
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
 
 management:
   endpoints:

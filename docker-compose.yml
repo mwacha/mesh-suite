@@ -32,6 +32,10 @@ services:
       # DB_ADMIN_USER (which is a cluster superuser and would bypass RLS).
       DB_USER: ${DB_APP_USER}
       DB_PASSWORD: ${DB_APP_PASSWORD}
+      # Browser-facing origin of the frontend, for CORS -- must be an exact
+      # origin (scheme+host+port), not "*", since login uses credentialed
+      # (cookie) requests.
+      FRONTEND_ORIGIN: http://localhost:5173
     ports:
       # Host port 8081 (not the default 8080), matching application.yml's
       # SERVER_PORT default -- avoids colliding with other local projects'

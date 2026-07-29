@@ -75,6 +75,7 @@ echo "Subindo backend (Spring Boot, http://localhost:${BACKEND_PORT})..."
   export DB_USER="${DB_APP_USER}"
   export DB_PASSWORD="${DB_APP_PASSWORD}"
   export SERVER_PORT="${BACKEND_PORT}"
+  export FRONTEND_ORIGIN="http://localhost:${FRONTEND_PORT}"
   # JWT_SECRET, SMTP_*, MAIL_FROM já vêm exportados do .env acima.
   exec ./mvnw -q spring-boot:run
 ) &
