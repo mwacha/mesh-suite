@@ -38,14 +38,4 @@ public class GlobalExceptionHandler {
             com.meshsuite.parceiro.ParceiroValidacaoException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
-
-    // Fallback for a race condition slipping past ParceiroService's pre-check
-    // (two concurrent requests for the same new documento) -- the DB's
-    // UNIQUE(tenant_id, documento) constraint is the actual source of truth.
-    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
-    public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(
-            org.springframework.dao.DataIntegrityViolationException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("mensagem", "Já existe um parceiro cadastrado com este documento"));
-    }
 }
