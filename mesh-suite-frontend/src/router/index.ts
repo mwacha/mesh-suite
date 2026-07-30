@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import DashboardView from '@/views/DashboardView.vue'
+import ClienteFormView from '@/views/ClienteFormView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -12,6 +13,8 @@ const router = createRouter({
     { path: '/esqueci-senha', name: 'forgot-password', component: ForgotPasswordView, meta: { public: true } },
     { path: '/redefinir-senha', name: 'reset-password', component: ResetPasswordView, meta: { public: true } },
     { path: '/', name: 'dashboard', component: DashboardView },
+    { path: '/clientes/novo', name: 'clientes-novo', component: ClienteFormView },
+    { path: '/clientes/:id/editar', name: 'clientes-editar', component: ClienteFormView },
   ],
 })
 
