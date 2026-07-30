@@ -1,69 +1,71 @@
 <template>
   <div class="login-page">
-    <aside class="login-brand">
-      <div class="logo">
-        <span class="logo-mark">P</span>
-        <span class="logo-text">PediMais</span>
-      </div>
-      <p class="tagline">Gestão inteligente de pedidos para o seu negócio.</p>
-    </aside>
+    <div class="login-box">
+      <aside class="login-brand">
+        <div class="logo">
+          <span class="logo-mark">P</span>
+          <span class="logo-text">PediMais</span>
+        </div>
+        <p class="tagline">Gestão inteligente de pedidos para o seu negócio.</p>
+      </aside>
 
-    <main class="login-main">
-      <div class="login-card">
-        <h1>Entrar</h1>
-        <p class="subtitle">Acesse o painel do seu PediMais</p>
+      <main class="login-main">
+        <div class="login-card">
+          <h1>Entrar</h1>
+          <p class="subtitle">Acesse o painel do seu PediMais</p>
 
-        <form @submit.prevent="onSubmit">
-          <label class="field-label" for="email">E-mail</label>
-          <input
-            id="email"
-            type="email"
-            v-model="email"
-            required
-            autocomplete="username"
-            placeholder="marina@confeccaoaurora.com.br"
-          />
-
-          <label class="field-label" for="senha">Senha</label>
-          <div class="password-field">
+          <form @submit.prevent="onSubmit">
+            <label class="field-label" for="email">E-mail</label>
             <input
-              id="senha"
-              :type="showSenha ? 'text' : 'password'"
-              v-model="senha"
+              id="email"
+              type="email"
+              v-model="email"
               required
-              autocomplete="current-password"
+              autocomplete="username"
+              placeholder="marina@confeccaoaurora.com.br"
             />
-            <button
-              type="button"
-              class="toggle-senha"
-              @click="showSenha = !showSenha"
-              :aria-label="showSenha ? 'Ocultar senha' : 'Mostrar senha'"
-            >
-              {{ showSenha ? 'Ocultar' : 'Mostrar' }}
-            </button>
-          </div>
 
-          <div class="row">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="manterConectado" />
-              Manter conectado
-            </label>
-            <RouterLink to="/esqueci-senha" class="link">Esqueci minha senha</RouterLink>
-          </div>
+            <label class="field-label" for="senha">Senha</label>
+            <div class="password-field">
+              <input
+                id="senha"
+                :type="showSenha ? 'text' : 'password'"
+                v-model="senha"
+                required
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="toggle-senha"
+                @click="showSenha = !showSenha"
+                :aria-label="showSenha ? 'Ocultar senha' : 'Mostrar senha'"
+              >
+                {{ showSenha ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
 
-          <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+            <div class="row">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="manterConectado" />
+                Manter conectado
+              </label>
+              <RouterLink to="/esqueci-senha" class="link">Esqueci minha senha</RouterLink>
+            </div>
 
-          <button type="submit" class="submit-button" :disabled="loading">Entrar</button>
-        </form>
+            <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
-        <p class="footer-text">
-          Não tem conta?
-          <span class="link-inert" title="Provisionamento de tenant fora de escopo desta fatia">
-            Fale com o time comercial
-          </span>
-        </p>
-      </div>
-    </main>
+            <button type="submit" class="submit-button" :disabled="loading">Entrar</button>
+          </form>
+
+          <p class="footer-text">
+            Não tem conta?
+            <span class="link-inert" title="Provisionamento de tenant fora de escopo desta fatia">
+              Fale com o time comercial
+            </span>
+          </p>
+        </div>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -107,21 +109,36 @@ async function onSubmit() {
 <style scoped>
 .login-page {
   display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100vw;
   height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
   background: var(--pm-bg);
   font-family: var(--pm-font);
 }
 
+.login-box {
+  display: flex;
+  width: 100%;
+  max-width: 800px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
 .login-brand {
-  width: 40%;
-  min-width: 320px;
+  width: 320px;
+  flex-shrink: 0;
   background: var(--pm-sidebar-bg);
   color: var(--pm-text-light);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 64px;
+  padding: 56px 40px;
   gap: 16px;
 }
 
@@ -132,29 +149,30 @@ async function onSubmit() {
 }
 
 .logo-mark {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   background: var(--pm-accent);
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--pm-white);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .logo-text {
   font-family: var(--pm-font);
   font-weight: 700;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .tagline {
   color: var(--pm-text-muted);
-  font-size: 16px;
+  font-size: 14px;
   max-width: 220px;
+  margin: 0;
 }
 
 .login-main {
@@ -162,16 +180,14 @@ async function onSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--pm-white);
+  padding: 48px 40px;
+  box-sizing: border-box;
 }
 
 .login-card {
-  background: var(--pm-white);
-  border-radius: 12px;
-  padding: 40px;
-  width: 380px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 4px 16px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 340px;
   color: var(--pm-text-dark);
   font-family: var(--pm-font);
 }
