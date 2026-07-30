@@ -212,7 +212,7 @@ input[type='text'] {
 input[type='email']::placeholder,
 input[type='password']::placeholder,
 input[type='text']::placeholder {
-  color: #9ca3af;
+  color: var(--pm-placeholder);
 }
 
 .password-field {
