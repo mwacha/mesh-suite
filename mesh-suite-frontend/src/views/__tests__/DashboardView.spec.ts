@@ -33,4 +33,25 @@ describe('DashboardView', () => {
     expect(wrapper.text()).toContain('PediMais')
     expect(wrapper.text()).toContain('Dashboard')
   })
+
+  it('renders the example stat cards and the orders table', () => {
+    const { wrapper } = mountWithRouter()
+
+    expect(wrapper.text()).toContain('Pedidos hoje')
+    expect(wrapper.text()).toContain('38')
+    expect(wrapper.text()).toContain('Faturamento mês')
+    expect(wrapper.findAll('tbody tr')).toHaveLength(5)
+    expect(wrapper.text()).toContain('Mercado Silva')
+  })
+
+  it('renders quick-action buttons and table row links as inert (no click handlers)', () => {
+    const { wrapper } = mountWithRouter()
+
+    const novoPedido = wrapper.find('[title="Cadastro de pedidos fora de escopo desta fatia"]')
+    expect(novoPedido.exists()).toBe(true)
+    expect(novoPedido.attributes('onclick')).toBeUndefined()
+
+    const verPedido = wrapper.find('[title="Detalhe de pedido fora de escopo desta fatia"]')
+    expect(verPedido.exists()).toBe(true)
+  })
 })
