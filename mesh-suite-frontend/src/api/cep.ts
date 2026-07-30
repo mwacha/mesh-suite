@@ -21,7 +21,12 @@ export async function buscarEnderecoPorCep(cep: string): Promise<EnderecoViaCep 
     return null
   }
 
-  const data = await response.json()
+  let data: any
+  try {
+    data = await response.json()
+  } catch {
+    return null
+  }
   if (data.erro) {
     return null
   }

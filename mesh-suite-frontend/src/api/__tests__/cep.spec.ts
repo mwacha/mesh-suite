@@ -44,4 +44,16 @@ describe('buscarEnderecoPorCep', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')))
     expect(await buscarEnderecoPorCep('01310100')).toBeNull()
   })
+
+  it('returns null when response.json() throws (non-JSON 200 response)', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.reject(new Error('Invalid JSON')),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    const endereco = await buscarEnderecoPorCep('01310100')
+
+    expect(endereco).toBeNull()
+  })
 })
