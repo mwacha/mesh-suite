@@ -135,4 +135,44 @@ class ParceiroServiceTest extends AbstractIntegrationTest {
 
         assertThrows(ParceiroNaoEncontradoException.class, () -> parceiroService.buscarPorId(criado.id()));
     }
+
+    @Test
+    void atualizaParceiroComSucesso() {
+        setUpTenant("aurora");
+        var criado = parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+
+        var requestAtualizado = new ParceiroRequest(
+                TipoPessoa.JURIDICA, "11222333000144", "Mercado Silva Atualizado", "Mercado Silva Ltda",
+                Set.of(PapelParceiro.CLIENTE), "financeiro@mercadosilva.com.br", "(11) 99999-9999",
+                IndicadorIe.CONTRIBUINTE, "123456789", null, null,
+                "01310100", "Av. Paulista", "1000", "Bela Vista", null, "SP", "São Paulo",
+                "Cliente antigo", List.of(new ParceiroContatoDto("Ana Souza", "ana@mercadosilva.com.br",
+                        "(11) 3333-3333", "(11) 98888-8888", "Financeiro")));
+
+        parceiroService.atualizar(criado.id(), requestAtualizado);
+
+        var buscado = parceiroService.buscarPorId(criado.id());
+        assertThat(buscado.nomeFantasia()).isEqualTo("Mercado Silva Atualizado");
+    }
+
+    @Test
+    void atualizaParceiroMantendoOProprioDocumento() {
+        setUpTenant("aurora");
+        var criado = parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+
+        var atualizado = parceiroService.atualizar(criado.id(),
+                request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+
+        assertThat(atualizado.documento()).isEqualTo("11222333000144");
+    }
+
+    @Test
+    void rejeitaAtualizacaoParaDocumentoDeOutroParceiro() {
+        setUpTenant("aurora");
+        parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+        var outro = parceiroService.criar(TenantContext.get(), request("55666777000155", Set.of(PapelParceiro.FORNECEDOR)));
+
+        assertThrows(DocumentoDuplicadoException.class,
+                () -> parceiroService.atualizar(outro.id(), request("11222333000144", Set.of(PapelParceiro.FORNECEDOR))));
+    }
 }
