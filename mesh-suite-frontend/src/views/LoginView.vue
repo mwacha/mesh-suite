@@ -2,16 +2,16 @@
   <div class="login-page">
     <aside class="login-brand">
       <div class="logo">
-        <span class="logo-mark" />
-        <span class="logo-text">Mesh Suite</span>
+        <span class="logo-mark">P</span>
+        <span class="logo-text">PediMais</span>
       </div>
-      <p class="tagline">O ERP completo para confecções.</p>
+      <p class="tagline">Gestão inteligente de pedidos para o seu negócio.</p>
     </aside>
 
     <main class="login-main">
       <div class="login-card">
         <h1>Entrar</h1>
-        <p class="subtitle">Acesse o painel do seu Mesh Suite</p>
+        <p class="subtitle">Acesse o painel do seu PediMais</p>
 
         <form @submit.prevent="onSubmit">
           <label class="field-label" for="email">E-mail</label>
@@ -109,14 +109,15 @@ async function onSubmit() {
   display: flex;
   width: 100vw;
   height: 100vh;
-  background: #fafaf9;
+  background: var(--pm-bg);
+  font-family: var(--pm-font);
 }
 
 .login-brand {
   width: 40%;
   min-width: 320px;
-  background: #0e2530;
-  color: #eaf2f4;
+  background: var(--pm-sidebar-bg);
+  color: var(--pm-text-light);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -131,20 +132,27 @@ async function onSubmit() {
 }
 
 .logo-mark {
-  width: 14px;
-  height: 14px;
-  background: #c9a15a;
-  border-radius: 2px;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  background: var(--pm-accent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pm-white);
+  font-weight: 700;
+  font-size: 13px;
 }
 
 .logo-text {
-  font-family: 'Manrope', sans-serif;
-  font-weight: 800;
+  font-family: var(--pm-font);
+  font-weight: 700;
   font-size: 18px;
 }
 
 .tagline {
-  color: #8fb0ba;
+  color: var(--pm-text-muted);
   font-size: 16px;
   max-width: 220px;
 }
@@ -157,23 +165,25 @@ async function onSubmit() {
 }
 
 .login-card {
-  background: #0e2530;
-  border-radius: 20px;
+  background: var(--pm-white);
+  border-radius: 12px;
   padding: 40px;
   width: 380px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-  color: #eaf2f4;
-  font-family: 'Manrope', sans-serif;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+  color: var(--pm-text-dark);
+  font-family: var(--pm-font);
 }
 
 .login-card h1 {
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 700;
   margin: 0 0 8px;
 }
 
 .subtitle {
-  color: #8fb0ba;
+  color: var(--pm-text-mid);
   font-size: 14px;
   margin: 0 0 24px;
 }
@@ -182,7 +192,7 @@ async function onSubmit() {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #8fb0ba;
+  color: var(--pm-text-mid);
   margin: 16px 0 6px;
 }
 
@@ -191,18 +201,18 @@ input[type='password'],
 input[type='text'] {
   width: 100%;
   box-sizing: border-box;
-  background: #14313d;
-  border: 1px solid #1e4552;
-  border-radius: 10px;
+  background: var(--pm-white);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 8px;
   padding: 10px 14px;
-  color: #eaf2f4;
+  color: var(--pm-text-dark);
   font-size: 14px;
 }
 
 input[type='email']::placeholder,
 input[type='password']::placeholder,
 input[type='text']::placeholder {
-  color: #5f7d87;
+  color: #9ca3af;
 }
 
 .password-field {
@@ -220,7 +230,7 @@ input[type='text']::placeholder {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #4fc3d9;
+  color: var(--pm-accent);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -239,27 +249,27 @@ input[type='text']::placeholder {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #eaf2f4;
+  color: var(--pm-text-dark);
 }
 
 .checkbox-label input[type='checkbox'] {
-  accent-color: #4fc3d9;
+  accent-color: var(--pm-accent);
   width: 16px;
   height: 16px;
 }
 
 .link {
-  color: #4fc3d9;
+  color: var(--pm-accent);
   text-decoration: none;
 }
 
 .link-inert {
-  color: #4fc3d9;
+  color: var(--pm-accent);
   cursor: not-allowed;
 }
 
 .error {
-  color: #d0453a;
+  color: var(--pm-error);
   font-size: 14px;
   margin-top: 16px;
 }
@@ -267,10 +277,10 @@ input[type='text']::placeholder {
 .submit-button {
   width: 100%;
   margin-top: 24px;
-  background: #c9a15a;
-  color: #17171a;
+  background: var(--pm-accent);
+  color: var(--pm-white);
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px;
   font-weight: 700;
   font-size: 15px;
@@ -286,6 +296,6 @@ input[type='text']::placeholder {
   text-align: center;
   margin-top: 24px;
   font-size: 13px;
-  color: #8fb0ba;
+  color: var(--pm-text-mid);
 }
 </style>
