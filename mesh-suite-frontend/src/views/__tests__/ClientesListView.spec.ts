@@ -89,4 +89,12 @@ describe('ClientesListView', () => {
 
     expect(parceirosApi.atualizarStatusParceiro).toHaveBeenCalledWith('p1', 'BLOQUEADO')
   })
+
+  it('shows an error message when loading the client list fails', async () => {
+    vi.mocked(parceirosApi.listarParceiros).mockRejectedValue(new Error('network error'))
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Não foi possível carregar a lista de clientes.')
+  })
 })

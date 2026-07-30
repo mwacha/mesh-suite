@@ -1,5 +1,7 @@
 <template>
   <AppShell title="Clientes">
+    <p v-if="erro" class="error-geral">{{ erro }}</p>
+
     <div class="toolbar">
       <input
         v-model="filtros.busca"
@@ -97,25 +99,36 @@ const filtros = reactive({ busca: '', status: '', tipoDocumento: '', uf: '', cid
 const pagina = ref<ApiPage<ParceiroSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const resumo = ref<ParceiroResumo | null>(null)
 const acoesAbertas = ref<string | null>(null)
+const erro = ref('')
 
 function statusLabel(status: StatusParceiro) {
   return { ATIVO: 'Ativo', EM_RISCO: 'Em Risco', BLOQUEADO: 'Bloqueado' }[status]
 }
 
 async function carregar(page: number) {
-  pagina.value = await listarParceiros({
-    busca: filtros.busca || undefined,
-    status: (filtros.status || undefined) as StatusParceiro | undefined,
-    tipoDocumento: (filtros.tipoDocumento || undefined) as TipoPessoa | undefined,
-    uf: filtros.uf || undefined,
-    cidade: filtros.cidade || undefined,
-    page,
-    size: pagina.value.size,
-  })
+  erro.value = ''
+  try {
+    pagina.value = await listarParceiros({
+      busca: filtros.busca || undefined,
+      status: (filtros.status || undefined) as StatusParceiro | undefined,
+      tipoDocumento: (filtros.tipoDocumento || undefined) as TipoPessoa | undefined,
+      uf: filtros.uf || undefined,
+      cidade: filtros.cidade || undefined,
+      page,
+      size: pagina.value.size,
+    })
+  } catch {
+    erro.value = 'Não foi possível carregar a lista de clientes.'
+  }
 }
 
 async function carregarResumo() {
-  resumo.value = await buscarResumoParceiros()
+  erro.value = ''
+  try {
+    resumo.value = await buscarResumoParceiros()
+  } catch {
+    erro.value = 'Não foi possível carregar o resumo de clientes.'
+  }
 }
 
 function novoCliente() {
@@ -137,9 +150,14 @@ function toggleAcoes(id: string) {
 
 async function alternarStatus(parceiro: ParceiroSummary) {
   acoesAbertas.value = null
+  erro.value = ''
   const novoStatus = parceiro.status === 'BLOQUEADO' ? 'ATIVO' : 'BLOQUEADO'
-  await atualizarStatusParceiro(parceiro.id, novoStatus)
-  await Promise.all([carregar(pagina.value.number), carregarResumo()])
+  try {
+    await atualizarStatusParceiro(parceiro.id, novoStatus)
+    await Promise.all([carregar(pagina.value.number), carregarResumo()])
+  } catch {
+    erro.value = 'Não foi possível atualizar o status.'
+  }
 }
 
 async function excluir(parceiro: ParceiroSummary) {
@@ -147,8 +165,13 @@ async function excluir(parceiro: ParceiroSummary) {
   if (!confirm(`Excluir o cliente "${parceiro.nomeFantasia}"?`)) {
     return
   }
-  await excluirParceiro(parceiro.id)
-  await Promise.all([carregar(pagina.value.number), carregarResumo()])
+  erro.value = ''
+  try {
+    await excluirParceiro(parceiro.id)
+    await Promise.all([carregar(pagina.value.number), carregarResumo()])
+  } catch {
+    erro.value = 'Não foi possível excluir o cliente.'
+  }
 }
 
 onMounted(() => {
@@ -158,6 +181,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.error-geral {
+  color: var(--pm-error);
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+
 .toolbar {
   display: flex;
   gap: 8px;
