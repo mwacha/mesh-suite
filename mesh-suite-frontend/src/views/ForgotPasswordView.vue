@@ -40,48 +40,52 @@ async function onSubmit() {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: #fafaf9;
-  font-family: 'Manrope', sans-serif;
+  background: var(--pm-bg);
+  font-family: var(--pm-font);
 }
 
 .auth-card {
-  background: #0e2530;
-  color: #eaf2f4;
-  border-radius: 20px;
+  background: var(--pm-white);
+  color: var(--pm-text-dark);
+  border-radius: 12px;
   padding: 40px;
   width: 380px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 .field-label {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #8fb0ba;
+  color: var(--pm-text-mid);
   margin: 16px 0 6px;
 }
 
 input {
   width: 100%;
   box-sizing: border-box;
-  background: #14313d;
-  border: 1px solid #1e4552;
-  border-radius: 10px;
+  background: var(--pm-white);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 8px;
   padding: 10px 14px;
-  color: #eaf2f4;
+  color: var(--pm-text-dark);
 }
 
 .submit-button {
   width: 100%;
   margin-top: 24px;
-  background: #c9a15a;
+  background: var(--pm-accent);
+  color: var(--pm-white);
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .success {
-  color: #8fb0ba;
+  color: var(--pm-success);
 }
 </style>
