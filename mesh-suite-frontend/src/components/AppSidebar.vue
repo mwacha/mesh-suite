@@ -54,7 +54,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: '🏠', label: 'Home', route: '/' },
-  { icon: '👥', label: 'Clientes', route: null },
+  { icon: '👥', label: 'Clientes', route: '/clientes' },
   { icon: '🏢', label: 'Empresa', route: null },
   { icon: '🏷', label: 'Marcas', route: null },
   { icon: '💳', label: 'Pagamentos', route: null },
@@ -73,7 +73,10 @@ const authStore = useAuthStore()
 const initial = computed(() => (authStore.usuario?.nome?.[0] ?? '?').toUpperCase())
 
 function isActive(item: NavItem) {
-  return item.route !== null && route.path === item.route
+  if (item.route === null) {
+    return false
+  }
+  return item.route === '/' ? route.path === '/' : route.path.startsWith(item.route)
 }
 
 function go(item: NavItem) {

@@ -67,4 +67,25 @@ describe('AppSidebar', () => {
     expect(wrapper.text()).toContain('Marina Aurora')
     expect(wrapper.text()).toContain('ADMINISTRADOR')
   })
+
+  it('navigates to /clientes when Clientes is clicked, and highlights it from a sub-route', async () => {
+    const router = createRouter({
+      history: createWebHistory(),
+      routes: [
+        { path: '/', name: 'dashboard', component: { template: '<div />' } },
+        { path: '/clientes', name: 'clientes', component: { template: '<div />' } },
+        { path: '/clientes/novo', name: 'clientes-novo', component: { template: '<div />' } },
+      ],
+    })
+    const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
+
+    await wrapper.find('[data-test="nav-Clientes"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/clientes')
+    expect(wrapper.find('[data-test="nav-Clientes"]').classes()).toContain('nav-item-active')
+
+    await router.push('/clientes/novo')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-test="nav-Clientes"]').classes()).toContain('nav-item-active')
+  })
 })
