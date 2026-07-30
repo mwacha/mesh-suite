@@ -220,8 +220,12 @@ const salvando = ref(false)
 onMounted(async () => {
   const id = route.params.id
   if (typeof id === 'string') {
-    const parceiro = await buscarParceiro(id)
-    Object.assign(form, parceiro)
+    try {
+      const parceiro = await buscarParceiro(id)
+      Object.assign(form, parceiro)
+    } catch {
+      erroGeral.value = 'Não foi possível carregar os dados do cliente. Tente novamente em instantes.'
+    }
   }
 })
 

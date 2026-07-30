@@ -117,4 +117,14 @@ describe('ClienteFormView', () => {
     expect(parceirosApi.buscarParceiro).toHaveBeenCalledWith('abc-123')
     expect((wrapper.find('[data-test="nomeFantasia"]').element as HTMLInputElement).value).toBe('Mercado Silva')
   })
+
+  it('shows an error message when loading parceiro data fails in edit mode', async () => {
+    vi.mocked(parceirosApi.buscarParceiro).mockRejectedValue(new Error('network error'))
+
+    const { wrapper } = await mountWithRouter('/clientes/abc-123/editar')
+    await flushPromises()
+
+    expect(parceirosApi.buscarParceiro).toHaveBeenCalledWith('abc-123')
+    expect(wrapper.text()).toContain('Não foi possível carregar os dados do cliente')
+  })
 })
