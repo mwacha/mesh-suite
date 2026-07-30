@@ -6,6 +6,7 @@ import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import ClienteFormView from '@/views/ClienteFormView.vue'
 import ClientesListView from '@/views/ClientesListView.vue'
+import ClienteDetailView from '@/views/ClienteDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -17,6 +18,7 @@ const router = createRouter({
     { path: '/clientes', name: 'clientes', component: ClientesListView },
     { path: '/clientes/novo', name: 'clientes-novo', component: ClienteFormView },
     { path: '/clientes/:id/editar', name: 'clientes-editar', component: ClienteFormView },
+    { path: '/clientes/:id', name: 'clientes-detalhe', component: ClienteDetailView },
   ],
 })
 
