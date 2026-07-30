@@ -64,11 +64,7 @@
             >
               + Novo Pedido
             </button>
-            <button
-              type="button"
-              class="btn-secondary btn-inert"
-              title="Cadastro de clientes fora de escopo desta fatia"
-            >
+            <button type="button" class="btn-secondary" @click="router.push({ name: 'clientes-novo' })">
               + Novo Cliente
             </button>
             <button
@@ -97,7 +93,10 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+
+const router = useRouter()
 
 type StatusPedido = 'pendente' | 'aprovado' | 'faturamento' | 'cancelado'
 

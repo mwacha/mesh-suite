@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '@/views/DashboardView.vue'
@@ -8,7 +8,10 @@ import { useAuthStore } from '@/stores/auth'
 function mountWithRouter() {
   const router = createRouter({
     history: createWebHistory(),
-    routes: [{ path: '/', name: 'dashboard', component: DashboardView }],
+    routes: [
+      { path: '/', name: 'dashboard', component: DashboardView },
+      { path: '/clientes/novo', name: 'clientes-novo', component: { template: '<div />' } },
+    ],
   })
   return { router, wrapper: mount(DashboardView, { global: { plugins: [router] } }) }
 }
@@ -53,5 +56,16 @@ describe('DashboardView', () => {
 
     const verPedido = wrapper.find('[title="Detalhe de pedido fora de escopo desta fatia"]')
     expect(verPedido.exists()).toBe(true)
+  })
+
+  it('navigates to the client creation form when + Novo Cliente is clicked', async () => {
+    const { router, wrapper } = mountWithRouter()
+    await router.isReady()
+
+    const novoCliente = wrapper.findAll('button').find((b) => b.text() === '+ Novo Cliente')!
+    await novoCliente.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('clientes-novo')
   })
 })
