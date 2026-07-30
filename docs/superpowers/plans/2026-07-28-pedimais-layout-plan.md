@@ -45,6 +45,7 @@ The spec's shorthand ("mesma estrutura já implementada... só a paleta muda") u
   --pm-text-dark: #1e293b;
   --pm-text-mid: #475569;
   --pm-text-muted: #94a3b8;
+  --pm-placeholder: #9ca3af;
 
   /* Light surfaces */
   --pm-border: #374151;
@@ -1093,7 +1094,7 @@ input[type='text'] {
 input[type='email']::placeholder,
 input[type='password']::placeholder,
 input[type='text']::placeholder {
-  color: #9ca3af;
+  color: var(--pm-placeholder);
 }
 
 .password-field {
