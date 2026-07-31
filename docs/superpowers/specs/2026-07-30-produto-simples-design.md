@@ -67,6 +67,7 @@ Ativa o item "Produtos" do menu lateral (hoje inerte).
 
 ### `ProdutosListView.vue` (rota `/produtos`)
 - Busca por nome/SKU; filtro por Status.
+- Cards de resumo: Total, Ativos, Inativos (mesmo padrão do Cliente, só sem "Em Risco" já que Produto tem apenas dois status).
 - Colunas: Código (SKU), Produto (nome), Marca, Preço de Venda, Estoque, Status, Ações.
 - Menu Ações (Ver/Editar/Ativar-Inativar/Excluir) — usa `Teleport` desde o início, evitando o bug de clipping por `overflow: hidden` já corrigido no Cliente.
 - Paginação real via backend, simplificada (Prev/Next + "página X de Y"), mesma simplificação usada no Cliente.
@@ -87,6 +88,7 @@ Um único componente serve criar e editar. Erros: 409 (SKU duplicado) com mensag
 Mesmo padrão de `parceiro`: entity + repository + service + controller + DTO, RLS via `tenant_id`.
 
 - `GET /api/produtos` — lista paginada; query params: `busca` (nome/SKU), `status`.
+- `GET /api/produtos/resumo` — contagens Total/Ativos/Inativos, independente dos filtros da lista (mesma simplificação do Cliente).
 - `GET /api/produtos/{id}` — detalhe.
 - `POST /api/produtos` — criar.
 - `PUT /api/produtos/{id}` — atualizar.
