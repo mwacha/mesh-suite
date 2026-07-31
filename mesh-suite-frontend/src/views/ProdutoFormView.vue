@@ -1,0 +1,340 @@
+<template>
+  <AppShell :title="modoEdicao ? 'Editar Produto' : 'Novo Produto'">
+    <form class="form" @submit.prevent="salvar">
+      <section class="card">
+        <h2>Informações Gerais</h2>
+        <div class="grid grid-2">
+          <div>
+            <label class="field-label">Nome do Produto *</label>
+            <input v-model="form.nome" data-test="nome" />
+            <p v-if="erros.nome" class="field-error">{{ erros.nome }}</p>
+          </div>
+          <div>
+            <label class="field-label">Código SKU *</label>
+            <input v-model="form.sku" data-test="sku" />
+            <p v-if="erros.sku" class="field-error">{{ erros.sku }}</p>
+          </div>
+        </div>
+        <div class="grid grid-2">
+          <div>
+            <label class="field-label">Código de Barra (EAN/GTIN)</label>
+            <input v-model="form.codigoBarras" placeholder="7891234567890" />
+          </div>
+          <div>
+            <label class="field-label">Marca</label>
+            <input v-model="form.marca" />
+          </div>
+        </div>
+        <div class="grid grid-3">
+          <div>
+            <label class="field-label">Categoria</label>
+            <input v-model="form.categoria" />
+          </div>
+          <div>
+            <label class="field-label">Preço de Venda *</label>
+            <input v-model.number="form.precoVenda" type="number" step="0.01" min="0" data-test="preco-venda" />
+            <p v-if="erros.precoVenda" class="field-error">{{ erros.precoVenda }}</p>
+          </div>
+          <div>
+            <label class="field-label">Preço de Custo</label>
+            <input v-model.number="form.precoCusto" type="number" step="0.01" min="0" />
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Status</label>
+          <select v-model="form.status">
+            <option value="ATIVO">Ativo</option>
+            <option value="INATIVO">Inativo</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Descrição</label>
+          <textarea v-model="form.descricao" rows="3" placeholder="Descreva o produto..."></textarea>
+        </div>
+      </section>
+
+      <div class="grid-cards">
+        <section class="card">
+          <h2>Estoque</h2>
+          <div class="grid grid-2">
+            <div>
+              <label class="field-label">Qtd. em Estoque</label>
+              <input v-model.number="form.quantidadeEstoque" type="number" step="1" min="0" />
+            </div>
+            <div>
+              <label class="field-label">Unidade de Medida</label>
+              <select v-model="form.unidadeMedida">
+                <option v-for="unidade in UNIDADES" :key="unidade" :value="unidade">{{ unidade }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Estoque Mínimo</label>
+              <input v-model.number="form.estoqueMinimo" type="number" step="1" min="0" />
+            </div>
+            <div>
+              <label class="field-label">Estoque Máximo</label>
+              <input v-model.number="form.estoqueMaximo" type="number" step="1" min="0" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Pesos &amp; Dimensões</h2>
+          <div class="grid grid-2">
+            <div>
+              <label class="field-label">Peso (kg)</label>
+              <input v-model.number="form.peso" type="number" step="0.001" min="0" />
+            </div>
+            <div>
+              <label class="field-label">Comprimento (cm)</label>
+              <input v-model.number="form.comprimento" type="number" step="0.01" min="0" />
+            </div>
+            <div>
+              <label class="field-label">Largura (cm)</label>
+              <input v-model.number="form.largura" type="number" step="0.01" min="0" />
+            </div>
+            <div>
+              <label class="field-label">Altura (cm)</label>
+              <input v-model.number="form.altura" type="number" step="0.01" min="0" />
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
+
+      <div class="actions">
+        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
+        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Produto</button>
+      </div>
+    </form>
+  </AppShell>
+</template>
+
+<script setup lang="ts">
+import { reactive, ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppShell from '@/components/AppShell.vue'
+import {
+  buscarProduto,
+  criarProduto,
+  atualizarProduto,
+  type ProdutoRequest,
+  type UnidadeMedida,
+} from '@/api/produtos'
+
+const UNIDADES: UnidadeMedida[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
+
+const route = useRoute()
+const router = useRouter()
+
+const modoEdicao = computed(() => typeof route.params.id === 'string')
+
+function novoFormulario(): ProdutoRequest {
+  return {
+    nome: '',
+    sku: '',
+    codigoBarras: '',
+    marca: '',
+    categoria: '',
+    precoVenda: 0,
+    precoCusto: null,
+    status: 'ATIVO',
+    descricao: '',
+    quantidadeEstoque: 0,
+    unidadeMedida: 'UN',
+    estoqueMinimo: null,
+    estoqueMaximo: null,
+    peso: null,
+    comprimento: null,
+    largura: null,
+    altura: null,
+  }
+}
+
+const form = reactive<ProdutoRequest>(novoFormulario())
+const erros = reactive<{ nome?: string; sku?: string; precoVenda?: string }>({})
+const erroGeral = ref('')
+const salvando = ref(false)
+
+onMounted(async () => {
+  const id = route.params.id
+  if (typeof id === 'string') {
+    try {
+      const produto = await buscarProduto(id)
+      Object.assign(form, produto)
+    } catch {
+      erroGeral.value = 'Não foi possível carregar os dados do produto.'
+    }
+  }
+})
+
+function validar(): boolean {
+  erros.nome = form.nome.trim() ? undefined : 'Campo obrigatório'
+  erros.sku = form.sku.trim() ? undefined : 'Campo obrigatório'
+  erros.precoVenda = Number(form.precoVenda) > 0 ? undefined : 'Informe um preço maior que zero'
+  return !erros.nome && !erros.sku && !erros.precoVenda
+}
+
+function numeroOuNull(valor: unknown): number | null {
+  return valor === '' || valor === null || valor === undefined ? null : Number(valor)
+}
+
+function paraPayload(): ProdutoRequest {
+  return {
+    ...form,
+    precoVenda: Number(form.precoVenda) || 0,
+    precoCusto: numeroOuNull(form.precoCusto),
+    quantidadeEstoque: Number(form.quantidadeEstoque) || 0,
+    estoqueMinimo: numeroOuNull(form.estoqueMinimo),
+    estoqueMaximo: numeroOuNull(form.estoqueMaximo),
+    peso: numeroOuNull(form.peso),
+    comprimento: numeroOuNull(form.comprimento),
+    largura: numeroOuNull(form.largura),
+    altura: numeroOuNull(form.altura),
+  }
+}
+
+async function salvar() {
+  erroGeral.value = ''
+  if (!validar()) {
+    return
+  }
+  salvando.value = true
+  try {
+    const id = route.params.id
+    const payload = paraPayload()
+    if (typeof id === 'string') {
+      await atualizarProduto(id, payload)
+    } else {
+      await criarProduto(payload)
+    }
+    router.push({ name: 'produtos' })
+  } catch (err: any) {
+    if (err?.response?.status === 409) {
+      erroGeral.value = 'Já existe um produto cadastrado com este SKU.'
+    } else if (err?.response?.status === 400) {
+      erroGeral.value = err.response.data?.mensagem ?? 'Verifique os dados informados.'
+    } else {
+      erroGeral.value = 'Não foi possível salvar. Tente novamente em instantes.'
+    }
+  } finally {
+    salvando.value = false
+  }
+}
+
+function cancelar() {
+  router.push({ name: 'produtos' })
+}
+</script>
+
+<style scoped>
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--pm-font);
+}
+
+.grid-cards {
+  display: flex;
+  gap: 12px;
+}
+
+.grid-cards .card {
+  flex: 1;
+}
+
+.card {
+  background: var(--pm-white);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.card h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+  margin: 0 0 12px;
+}
+
+.grid {
+  display: grid;
+  gap: 0 14px;
+  margin-bottom: 10px;
+}
+
+.grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  color: var(--pm-text-mid);
+  margin-bottom: 4px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--pm-white);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--pm-text-dark);
+  font-size: 13px;
+  font-family: var(--pm-font);
+}
+
+.field-error {
+  color: var(--pm-error);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.error-geral {
+  color: var(--pm-error);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-primary,
+.btn-secondary {
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--pm-font);
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--pm-accent);
+  color: var(--pm-white);
+  border: none;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--pm-white);
+  color: var(--pm-text-dark);
+  border: 1px solid var(--pm-border-light);
+}
+</style>
