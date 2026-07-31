@@ -38,4 +38,16 @@ public class GlobalExceptionHandler {
             com.meshsuite.parceiro.ParceiroValidacaoException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.produto.ProdutoNaoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> handleProdutoNaoEncontrado(
+            com.meshsuite.produto.ProdutoNaoEncontradoException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.produto.SkuDuplicadoException.class)
+    public ResponseEntity<Map<String, String>> handleSkuDuplicado(
+            com.meshsuite.produto.SkuDuplicadoException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
 }
