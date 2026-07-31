@@ -51,20 +51,34 @@
             <td>{{ parceiro.whatsapp }}</td>
             <td><span class="badge" :class="`badge-${parceiro.status}`">{{ statusLabel(parceiro.status) }}</span></td>
             <td class="acoes">
-              <button type="button" class="btn-acoes" data-test="btn-acoes" @click="toggleAcoes(parceiro.id)">Ações</button>
-              <div v-if="acoesAbertas === parceiro.id" class="dropdown-acoes">
-                <div data-test="acao-ver" @click="abrirCliente(parceiro.id)">Ver</div>
-                <div @click="editarCliente(parceiro.id)">Editar</div>
-                <div @click="alternarStatus(parceiro)">
-                  {{ parceiro.status === 'BLOQUEADO' ? 'Ativar' : 'Bloquear' }}
-                </div>
-                <div class="acao-excluir" @click="excluir(parceiro)">Excluir</div>
-              </div>
+              <button
+                type="button"
+                class="btn-acoes"
+                data-test="btn-acoes"
+                @click="toggleAcoes(parceiro.id, $event)"
+              >
+                Ações
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </section>
+
+    <Teleport to="body">
+      <div
+        v-if="parceiroAcoesAtual"
+        class="dropdown-acoes"
+        :style="{ top: posicaoDropdown.top, left: posicaoDropdown.left }"
+      >
+        <div data-test="acao-ver" @click="abrirCliente(parceiroAcoesAtual.id)">Ver</div>
+        <div @click="editarCliente(parceiroAcoesAtual.id)">Editar</div>
+        <div @click="alternarStatus(parceiroAcoesAtual)">
+          {{ parceiroAcoesAtual.status === 'BLOQUEADO' ? 'Ativar' : 'Bloquear' }}
+        </div>
+        <div class="acao-excluir" @click="excluir(parceiroAcoesAtual)">Excluir</div>
+      </div>
+    </Teleport>
 
     <div class="paginacao">
       <button type="button" :disabled="pagina.number === 0" @click="carregar(pagina.number - 1)">‹</button>
@@ -75,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
@@ -96,7 +110,12 @@ const filtros = reactive({ busca: '', status: '', tipoDocumento: '', uf: '', cid
 const pagina = ref<ApiPage<ParceiroSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const resumo = ref<ParceiroResumo | null>(null)
 const acoesAbertas = ref<string | null>(null)
+const posicaoDropdown = ref({ top: '0px', left: '0px' })
 const erro = ref('')
+
+const parceiroAcoesAtual = computed(() =>
+  pagina.value.content.find((p) => p.id === acoesAbertas.value) ?? null,
+)
 
 function statusLabel(status: StatusParceiro) {
   return { ATIVO: 'Ativo', EM_RISCO: 'Em Risco', BLOQUEADO: 'Bloqueado' }[status]
@@ -142,8 +161,17 @@ function editarCliente(id: string) {
   router.push({ name: 'clientes-editar', params: { id } })
 }
 
-function toggleAcoes(id: string) {
-  acoesAbertas.value = acoesAbertas.value === id ? null : id
+function toggleAcoes(id: string, event: MouseEvent) {
+  if (acoesAbertas.value === id) {
+    acoesAbertas.value = null
+    return
+  }
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  posicaoDropdown.value = {
+    top: `${rect.bottom + 4}px`,
+    left: `${rect.right - 120}px`,
+  }
+  acoesAbertas.value = id
 }
 
 async function alternarStatus(parceiro: ParceiroSummary) {
@@ -303,10 +331,6 @@ onMounted(() => {
   color: var(--pm-error);
 }
 
-.acoes {
-  position: relative;
-}
-
 .btn-acoes {
   border: 1px solid var(--pm-border-light);
   background: var(--pm-white);
@@ -317,9 +341,7 @@ onMounted(() => {
 }
 
 .dropdown-acoes {
-  position: absolute;
-  right: 0;
-  top: 100%;
+  position: fixed;
   background: var(--pm-white);
   border: 1px solid var(--pm-border-light);
   border-radius: 6px;

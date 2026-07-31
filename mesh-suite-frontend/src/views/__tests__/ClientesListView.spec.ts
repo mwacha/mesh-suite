@@ -20,7 +20,10 @@ function mountWithRouter() {
   router.push('/clientes')
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(ClientesListView, { global: { plugins: [router] } }),
+    // The Ações dropdown is Teleported to <body> so it isn't clipped by the
+    // table card's `overflow: hidden` -- stub it here so it renders in
+    // place instead, keeping the existing wrapper.find() queries working.
+    wrapper: mount(ClientesListView, { global: { plugins: [router], stubs: { teleport: true } } }),
   }))
 }
 
