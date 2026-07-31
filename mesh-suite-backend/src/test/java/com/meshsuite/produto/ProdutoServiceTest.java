@@ -126,4 +126,15 @@ class ProdutoServiceTest extends AbstractIntegrationTest {
 
         assertThrows(ProdutoNaoEncontradoException.class, () -> produtoService.buscarPorId(criado.id()));
     }
+
+    @Test
+    void sameSkuAllowedAcrossDifferentTenants() {
+        setUpTenant("aurora");
+        produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
+
+        setUpTenant("boreal");
+        var segundo = produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("39.90")));
+
+        assertThat(segundo.sku()).isEqualTo("P0001");
+    }
 }
