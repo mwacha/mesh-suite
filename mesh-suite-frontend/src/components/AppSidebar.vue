@@ -60,7 +60,7 @@ const navItems: NavItem[] = [
   { icon: '💳', label: 'Pagamentos', route: null },
   { icon: '📋', label: 'Pedidos', route: null },
   { icon: '🔒', label: 'Permissões', route: null },
-  { icon: '📦', label: 'Produtos', route: null },
+  { icon: '📦', label: 'Produtos', route: '/produtos' },
   { icon: '💰', label: 'Tab. Preços', route: null },
   { icon: '👤', label: 'Usuários', route: null },
 ]
