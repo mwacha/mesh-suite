@@ -26,6 +26,10 @@ function mountWithRouter(path = '/produtos/novo') {
 describe('ProdutoFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // Mocks otherwise persist mock.calls across tests in this file, so a later
+    // test's `mock.calls[0]` can silently pick up an earlier test's call
+    // (e.g. the "submits successfully" test) instead of its own.
+    vi.clearAllMocks()
   })
 
   it('shows required-field errors when nome/sku are blank on submit', async () => {
@@ -70,6 +74,13 @@ describe('ProdutoFormView', () => {
     await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
     await wrapper.find('[data-test="sku"]').setValue('P0001')
     await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
+    // Simulate a user typing into the optional "Preço de Custo" field and then
+    // clearing it. With v-model.number, clearing a numeric input drives the
+    // underlying form value to '' (empty string), not null -- this is the exact
+    // state that must be normalized by paraPayload()/numeroOuNull() before the
+    // request is sent, or the backend's BigDecimal deserialization 400s.
+    await wrapper.find('[data-test="preco-custo"]').setValue('123.45')
+    await wrapper.find('[data-test="preco-custo"]').setValue('')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 

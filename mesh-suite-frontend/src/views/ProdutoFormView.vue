@@ -37,7 +37,7 @@
           </div>
           <div>
             <label class="field-label">Preço de Custo</label>
-            <input v-model.number="form.precoCusto" type="number" step="0.01" min="0" />
+            <input v-model.number="form.precoCusto" type="number" step="0.01" min="0" data-test="preco-custo" />
           </div>
         </div>
         <div>
