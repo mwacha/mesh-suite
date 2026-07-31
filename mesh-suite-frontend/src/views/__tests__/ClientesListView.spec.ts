@@ -67,11 +67,12 @@ describe('ClientesListView', () => {
     expect(router.currentRoute.value.name).toBe('clientes-novo')
   })
 
-  it('navigates to the detail view when a client name is clicked', async () => {
+  it('navigates to the detail view via the Ações menu\'s "Ver" item', async () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="abrir-cliente"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="acao-ver"]').trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('clientes-detalhe')
@@ -84,7 +85,7 @@ describe('ClientesListView', () => {
     await flushPromises()
 
     await wrapper.find('.btn-acoes').trigger('click')
-    await wrapper.findAll('.dropdown-acoes div')[1].trigger('click')
+    await wrapper.findAll('.dropdown-acoes div')[2].trigger('click')
     await flushPromises()
 
     expect(parceirosApi.atualizarStatusParceiro).toHaveBeenCalledWith('p1', 'BLOQUEADO')

@@ -46,17 +46,14 @@
         </thead>
         <tbody>
           <tr v-for="parceiro in pagina.content" :key="parceiro.id">
-            <td>
-              <span class="link-nome" data-test="abrir-cliente" @click="abrirCliente(parceiro.id)">
-                {{ parceiro.nomeFantasia }}
-              </span>
-            </td>
+            <td>{{ parceiro.nomeFantasia }}</td>
             <td>{{ parceiro.cidade }}</td>
             <td>{{ parceiro.whatsapp }}</td>
             <td><span class="badge" :class="`badge-${parceiro.status}`">{{ statusLabel(parceiro.status) }}</span></td>
             <td class="acoes">
-              <button type="button" class="btn-acoes" @click="toggleAcoes(parceiro.id)">Ações</button>
+              <button type="button" class="btn-acoes" data-test="btn-acoes" @click="toggleAcoes(parceiro.id)">Ações</button>
               <div v-if="acoesAbertas === parceiro.id" class="dropdown-acoes">
+                <div data-test="acao-ver" @click="abrirCliente(parceiro.id)">Ver</div>
                 <div @click="editarCliente(parceiro.id)">Editar</div>
                 <div @click="alternarStatus(parceiro)">
                   {{ parceiro.status === 'BLOQUEADO' ? 'Ativar' : 'Bloquear' }}
@@ -136,6 +133,7 @@ function novoCliente() {
 }
 
 function abrirCliente(id: string) {
+  acoesAbertas.value = null
   router.push({ name: 'clientes-detalhe', params: { id } })
 }
 
@@ -280,11 +278,6 @@ onMounted(() => {
   padding: 8px 12px;
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
-}
-
-.link-nome {
-  color: var(--pm-accent);
-  cursor: pointer;
 }
 
 .badge {
