@@ -50,4 +50,16 @@ public class GlobalExceptionHandler {
             com.meshsuite.produto.SkuDuplicadoException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.pedido.PedidoNaoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> handlePedidoNaoEncontrado(
+            com.meshsuite.pedido.PedidoNaoEncontradoException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.pedido.PedidoValidacaoException.class)
+    public ResponseEntity<Map<String, String>> handlePedidoValidacao(
+            com.meshsuite.pedido.PedidoValidacaoException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
