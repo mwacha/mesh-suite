@@ -110,7 +110,7 @@ describe('PedidoFormView', () => {
     expect(wrapper.text()).not.toContain('Camiseta Polo')
   })
 
-  it('sends a numeric (not empty-string) valorUnitario for a manually cleared-then-refilled item field', async () => {
+  it('normalizes a cleared valorUnitario to the number 0 (not empty-string) when added immediately', async () => {
     vi.mocked(pedidosApi.criarPedido).mockResolvedValue({} as any)
     const { wrapper } = await mountWithRouter()
     await flushPromises()
@@ -123,18 +123,20 @@ describe('PedidoFormView', () => {
     await wrapper.find('[data-test="produto-busca"]').setValue('camiseta')
     await flushPromises()
     await wrapper.find('[data-test="produto-resultados"] li').trigger('click')
-    // Simulate the auto-filled valor unitário being manually cleared and refilled --
-    // v-model.number drives the underlying value to '' (empty string) when cleared,
-    // the exact state that must be normalized before it lands in form.itens/payload.
+    // Simulate the auto-filled valor unitário being manually cleared, then
+    // "Adicionar" clicked immediately -- v-model.number drives the underlying
+    // value to '' (empty string) when cleared, and adicionarItem() must
+    // normalize that '' to 0 before it lands in form.itens/payload. This must
+    // NOT be refilled before clicking Adicionar, or the empty-string state
+    // never reaches adicionarItem() and the normalization guard goes untested.
     await wrapper.find('[data-test="item-valor-unitario"]').setValue('')
-    await wrapper.find('[data-test="item-valor-unitario"]').setValue('75.00')
     await wrapper.find('[data-test="item-quantidade"]').setValue('1')
     await wrapper.find('[data-test="item-adicionar"]').trigger('click')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     const payload = vi.mocked(pedidosApi.criarPedido).mock.calls[0][0]
-    expect(payload.itens[0].valorUnitario).toBe(75)
+    expect(payload.itens[0].valorUnitario).toBe(0)
     expect(typeof payload.itens[0].valorUnitario).toBe('number')
   })
 
