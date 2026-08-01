@@ -66,6 +66,7 @@ export interface ListarParceirosParams {
   tipoDocumento?: TipoPessoa
   uf?: string
   cidade?: string
+  papel?: PapelParceiro
   page?: number
   size?: number
 }
