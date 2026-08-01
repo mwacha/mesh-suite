@@ -29,8 +29,9 @@ public class ParceiroController {
             @RequestParam(required = false) TipoPessoa tipoDocumento,
             @RequestParam(required = false) String uf,
             @RequestParam(required = false) String cidade,
+            @RequestParam(required = false) PapelParceiro papel,
             @PageableDefault(size = 10, sort = "nomeFantasia") Pageable pageable) {
-        return parceiroService.listar(busca, status, tipoDocumento, uf, cidade, pageable);
+        return parceiroService.listar(busca, status, tipoDocumento, uf, cidade, papel, pageable);
     }
 
     @GetMapping("/resumo")

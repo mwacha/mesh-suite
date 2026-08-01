@@ -23,13 +23,14 @@ public class ParceiroService {
 
     @Transactional(readOnly = true)
     public Page<ParceiroSummaryResponse> listar(String busca, StatusParceiro status, TipoPessoa tipoDocumento,
-                                                 String uf, String cidade, Pageable pageable) {
+                                                 String uf, String cidade, PapelParceiro papel, Pageable pageable) {
         Specification<Parceiro> spec = Specification.allOf(
                 ParceiroSpecifications.comBusca(busca),
                 ParceiroSpecifications.comStatus(status),
                 ParceiroSpecifications.comTipoPessoa(tipoDocumento),
                 ParceiroSpecifications.comUf(uf),
-                ParceiroSpecifications.comCidade(cidade));
+                ParceiroSpecifications.comCidade(cidade),
+                ParceiroSpecifications.comPapel(papel));
         return parceiroRepository.findAll(spec, pageable).map(this::toSummary);
     }
 

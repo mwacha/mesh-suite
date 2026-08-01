@@ -120,10 +120,21 @@ class ParceiroServiceTest extends AbstractIntegrationTest {
         setUpTenant("aurora");
         parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
 
-        var pagina = parceiroService.listar("silva", null, null, null, null, PageRequest.of(0, 10));
+        var pagina = parceiroService.listar("silva", null, null, null, null, null, PageRequest.of(0, 10));
 
         assertThat(pagina.getTotalElements()).isEqualTo(1);
         assertThat(pagina.getContent().get(0).nomeFantasia()).isEqualTo("Mercado Silva");
+    }
+
+    @Test
+    void listaComFiltroDePapel() {
+        setUpTenant("aurora");
+        parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+        parceiroService.criar(TenantContext.get(), request("55666777000155", Set.of(PapelParceiro.FORNECEDOR)));
+
+        var pagina = parceiroService.listar(null, null, null, null, null, PapelParceiro.CLIENTE, PageRequest.of(0, 10));
+
+        assertThat(pagina.getTotalElements()).isEqualTo(1);
     }
 
     @Test

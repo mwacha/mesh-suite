@@ -44,4 +44,11 @@ public final class ParceiroSpecifications {
         }
         return (root, query, cb) -> cb.equal(root.get("cidade"), cidade);
     }
+
+    public static Specification<Parceiro> comPapel(PapelParceiro papel) {
+        if (papel == null) {
+            return null;
+        }
+        return (root, query, cb) -> cb.isMember(papel, root.get("papeis"));
+    }
 }
