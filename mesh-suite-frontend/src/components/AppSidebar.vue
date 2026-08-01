@@ -58,7 +58,7 @@ const navItems: NavItem[] = [
   { icon: '🏢', label: 'Empresa', route: null },
   { icon: '🏷', label: 'Marcas', route: null },
   { icon: '💳', label: 'Pagamentos', route: null },
-  { icon: '📋', label: 'Pedidos', route: null },
+  { icon: '📋', label: 'Pedidos', route: '/pedidos' },
   { icon: '🔒', label: 'Permissões', route: null },
   { icon: '📦', label: 'Produtos', route: '/produtos' },
   { icon: '💰', label: 'Tab. Preços', route: null },

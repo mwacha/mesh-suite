@@ -10,6 +10,7 @@ import ClienteDetailView from '@/views/ClienteDetailView.vue'
 import ProdutoFormView from '@/views/ProdutoFormView.vue'
 import ProdutosListView from '@/views/ProdutosListView.vue'
 import PedidoFormView from '@/views/PedidoFormView.vue'
+import PedidosListView from '@/views/PedidosListView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -25,6 +26,7 @@ const router = createRouter({
     { path: '/produtos', name: 'produtos', component: ProdutosListView },
     { path: '/produtos/novo', name: 'produtos-novo', component: ProdutoFormView },
     { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoFormView },
+    { path: '/pedidos', name: 'pedidos', component: PedidosListView },
     { path: '/pedidos/novo', name: 'pedidos-novo', component: PedidoFormView },
     { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: PedidoFormView },
   ],
