@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -213,6 +212,34 @@ class PedidoRepositoryTest extends AbstractIntegrationTest {
 
         Long count = ((Number) entityManager
                 .createNativeQuery("SELECT count(*) FROM pedido_contador")
+                .getSingleResult()).longValue();
+        assertThat(count).isZero();
+    }
+
+    @Test
+    @Transactional
+    void itemPedidoRlsHidesRowsWhenTenantContextUnset() {
+        Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+        Parceiro cliente = criarCliente(tenant.getId(), "11222333000144");
+        Usuario vendedor = criarVendedor(tenant.getId(), "marina@aurora.com.br");
+        Produto produto = criarProduto(tenant.getId(), "P0001");
+
+        Pedido pedido = novoPedido(tenant.getId(), cliente, vendedor, 1);
+        ItemPedido item = new ItemPedido();
+        item.setPedido(pedido);
+        item.setProduto(produto);
+        item.setQuantidade(new BigDecimal("2"));
+        item.setValorUnitario(new BigDecimal("59.90"));
+        item.setValorTotal(new BigDecimal("119.80"));
+        pedido.getItens().add(item);
+        Pedido saved = pedidoRepository.saveAndFlush(pedido);
+        entityManager.clear();
+
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
+
+        Long count = ((Number) entityManager
+                .createNativeQuery("SELECT count(*) FROM item_pedido WHERE pedido_id = '" + saved.getId() + "'")
                 .getSingleResult()).longValue();
         assertThat(count).isZero();
     }
