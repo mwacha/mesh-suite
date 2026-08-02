@@ -1,4 +1,4 @@
-package com.meshsuite.usuario;
+package com.meshsuite.user;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,10 +9,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "usuario")
+@Table(name = "app_user")
 @Getter
 @Setter
-public class Usuario {
+public class User {
 
     @Id
     @GeneratedValue
@@ -23,24 +23,24 @@ public class Usuario {
     private UUID tenantId;
 
     @Column(nullable = false)
-    private String nome;
+    private String name;
 
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "senha_hash", nullable = false)
-    private String senhaHash;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private Papel papel;
+    private Role role;
 
     @Column(nullable = false)
-    private boolean ativo = true;
+    private boolean active = true;
 
-    @Column(name = "criado_em", nullable = false, updatable = false)
-    private Instant criadoEm = Instant.now();
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
 
-    @Column(name = "ultimo_acesso")
-    private Instant ultimoAcesso;
+    @Column(name = "last_access_at")
+    private Instant lastAccessAt;
 }
