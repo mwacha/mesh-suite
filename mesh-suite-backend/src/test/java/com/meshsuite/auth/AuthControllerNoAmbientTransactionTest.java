@@ -5,9 +5,9 @@ import com.meshsuite.empresa.Empresa;
 import com.meshsuite.empresa.EmpresaRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ class AuthControllerNoAmbientTransactionTest extends AbstractIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
-    @Autowired UsuarioRepository usuarioRepository;
+    @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
     @Autowired PlatformTransactionManager txManager;
@@ -75,13 +75,13 @@ class AuthControllerNoAmbientTransactionTest extends AbstractIntegrationTest {
             empresa.setCnpj(cnpj);
             empresaRepository.saveAndFlush(empresa);
 
-            Usuario usuario = new Usuario();
-            usuario.setTenantId(tenant.getId());
-            usuario.setNome("No-Tx Usuario");
-            usuario.setEmail(email);
-            usuario.setSenhaHash(passwordEncoder.encode(senha));
-            usuario.setPapel(Papel.ADMINISTRADOR);
-            usuarioRepository.saveAndFlush(usuario);
+            User user = new User();
+            user.setTenantId(tenant.getId());
+            user.setName("No-Tx User");
+            user.setEmail(email);
+            user.setPasswordHash(passwordEncoder.encode(senha));
+            user.setRole(Role.ADMIN);
+            userRepository.saveAndFlush(user);
         });
 
         // RateLimiter (Task 9) is an in-memory singleton bean shared across every

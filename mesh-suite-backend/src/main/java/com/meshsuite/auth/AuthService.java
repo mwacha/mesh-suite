@@ -4,8 +4,8 @@ import com.meshsuite.empresa.Empresa;
 import com.meshsuite.empresa.EmpresaRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,7 +19,7 @@ import java.util.UUID;
 @Service
 public class AuthService {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
     private final EmpresaRepository empresaRepository;
     private final PasswordEncoder passwordEncoder;
@@ -38,10 +38,10 @@ public class AuthService {
     // `self.` instead, routing them through the real proxy so @Transactional
     // actually applies. @Lazy avoids a circular-construction failure (Spring can't
     // otherwise build a bean that depends on itself).
-    public AuthService(UsuarioRepository usuarioRepository, TenantRepository tenantRepository,
+    public AuthService(UserRepository userRepository, TenantRepository tenantRepository,
                         EmpresaRepository empresaRepository, PasswordEncoder passwordEncoder,
                         EntityManager entityManager, @Lazy AuthService self) {
-        this.usuarioRepository = usuarioRepository;
+        this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
         this.empresaRepository = empresaRepository;
         this.passwordEncoder = passwordEncoder;
@@ -49,57 +49,52 @@ public class AuthService {
         this.self = self;
     }
 
-    public record LoginResult(Usuario usuario, Tenant tenant, Empresa empresa) {
+    public record LoginResult(User user, Tenant tenant, Empresa empresa) {
     }
 
     private record TenantAndEmpresa(Tenant tenant, Empresa empresa) {
     }
 
-    // Runs before the caller's tenant is known. See plan §"Design decision beyond
-    // the spec" for why this needs the usuario_login_lookup RLS policy.
+    // Runs before the caller's tenant is known -- needs the app_user_login_lookup
+    // RLS policy (SET LOCAL app.bypass_tenant_check below).
     @Transactional(readOnly = true)
-    public Usuario findByEmailForLogin(String email) {
+    public User findByEmailForLogin(String email) {
         entityManager.createNativeQuery("SET LOCAL app.bypass_tenant_check = 'true'").executeUpdate();
-        return usuarioRepository.findByEmail(email).orElse(null);
+        return userRepository.findByEmail(email).orElse(null);
     }
 
-    // Used by PasswordResetService.confirmReset (Task 11): a reset token identifies
-    // a usuario_id but not a tenant, so this lookup is also pre-tenant-context and
-    // needs the same bypass. Reuses usuario_login_lookup -- that policy is
-    // unconditional on the flag, not scoped to email lookups specifically.
+    // Used by PasswordResetService.confirmReset: a reset token identifies a user id
+    // but not a tenant, so this lookup is also pre-tenant-context and needs the same
+    // bypass. Reuses app_user_login_lookup -- that policy is unconditional on the
+    // flag, not scoped to email lookups specifically.
     @Transactional(readOnly = true)
-    public Usuario findUsuarioByIdBypassingTenant(UUID usuarioId) {
+    public User findUserByIdBypassingTenant(UUID userId) {
         entityManager.createNativeQuery("SET LOCAL app.bypass_tenant_check = 'true'").executeUpdate();
-        return usuarioRepository.findById(usuarioId).orElse(null);
+        return userRepository.findById(userId).orElse(null);
     }
 
     public LoginResult authenticate(String email, String senha) {
-        Usuario usuario = self.findByEmailForLogin(email);
-        if (usuario == null || !passwordEncoder.matches(senha, usuario.getSenhaHash()) || !usuario.isAtivo()) {
+        User user = self.findByEmailForLogin(email);
+        if (user == null || !passwordEncoder.matches(senha, user.getPasswordHash()) || !user.isActive()) {
             throw new AuthException();
         }
 
-        TenantContext.set(usuario.getTenantId());
+        TenantContext.set(user.getTenantId());
         try {
-            TenantAndEmpresa loaded = self.loadTenantAndEmpresa(usuario.getTenantId());
+            TenantAndEmpresa loaded = self.loadTenantAndEmpresa(user.getTenantId());
             if (loaded == null || !loaded.tenant().isAtivo() || loaded.empresa() == null) {
                 throw new AuthException();
             }
 
-            self.registerAcesso(usuario.getId());
-            return new LoginResult(usuario, loaded.tenant(), loaded.empresa());
+            self.registerAcesso(user.getId());
+            return new LoginResult(user, loaded.tenant(), loaded.empresa());
         } finally {
             TenantContext.clear();
         }
     }
 
     // Consolidates the tenant+empresa lookups into one plain, hand-written
-    // @Transactional method -- the same pattern TenantQueryService (Task 7)
-    // already uses and is proven to work with TenantContextAspect. Calling
-    // tenantRepository/empresaRepository methods directly from authenticate()
-    // would rely on Spring Data's dynamically-generated repository proxy methods
-    // exposing @Transactional in a way a custom @annotation(...) pointcut reliably
-    // matches, which is less certain than a plain, explicitly-annotated method.
+    // @Transactional method, proven to work with TenantContextAspect.
     @Transactional(readOnly = true)
     public TenantAndEmpresa loadTenantAndEmpresa(UUID tenantId) {
         Tenant tenant = tenantRepository.findById(tenantId).orElse(null);
@@ -112,9 +107,9 @@ public class AuthService {
     }
 
     @Transactional
-    public void registerAcesso(UUID usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId).orElseThrow();
-        usuario.setUltimoAcesso(Instant.now());
-        usuarioRepository.save(usuario);
+    public void registerAcesso(UUID userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        user.setLastAccessAt(Instant.now());
+        userRepository.save(user);
     }
 }

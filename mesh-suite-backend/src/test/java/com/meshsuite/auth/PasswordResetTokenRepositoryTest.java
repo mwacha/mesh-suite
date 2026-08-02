@@ -3,9 +3,9 @@ package com.meshsuite.auth;
 import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ class PasswordResetTokenRepositoryTest extends AbstractIntegrationTest {
     @Autowired
     TenantRepository tenantRepository;
     @Autowired
-    UsuarioRepository usuarioRepository;
+    UserRepository userRepository;
     @Autowired
     PasswordResetTokenRepository tokenRepository;
     @Autowired
@@ -38,16 +38,16 @@ class PasswordResetTokenRepositoryTest extends AbstractIntegrationTest {
         // WITH CHECK), so app.tenant_id must be set before writing this row.
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Usuario usuario = new Usuario();
-        usuario.setTenantId(tenant.getId());
-        usuario.setNome("Marina");
-        usuario.setEmail("marina@confeccaoaurora.com.br");
-        usuario.setSenhaHash("hash");
-        usuario.setPapel(Papel.ADMINISTRADOR);
-        usuarioRepository.saveAndFlush(usuario);
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName("Marina");
+        user.setEmail("marina@confeccaoaurora.com.br");
+        user.setPasswordHash("hash");
+        user.setRole(Role.ADMIN);
+        userRepository.saveAndFlush(user);
 
         PasswordResetToken token = new PasswordResetToken();
-        token.setUsuarioId(usuario.getId());
+        token.setUserId(user.getId());
         token.setTokenHash("abc123hash");
         token.setExpiraEm(Instant.now().plus(1, ChronoUnit.HOURS));
 

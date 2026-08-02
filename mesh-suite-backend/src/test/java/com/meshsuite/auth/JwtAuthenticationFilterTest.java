@@ -3,9 +3,9 @@ package com.meshsuite.auth;
 import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ class JwtAuthenticationFilterTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
-    @Autowired UsuarioRepository usuarioRepository;
+    @Autowired UserRepository userRepository;
     @Autowired JwtService jwtService;
     @Autowired EntityManager entityManager;
 
@@ -40,17 +40,17 @@ class JwtAuthenticationFilterTest extends AbstractIntegrationTest {
         // state -- otherwise a broken filter could spuriously pass on leftover context.
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Usuario usuario = new Usuario();
-        usuario.setTenantId(tenant.getId());
-        usuario.setNome("Marina");
-        usuario.setEmail("marina@aurora.com.br");
-        usuario.setSenhaHash("hash");
-        usuario.setPapel(Papel.ADMINISTRADOR);
-        usuario.setAtivo(false);
-        usuarioRepository.saveAndFlush(usuario);
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName("Marina");
+        user.setEmail("marina@aurora.com.br");
+        user.setPasswordHash("hash");
+        user.setRole(Role.ADMIN);
+        user.setActive(false);
+        userRepository.saveAndFlush(user);
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
-        String token = jwtService.generateToken(usuario.getId(), tenant.getId(), java.util.UUID.randomUUID(), "ADMINISTRADOR", false);
+        String token = jwtService.generateToken(user.getId(), tenant.getId(), java.util.UUID.randomUUID(), "ADMIN", false);
 
         // .header(HttpHeaders.COOKIE, ...) does NOT populate request.getCookies() in
         // MockMvc -- only the .cookie(...) builder method does. Using .header() here

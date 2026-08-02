@@ -5,9 +5,9 @@ import com.meshsuite.empresa.Empresa;
 import com.meshsuite.empresa.EmpresaRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
-    @Autowired UsuarioRepository usuarioRepository;
+    @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
 
@@ -67,13 +67,13 @@ class AuthControllerTest extends AbstractIntegrationTest {
         empresa.setCnpj("11222333000144");
         empresaRepository.saveAndFlush(empresa);
 
-        Usuario usuario = new Usuario();
-        usuario.setTenantId(tenant.getId());
-        usuario.setNome("Marina");
-        usuario.setEmail("marina@aurora.com.br");
-        usuario.setSenhaHash(passwordEncoder.encode(senhaPlano));
-        usuario.setPapel(Papel.ADMINISTRADOR);
-        usuarioRepository.saveAndFlush(usuario);
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName("Marina");
+        user.setEmail("marina@aurora.com.br");
+        user.setPasswordHash(passwordEncoder.encode(senhaPlano));
+        user.setRole(Role.ADMIN);
+        userRepository.saveAndFlush(user);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
     }
@@ -92,14 +92,14 @@ class AuthControllerTest extends AbstractIntegrationTest {
         empresa.setCnpj("11222333000155");
         empresaRepository.saveAndFlush(empresa);
 
-        Usuario usuario = new Usuario();
-        usuario.setTenantId(tenant.getId());
-        usuario.setNome("Inativa");
-        usuario.setEmail("inativa@aurora.com.br");
-        usuario.setSenhaHash(passwordEncoder.encode(senhaPlano));
-        usuario.setPapel(Papel.ADMINISTRADOR);
-        usuario.setAtivo(false);
-        usuarioRepository.saveAndFlush(usuario);
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName("Inativa");
+        user.setEmail("inativa@aurora.com.br");
+        user.setPasswordHash(passwordEncoder.encode(senhaPlano));
+        user.setRole(Role.ADMIN);
+        user.setActive(false);
+        userRepository.saveAndFlush(user);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
     }
@@ -119,13 +119,13 @@ class AuthControllerTest extends AbstractIntegrationTest {
         empresa.setCnpj("55666777000155");
         empresaRepository.saveAndFlush(empresa);
 
-        Usuario usuario = new Usuario();
-        usuario.setTenantId(tenant.getId());
-        usuario.setNome("Carlos");
-        usuario.setEmail("carlos@boreal.com.br");
-        usuario.setSenhaHash(passwordEncoder.encode(senhaPlano));
-        usuario.setPapel(Papel.ADMINISTRADOR);
-        usuarioRepository.saveAndFlush(usuario);
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName("Carlos");
+        user.setEmail("carlos@boreal.com.br");
+        user.setPasswordHash(passwordEncoder.encode(senhaPlano));
+        user.setRole(Role.ADMIN);
+        userRepository.saveAndFlush(user);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
     }
@@ -150,7 +150,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie(JwtAuthenticationFilter.COOKIE_NAME, token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome").value("Marina"))
-                .andExpect(jsonPath("$.papel").value("ADMINISTRADOR"));
+                .andExpect(jsonPath("$.papel").value("ADMIN"));
     }
 
     @Test

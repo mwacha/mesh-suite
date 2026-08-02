@@ -45,8 +45,8 @@ public class AuthController {
             rateLimiter.recordSuccess(ip, request.email());
 
             String token = jwtService.generateToken(
-                    result.usuario().getId(), result.tenant().getId(), result.empresa().getId(),
-                    result.usuario().getPapel().name(), request.manterConectado());
+                    result.user().getId(), result.tenant().getId(), result.empresa().getId(),
+                    result.user().getRole().name(), request.manterConectado());
 
             long maxAgeSeconds = request.manterConectado() ? 30L * 24 * 3600 : 8L * 3600;
             ResponseCookie cookie = ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)
@@ -67,7 +67,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public MeResponse me(@AuthenticationPrincipal AuthContextService.Context principal) {
-        String nome = authContextService.nomeDoUsuario(principal.usuarioId());
+        String nome = authContextService.userName(principal.usuarioId());
         return new MeResponse(nome, principal.papel());
     }
 

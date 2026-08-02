@@ -54,7 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // can scope that query to this tenant.
                     TenantContext.set(tenantId);
 
-                    if (!authContextService.usuarioETenantAtivos(tenantId, usuarioId)) {
+                    if (!authContextService.userAndTenantActive(tenantId, usuarioId)) {
                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                         return;
                     }

@@ -1,8 +1,8 @@
 package com.meshsuite.auth;
 
 import com.meshsuite.mail.MailService;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +20,7 @@ import java.util.HexFormat;
 public class PasswordResetService {
 
     private final PasswordResetTokenRepository tokenRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
     private final AuthService authService;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
@@ -30,27 +30,25 @@ public class PasswordResetService {
     // can construct this class directly with mocks and assign `self` manually --
     // see the test. In production, Spring wires this via @Lazy to avoid a
     // circular-construction failure. Package-private (no `private`) so the test,
-    // which lives in the same package, can assign it directly. See plan §"Design
-    // decision beyond the spec: self-invocation breaks @Transactional...".
+    // which lives in the same package, can assign it directly.
     @Autowired
     @Lazy
     PasswordResetService self;
 
-    public PasswordResetService(PasswordResetTokenRepository tokenRepository, UsuarioRepository usuarioRepository,
+    public PasswordResetService(PasswordResetTokenRepository tokenRepository, UserRepository userRepository,
                                  AuthService authService, MailService mailService, PasswordEncoder passwordEncoder) {
         this.tokenRepository = tokenRepository;
-        this.usuarioRepository = usuarioRepository;
+        this.userRepository = userRepository;
         this.authService = authService;
         this.mailService = mailService;
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Usuario lookups pre-tenant-context always go through AuthService, the one
-    // class that sets app.bypass_tenant_check -- see plan §"Design decision beyond
-    // the spec: RLS bypass for login lookup".
+    // User lookups pre-tenant-context always go through AuthService, the one
+    // class that sets app.bypass_tenant_check.
     public boolean requestReset(String email) {
-        Usuario usuario = authService.findByEmailForLogin(email);
-        if (usuario == null || !usuario.isAtivo()) {
+        User user = authService.findByEmailForLogin(email);
+        if (user == null || !user.isActive()) {
             return false; // caller still returns 200 with the generic message
         }
 
@@ -59,10 +57,10 @@ public class PasswordResetService {
         String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
 
         PasswordResetToken token = new PasswordResetToken();
-        token.setUsuarioId(usuario.getId());
+        token.setUserId(user.getId());
         token.setTokenHash(sha256(rawToken));
         token.setExpiraEm(Instant.now().plus(1, ChronoUnit.HOURS));
-        tokenRepository.save(token); // PasswordResetToken has no RLS (Task 5) -- no tenant context needed here
+        tokenRepository.save(token); // PasswordResetToken has no RLS -- no tenant context needed here
 
         String resetLink = "https://app.meshsuite.local/redefinir-senha?token=" + rawToken;
         mailService.sendPasswordResetEmail(email, resetLink);
@@ -77,27 +75,26 @@ public class PasswordResetService {
             throw new AuthException();
         }
 
-        Usuario usuario = authService.findUsuarioByIdBypassingTenant(token.getUsuarioId());
-        if (usuario == null) {
+        User user = authService.findUserByIdBypassingTenant(token.getUserId());
+        if (user == null) {
             throw new AuthException();
         }
 
-        // usuario has RLS: updating senha_hash needs app.tenant_id set to this row's
-        // tenant. The bypass lookup above told us which tenant; route the write
-        // through `self.` so TenantContextAspect actually applies (see the
-        // self-invocation design note).
-        TenantContext.set(usuario.getTenantId());
+        // app_user has RLS: updating password_hash needs app.tenant_id set to this
+        // row's tenant. The bypass lookup above told us which tenant; route the
+        // write through `self.` so TenantContextAspect actually applies.
+        TenantContext.set(user.getTenantId());
         try {
-            self.updateSenhaAndMarkTokenUsed(usuario, novaSenha, token);
+            self.updateSenhaAndMarkTokenUsed(user, novaSenha, token);
         } finally {
             TenantContext.clear();
         }
     }
 
     @Transactional
-    public void updateSenhaAndMarkTokenUsed(Usuario usuario, String novaSenha, PasswordResetToken token) {
-        usuario.setSenhaHash(passwordEncoder.encode(novaSenha));
-        usuarioRepository.save(usuario);
+    public void updateSenhaAndMarkTokenUsed(User user, String novaSenha, PasswordResetToken token) {
+        user.setPasswordHash(passwordEncoder.encode(novaSenha));
+        userRepository.save(user);
 
         token.setUsadoEm(Instant.now());
         tokenRepository.save(token);

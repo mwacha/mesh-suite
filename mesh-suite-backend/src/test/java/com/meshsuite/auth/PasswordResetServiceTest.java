@@ -1,9 +1,8 @@
 package com.meshsuite.auth;
 
 import com.meshsuite.mail.MailService;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -21,12 +20,12 @@ import static org.mockito.Mockito.*;
 class PasswordResetServiceTest {
 
     @Mock AuthService authService;
-    @Mock UsuarioRepository usuarioRepository;
+    @Mock UserRepository userRepository;
     @Mock PasswordResetTokenRepository tokenRepository;
     @Mock MailService mailService;
 
     private PasswordResetService service() {
-        PasswordResetService svc = new PasswordResetService(tokenRepository, usuarioRepository, authService,
+        PasswordResetService svc = new PasswordResetService(tokenRepository, userRepository, authService,
                 mailService, org.mockito.Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class));
         // Plain Mockito test, no Spring proxy in play: `self` (package-private,
         // @Autowired @Lazy in production -- see PasswordResetService) is simulated
@@ -37,12 +36,12 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void requestResetSendsEmailWhenUsuarioExists() {
-        Usuario usuario = new Usuario();
-        usuario.setId(UUID.randomUUID());
-        usuario.setEmail("marina@aurora.com.br");
-        usuario.setAtivo(true);
-        when(authService.findByEmailForLogin("marina@aurora.com.br")).thenReturn(usuario);
+    void requestResetSendsEmailWhenUserExists() {
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setEmail("marina@aurora.com.br");
+        user.setActive(true);
+        when(authService.findByEmailForLogin("marina@aurora.com.br")).thenReturn(user);
 
         boolean found = service().requestReset("marina@aurora.com.br");
 
@@ -52,7 +51,7 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void requestResetDoesNothingSilentlyWhenUsuarioDoesNotExist() {
+    void requestResetDoesNothingSilentlyWhenUserDoesNotExist() {
         when(authService.findByEmailForLogin("ninguem@aurora.com.br")).thenReturn(null);
 
         boolean found = service().requestReset("ninguem@aurora.com.br");

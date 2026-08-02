@@ -22,12 +22,12 @@ public class AuthContextService {
     // Callers must set TenantContext.set(tenantId) *before* invoking this method,
     // so TenantContextAspect can issue SET LOCAL before this query runs.
     @Transactional(readOnly = true)
-    public boolean usuarioETenantAtivos(UUID tenantId, UUID usuarioId) {
+    public boolean userAndTenantActive(UUID tenantId, UUID userId) {
         try {
             Object[] row = (Object[]) entityManager.createNativeQuery(
-                            "SELECT u.ativo, t.ativo FROM usuario u JOIN tenant t ON t.id = u.tenant_id " +
-                                    "WHERE u.id = :usuarioId AND u.tenant_id = :tenantId")
-                    .setParameter("usuarioId", usuarioId)
+                            "SELECT u.active, t.ativo FROM app_user u JOIN tenant t ON t.id = u.tenant_id " +
+                                    "WHERE u.id = :userId AND u.tenant_id = :tenantId")
+                    .setParameter("userId", userId)
                     .setParameter("tenantId", tenantId)
                     .getSingleResult();
             return (boolean) row[0] && (boolean) row[1];
@@ -37,10 +37,10 @@ public class AuthContextService {
     }
 
     @Transactional(readOnly = true)
-    public String nomeDoUsuario(UUID usuarioId) {
+    public String userName(UUID userId) {
         return entityManager.createQuery(
-                        "SELECT u.nome FROM Usuario u WHERE u.id = :id", String.class)
-                .setParameter("id", usuarioId)
+                        "SELECT u.name FROM User u WHERE u.id = :id", String.class)
+                .setParameter("id", userId)
                 .getSingleResult();
     }
 }

@@ -19,8 +19,8 @@ public class PasswordResetToken {
     @UuidGenerator
     private UUID id;
 
-    @Column(name = "usuario_id", nullable = false)
-    private UUID usuarioId;
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
 
     @Column(name = "token_hash", nullable = false, unique = true, length = 64)
     private String tokenHash;

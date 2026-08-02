@@ -5,9 +5,9 @@ import com.meshsuite.empresa.Empresa;
 import com.meshsuite.empresa.EmpresaRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ class TenantIsolationTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
-    @Autowired UsuarioRepository usuarioRepository;
+    @Autowired UserRepository userRepository;
     @Autowired TenantQueryService tenantQueryService;
 
     @AfterEach
@@ -50,21 +50,21 @@ class TenantIsolationTest extends AbstractIntegrationTest {
 
         TenantContext.set(tenantA.getId());
         tenantQueryService.saveEmpresa(tenantA.getId(), "Aurora Ltda", "11222333000144");
-        tenantQueryService.saveUsuario(tenantA.getId(), "Marina", "marina@aurora.com.br", Papel.ADMINISTRADOR);
+        tenantQueryService.saveUser(tenantA.getId(), "Marina", "marina@aurora.com.br", Role.ADMIN);
         TenantContext.clear();
 
         TenantContext.set(tenantB.getId());
         tenantQueryService.saveEmpresa(tenantB.getId(), "Boreal Ltda", "55666777000188");
-        tenantQueryService.saveUsuario(tenantB.getId(), "Carlos", "carlos@boreal.com.br", Papel.ADMINISTRADOR);
+        tenantQueryService.saveUser(tenantB.getId(), "Carlos", "carlos@boreal.com.br", Role.ADMIN);
         TenantContext.clear();
 
         TenantContext.set(tenantA.getId());
         assertThat(tenantQueryService.listEmpresas()).extracting(Empresa::getCnpj).containsExactly("11222333000144");
-        assertThat(tenantQueryService.listUsuarios()).extracting(Usuario::getEmail).containsExactly("marina@aurora.com.br");
+        assertThat(tenantQueryService.listUsers()).extracting(User::getEmail).containsExactly("marina@aurora.com.br");
         TenantContext.clear();
 
         TenantContext.set(tenantB.getId());
         assertThat(tenantQueryService.listEmpresas()).extracting(Empresa::getCnpj).containsExactly("55666777000188");
-        assertThat(tenantQueryService.listUsuarios()).extracting(Usuario::getEmail).containsExactly("carlos@boreal.com.br");
+        assertThat(tenantQueryService.listUsers()).extracting(User::getEmail).containsExactly("carlos@boreal.com.br");
     }
 }

@@ -5,9 +5,9 @@ import com.meshsuite.empresa.Empresa;
 import com.meshsuite.empresa.EmpresaRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +53,7 @@ class PasswordResetControllerNoAmbientTransactionTest extends AbstractIntegratio
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
-    @Autowired UsuarioRepository usuarioRepository;
+    @Autowired UserRepository userRepository;
     @Autowired PasswordResetTokenRepository tokenRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
@@ -91,19 +91,19 @@ class PasswordResetControllerNoAmbientTransactionTest extends AbstractIntegratio
             empresa.setCnpj(cnpj);
             empresaRepository.saveAndFlush(empresa);
 
-            Usuario usuario = new Usuario();
-            usuario.setTenantId(tenant.getId());
-            usuario.setNome("Reset No-Tx Usuario");
-            usuario.setEmail(email);
-            usuario.setSenhaHash(passwordEncoder.encode(senhaAntiga));
-            usuario.setPapel(Papel.ADMINISTRADOR);
-            usuarioRepository.saveAndFlush(usuario);
-            usuarioId[0] = usuario.getId();
+            User user = new User();
+            user.setTenantId(tenant.getId());
+            user.setName("Reset No-Tx User");
+            user.setEmail(email);
+            user.setPasswordHash(passwordEncoder.encode(senhaAntiga));
+            user.setRole(Role.ADMIN);
+            userRepository.saveAndFlush(user);
+            usuarioId[0] = user.getId();
 
             // PasswordResetToken has no RLS (Task 5) -- no tenant context needed for
             // this insert, but it shares this transaction for convenience.
             PasswordResetToken token = new PasswordResetToken();
-            token.setUsuarioId(usuario.getId());
+            token.setUserId(user.getId());
             token.setTokenHash(sha256(rawToken));
             token.setExpiraEm(Instant.now().plus(1, ChronoUnit.HOURS));
             tokenRepository.save(token);
@@ -127,10 +127,10 @@ class PasswordResetControllerNoAmbientTransactionTest extends AbstractIntegratio
         // fresh connection/transaction. Usuario has RLS and this test has no ambient
         // tenant context, so the re-read goes through the same pre-tenant-context
         // bypass path the production code itself uses for this exact situation.
-        Usuario reloaded = authService.findUsuarioByIdBypassingTenant(usuarioId[0]);
+        User reloaded = authService.findUserByIdBypassingTenant(usuarioId[0]);
         assertThat(reloaded).isNotNull();
-        assertThat(passwordEncoder.matches(senhaNova, reloaded.getSenhaHash())).isTrue();
-        assertThat(passwordEncoder.matches(senhaAntiga, reloaded.getSenhaHash())).isFalse();
+        assertThat(passwordEncoder.matches(senhaNova, reloaded.getPasswordHash())).isTrue();
+        assertThat(passwordEncoder.matches(senhaAntiga, reloaded.getPasswordHash())).isFalse();
 
         PasswordResetToken reloadedToken = tokenRepository.findByTokenHash(sha256(rawToken)).orElseThrow();
         assertThat(reloadedToken.getUsadoEm()).isNotNull();
