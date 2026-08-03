@@ -103,6 +103,19 @@ describe('ProdutoFormView', () => {
     expect(wrapper.text()).toContain('Já existe um produto cadastrado com este SKU')
   })
 
+  it('shows a permission-denied message on 403', async () => {
+    vi.mocked(produtosApi.criarProduto).mockRejectedValue({ response: { status: 403 } })
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('P0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Você não tem permissão para executar esta ação')
+  })
+
   it('loads existing produto data in edit mode', async () => {
     vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
       id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '', categoria: '',

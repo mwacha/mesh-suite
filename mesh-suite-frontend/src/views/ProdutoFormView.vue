@@ -213,6 +213,8 @@ async function salvar() {
   } catch (err: any) {
     if (err?.response?.status === 409) {
       erroGeral.value = 'Já existe um produto cadastrado com este SKU.'
+    } else if (err?.response?.status === 403) {
+      erroGeral.value = 'Você não tem permissão para executar esta ação.'
     } else if (err?.response?.status === 400) {
       erroGeral.value = err.response.data?.mensagem ?? 'Verifique os dados informados.'
     } else {

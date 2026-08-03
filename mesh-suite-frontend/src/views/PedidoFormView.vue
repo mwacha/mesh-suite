@@ -301,7 +301,9 @@ async function salvar() {
     }
     router.push({ name: 'pedidos' })
   } catch (err: any) {
-    if (err?.response?.status === 400) {
+    if (err?.response?.status === 403) {
+      erroGeral.value = 'Você não tem permissão para executar esta ação.'
+    } else if (err?.response?.status === 400) {
       erroGeral.value = err.response.data?.mensagem ?? 'Verifique os dados informados.'
     } else {
       erroGeral.value = 'Não foi possível salvar. Tente novamente em instantes.'

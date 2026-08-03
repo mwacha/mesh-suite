@@ -77,6 +77,18 @@ describe('ClienteFormView', () => {
     expect(wrapper.text()).toContain('Já existe um parceiro cadastrado com este documento')
   })
 
+  it('shows a permission-denied message on 403', async () => {
+    vi.mocked(parceirosApi.criarParceiro).mockRejectedValue({ response: { status: 403 } })
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
+    await wrapper.find('[data-test="documento"]').setValue('11222333000144')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Você não tem permissão para executar esta ação')
+  })
+
   it('fills address fields when CEP lookup succeeds', async () => {
     vi.mocked(cepApi.buscarEnderecoPorCep).mockResolvedValue({
       logradouro: 'Av. Paulista', bairro: 'Bela Vista', localidade: 'São Paulo', uf: 'SP',

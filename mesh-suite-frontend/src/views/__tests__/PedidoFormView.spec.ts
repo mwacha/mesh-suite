@@ -163,6 +163,28 @@ describe('PedidoFormView', () => {
     expect(router.currentRoute.value.name).toBe('pedidos')
   })
 
+  it('shows a permission-denied message on 403', async () => {
+    vi.mocked(pedidosApi.criarPedido).mockRejectedValue({ response: { status: 403 } })
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="cliente-busca"]').setValue('silva')
+    await flushPromises()
+    await wrapper.find('[data-test="cliente-resultados"] li').trigger('click')
+    await wrapper.find('[data-test="vendedor"]').setValue('v1')
+
+    await wrapper.find('[data-test="produto-busca"]').setValue('camiseta')
+    await flushPromises()
+    await wrapper.find('[data-test="produto-resultados"] li').trigger('click')
+    await wrapper.find('[data-test="item-quantidade"]').setValue('1')
+    await wrapper.find('[data-test="item-adicionar"]').trigger('click')
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Você não tem permissão para executar esta ação')
+  })
+
   it('loads existing pedido data in edit mode', async () => {
     vi.mocked(pedidosApi.buscarPedido).mockResolvedValue({
       id: 'ped-1', numero: 3, clienteId: 'c1', clienteNome: 'Mercado Silva', vendedorId: 'v1',
