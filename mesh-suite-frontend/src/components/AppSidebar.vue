@@ -62,7 +62,7 @@ const navItems: NavItem[] = [
   { icon: '🔒', label: 'Permissões', route: null },
   { icon: '📦', label: 'Produtos', route: '/produtos' },
   { icon: '💰', label: 'Tab. Preços', route: null },
-  { icon: '👤', label: 'Usuários', route: null },
+  { icon: '👤', label: 'Usuários', route: '/usuarios' },
 ]
 
 const collapsed = ref(false)
