@@ -1,5 +1,8 @@
 package com.meshsuite.pedido;
 
+import com.meshsuite.auth.Action;
+import com.meshsuite.auth.Module;
+import com.meshsuite.auth.RequiresPermission;
 import com.meshsuite.parceiro.PapelParceiro;
 import com.meshsuite.parceiro.Parceiro;
 import com.meshsuite.parceiro.ParceiroRepository;
@@ -41,6 +44,7 @@ public class PedidoService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.ORDER, action = Action.VIEW)
     public Page<PedidoSummaryResponse> listar(String busca, StatusPedido status, Pageable pageable) {
         Specification<Pedido> spec = Specification.allOf(
                 PedidoSpecifications.comBusca(busca),
@@ -49,6 +53,7 @@ public class PedidoService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.ORDER, action = Action.VIEW)
     public PedidoResumoResponse resumo() {
         long digitados = pedidoRepository.countByStatus(StatusPedido.DIGITADO);
         long emPreparo = pedidoRepository.countByStatus(StatusPedido.EM_PREPARO);
@@ -57,11 +62,13 @@ public class PedidoService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.ORDER, action = Action.VIEW)
     public PedidoResponse buscarPorId(UUID id) {
         return toResponse(buscarEntidadePorId(id));
     }
 
     @Transactional
+    @RequiresPermission(module = Module.ORDER, action = Action.CREATE)
     public PedidoResponse criar(UUID tenantId, PedidoRequest request) {
         Parceiro cliente = buscarClienteValido(request.clienteId());
         User vendedor = buscarVendedorValido(request.vendedorId());
@@ -74,6 +81,7 @@ public class PedidoService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.ORDER, action = Action.EDIT)
     public PedidoResponse atualizar(UUID id, PedidoRequest request) {
         Parceiro cliente = buscarClienteValido(request.clienteId());
         User vendedor = buscarVendedorValido(request.vendedorId());
@@ -84,6 +92,7 @@ public class PedidoService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.ORDER, action = Action.EDIT)
     public PedidoResponse avancarStatus(UUID id, StatusPedido novoStatus) {
         Pedido pedido = buscarEntidadePorId(id);
         int atual = pedido.getStatus().ordinal();
@@ -97,6 +106,7 @@ public class PedidoService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.ORDER, action = Action.DELETE)
     public void excluir(UUID id) {
         pedidoRepository.delete(buscarEntidadePorId(id));
     }
