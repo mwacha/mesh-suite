@@ -46,6 +46,13 @@ public class User {
     @Column(name = "last_access_at")
     private Instant lastAccessAt;
 
+    @Column
+    private String phone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Profile profile = Profile.ADMIN;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_permission", joinColumns = @JoinColumn(name = "user_id"))
     private Set<UserPermissionGrant> permissions = new HashSet<>();

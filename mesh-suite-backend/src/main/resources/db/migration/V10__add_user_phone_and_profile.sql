@@ -1,0 +1,6 @@
+ALTER TABLE app_user ADD COLUMN phone VARCHAR(20);
+
+ALTER TABLE app_user ADD COLUMN profile VARCHAR(10) NOT NULL DEFAULT 'ADMIN';
+
+ALTER TABLE app_user ADD CONSTRAINT app_user_profile_check
+    CHECK (profile IN ('ADMIN','MANAGER','SALES','VIEWER'));
