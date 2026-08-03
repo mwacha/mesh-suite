@@ -11,6 +11,7 @@ import ProdutoFormView from '@/views/ProdutoFormView.vue'
 import ProdutosListView from '@/views/ProdutosListView.vue'
 import PedidoFormView from '@/views/PedidoFormView.vue'
 import PedidosListView from '@/views/PedidosListView.vue'
+import UserFormView from '@/views/UserFormView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,6 +30,8 @@ const router = createRouter({
     { path: '/pedidos', name: 'pedidos', component: PedidosListView },
     { path: '/pedidos/novo', name: 'pedidos-novo', component: PedidoFormView },
     { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: PedidoFormView },
+    { path: '/usuarios/novo', name: 'usuarios-novo', component: UserFormView },
+    { path: '/usuarios/:id/editar', name: 'usuarios-editar', component: UserFormView },
   ],
 })
 
