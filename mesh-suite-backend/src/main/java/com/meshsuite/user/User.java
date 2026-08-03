@@ -6,6 +6,8 @@ import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -43,4 +45,8 @@ public class User {
 
     @Column(name = "last_access_at")
     private Instant lastAccessAt;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_permission", joinColumns = @JoinColumn(name = "user_id"))
+    private Set<UserPermissionGrant> permissions = new HashSet<>();
 }
