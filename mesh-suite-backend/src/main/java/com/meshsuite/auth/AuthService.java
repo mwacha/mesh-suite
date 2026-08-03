@@ -60,7 +60,17 @@ public class AuthService {
     @Transactional(readOnly = true)
     public User findByEmailForLogin(String email) {
         entityManager.createNativeQuery("SET LOCAL app.bypass_tenant_check = 'true'").executeUpdate();
-        return userRepository.findByEmail(email).orElse(null);
+        User user = userRepository.findByEmail(email).orElse(null);
+        // In production this method's @Transactional always starts a fresh physical
+        // transaction (see the self-injection note above), so SET LOCAL naturally
+        // expires at commit and this RESET is a no-op. It matters when this method
+        // runs inside an already-active, longer-lived transaction -- e.g. a
+        // @Transactional integration test that shares one physical transaction across
+        // several "requests" -- where, without this, the bypass flag would otherwise
+        // leak into every later query on app_user for the rest of that transaction
+        // and silently defeat its tenant-isolation RLS policy.
+        entityManager.createNativeQuery("RESET app.bypass_tenant_check").executeUpdate();
+        return user;
     }
 
     // Used by PasswordResetService.confirmReset: a reset token identifies a user id
@@ -70,7 +80,10 @@ public class AuthService {
     @Transactional(readOnly = true)
     public User findUserByIdBypassingTenant(UUID userId) {
         entityManager.createNativeQuery("SET LOCAL app.bypass_tenant_check = 'true'").executeUpdate();
-        return userRepository.findById(userId).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
+        // See the matching comment in findByEmailForLogin above.
+        entityManager.createNativeQuery("RESET app.bypass_tenant_check").executeUpdate();
+        return user;
     }
 
     public LoginResult authenticate(String email, String senha) {
