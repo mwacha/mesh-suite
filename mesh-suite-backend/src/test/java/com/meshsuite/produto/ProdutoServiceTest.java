@@ -1,17 +1,29 @@
 package com.meshsuite.produto;
 
 import com.meshsuite.AbstractIntegrationTest;
+import com.meshsuite.auth.Action;
+import com.meshsuite.auth.AuthContextService;
+import com.meshsuite.auth.Module;
 import com.meshsuite.auth.TenantContext;
 import com.meshsuite.produto.dto.ProdutoRequest;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
+import com.meshsuite.user.Profile;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserPermissionGrant;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,6 +35,13 @@ class ProdutoServiceTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired ProdutoService produtoService;
     @Autowired EntityManager entityManager;
+    @Autowired UserRepository userRepository;
+
+    @AfterEach
+    void clearContext() {
+        TenantContext.clear();
+        SecurityContextHolder.clearContext();
+    }
 
     private UUID setUpTenant(String codigo) {
         Tenant tenant = new Tenant();
@@ -31,6 +50,24 @@ class ProdutoServiceTest extends AbstractIntegrationTest {
         tenantRepository.saveAndFlush(tenant);
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
         TenantContext.set(tenant.getId());
+
+        User caller = new User();
+        caller.setTenantId(tenant.getId());
+        caller.setName("Test Caller");
+        caller.setEmail("caller-" + UUID.randomUUID() + "@" + codigo + ".com.br");
+        caller.setPasswordHash("hash");
+        caller.setRole(Role.ADMINISTRATIVE);
+        caller.setProfile(Profile.ADMIN);
+        caller.getPermissions().add(new UserPermissionGrant(Module.PRODUCT, Action.VIEW));
+        caller.getPermissions().add(new UserPermissionGrant(Module.PRODUCT, Action.CREATE));
+        caller.getPermissions().add(new UserPermissionGrant(Module.PRODUCT, Action.EDIT));
+        caller.getPermissions().add(new UserPermissionGrant(Module.PRODUCT, Action.DELETE));
+        User savedCaller = userRepository.saveAndFlush(caller);
+
+        var principal = new AuthContextService.Context(savedCaller.getId(), tenant.getId(), "ADMIN");
+        var auth = new UsernamePasswordAuthenticationToken(principal, null, List.of());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
         return tenant.getId();
     }
 
@@ -136,5 +173,31 @@ class ProdutoServiceTest extends AbstractIntegrationTest {
         var segundo = produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("39.90")));
 
         assertThat(segundo.sku()).isEqualTo("P0001");
+    }
+
+    @Test
+    void deniesListingWhenCallerLacksProductViewPermission() {
+        Tenant tenant = new Tenant();
+        tenant.setCodigo("sem-permissao");
+        tenant.setNome("sem-permissao");
+        tenantRepository.saveAndFlush(tenant);
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
+        TenantContext.set(tenant.getId());
+
+        User noPerms = new User();
+        noPerms.setTenantId(tenant.getId());
+        noPerms.setName("No Permissions");
+        noPerms.setEmail("no-perms@sem-permissao.com.br");
+        noPerms.setPasswordHash("hash");
+        noPerms.setRole(Role.SALES_REP);
+        noPerms.setProfile(Profile.VIEWER);
+        User saved = userRepository.saveAndFlush(noPerms);
+
+        var principal = new AuthContextService.Context(saved.getId(), tenant.getId(), "ADMIN");
+        var auth = new UsernamePasswordAuthenticationToken(principal, null, List.of());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        assertThrows(com.meshsuite.auth.PermissionDeniedException.class,
+                () -> produtoService.listar(null, null, org.springframework.data.domain.PageRequest.of(0, 10)));
     }
 }

@@ -1,5 +1,8 @@
 package com.meshsuite.produto;
 
+import com.meshsuite.auth.Action;
+import com.meshsuite.auth.Module;
+import com.meshsuite.auth.RequiresPermission;
 import com.meshsuite.produto.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +23,7 @@ public class ProdutoService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
     public Page<ProdutoSummaryResponse> listar(String busca, StatusProduto status, Pageable pageable) {
         Specification<Produto> spec = Specification.allOf(
                 ProdutoSpecifications.comBusca(busca),
@@ -28,6 +32,7 @@ public class ProdutoService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
     public ProdutoResumoResponse resumo() {
         long ativos = produtoRepository.countByStatus(StatusProduto.ATIVO);
         long inativos = produtoRepository.countByStatus(StatusProduto.INATIVO);
@@ -35,11 +40,13 @@ public class ProdutoService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
     public ProdutoResponse buscarPorId(UUID id) {
         return toResponse(buscarEntidadePorId(id));
     }
 
     @Transactional
+    @RequiresPermission(module = Module.PRODUCT, action = Action.CREATE)
     public ProdutoResponse criar(UUID tenantId, ProdutoRequest request) {
         validarSku(request.sku(), null);
 
@@ -50,6 +57,7 @@ public class ProdutoService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.PRODUCT, action = Action.EDIT)
     public ProdutoResponse atualizar(UUID id, ProdutoRequest request) {
         validarSku(request.sku(), id);
 
@@ -59,6 +67,7 @@ public class ProdutoService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.PRODUCT, action = Action.EDIT)
     public ProdutoResponse atualizarStatus(UUID id, StatusProduto novoStatus) {
         Produto produto = buscarEntidadePorId(id);
         produto.setStatus(novoStatus);
@@ -66,6 +75,7 @@ public class ProdutoService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.PRODUCT, action = Action.DELETE)
     public void excluir(UUID id) {
         produtoRepository.delete(buscarEntidadePorId(id));
     }
