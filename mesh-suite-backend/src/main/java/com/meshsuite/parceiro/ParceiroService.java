@@ -1,5 +1,8 @@
 package com.meshsuite.parceiro;
 
+import com.meshsuite.auth.Action;
+import com.meshsuite.auth.Module;
+import com.meshsuite.auth.RequiresPermission;
 import com.meshsuite.parceiro.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +25,7 @@ public class ParceiroService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.CUSTOMER, action = Action.VIEW)
     public Page<ParceiroSummaryResponse> listar(String busca, StatusParceiro status, TipoPessoa tipoDocumento,
                                                  String uf, String cidade, PapelParceiro papel, Pageable pageable) {
         Specification<Parceiro> spec = Specification.allOf(
@@ -35,6 +39,7 @@ public class ParceiroService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.CUSTOMER, action = Action.VIEW)
     public ParceiroResumoResponse resumo() {
         long ativos = parceiroRepository.countByStatus(StatusParceiro.ATIVO);
         long emRisco = parceiroRepository.countByStatus(StatusParceiro.EM_RISCO);
@@ -43,11 +48,13 @@ public class ParceiroService {
     }
 
     @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.CUSTOMER, action = Action.VIEW)
     public ParceiroResponse buscarPorId(UUID id) {
         return toResponse(buscarEntidadePorId(id));
     }
 
     @Transactional
+    @RequiresPermission(module = Module.CUSTOMER, action = Action.CREATE)
     public ParceiroResponse criar(UUID tenantId, ParceiroRequest request) {
         validar(request, null);
 
@@ -58,6 +65,7 @@ public class ParceiroService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.CUSTOMER, action = Action.EDIT)
     public ParceiroResponse atualizar(UUID id, ParceiroRequest request) {
         validar(request, id);
 
@@ -67,6 +75,7 @@ public class ParceiroService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.CUSTOMER, action = Action.EDIT)
     public ParceiroResponse atualizarStatus(UUID id, StatusParceiro novoStatus) {
         if (novoStatus != StatusParceiro.ATIVO && novoStatus != StatusParceiro.BLOQUEADO) {
             throw new ParceiroValidacaoException("Só é possível definir o status como ATIVO ou BLOQUEADO manualmente");
@@ -77,6 +86,7 @@ public class ParceiroService {
     }
 
     @Transactional
+    @RequiresPermission(module = Module.CUSTOMER, action = Action.DELETE)
     public void excluir(UUID id) {
         parceiroRepository.delete(buscarEntidadePorId(id));
     }

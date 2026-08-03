@@ -1,13 +1,17 @@
 package com.meshsuite.parceiro;
 
 import com.meshsuite.AbstractIntegrationTest;
+import com.meshsuite.auth.Action;
 import com.meshsuite.auth.JwtAuthenticationFilter;
+import com.meshsuite.auth.Module;
 import com.meshsuite.empresa.Empresa;
 import com.meshsuite.empresa.EmpresaRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
+import com.meshsuite.user.Profile;
 import com.meshsuite.user.Role;
 import com.meshsuite.user.User;
+import com.meshsuite.user.UserPermissionGrant;
 import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
@@ -51,6 +55,45 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode("senha123"));
         user.setRole(Role.ADMIN);
+        user.setProfile(Profile.ADMIN);
+        user.getPermissions().add(new UserPermissionGrant(Module.CUSTOMER, Action.VIEW));
+        user.getPermissions().add(new UserPermissionGrant(Module.CUSTOMER, Action.CREATE));
+        user.getPermissions().add(new UserPermissionGrant(Module.CUSTOMER, Action.EDIT));
+        user.getPermissions().add(new UserPermissionGrant(Module.CUSTOMER, Action.DELETE));
+        userRepository.saveAndFlush(user);
+
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
+
+        String cookieHeader = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"senha\":\"senha123\",\"manterConectado\":false}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getHeader("Set-Cookie");
+
+        return cookieHeader.split("mesh_token=")[1].split(";")[0];
+    }
+
+    private String loginWithoutCustomerPermission(String codigo, String email, String cnpjEmpresa) throws Exception {
+        Tenant tenant = new Tenant();
+        tenant.setCodigo(codigo);
+        tenant.setNome(codigo);
+        tenantRepository.saveAndFlush(tenant);
+
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
+
+        Empresa empresa = new Empresa();
+        empresa.setTenantId(tenant.getId());
+        empresa.setRazaoSocial(codigo + " Ltda");
+        empresa.setCnpj(cnpjEmpresa);
+        empresaRepository.saveAndFlush(empresa);
+
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName("Sem Permissão");
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode("senha123"));
+        user.setRole(Role.ADMIN);
+        user.setProfile(Profile.VIEWER);
         userRepository.saveAndFlush(user);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
@@ -193,5 +236,14 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
     void unauthenticatedRequestIsRejected() throws Exception {
         mockMvc.perform(get("/api/parceiros"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void listingWithoutCustomerViewPermissionIsForbidden() throws Exception {
+        String token = loginWithoutCustomerPermission("sem-permissao", "sem-permissao@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
+
+        mockMvc.perform(get("/api/parceiros").cookie(cookie))
+                .andExpect(status().isForbidden());
     }
 }
