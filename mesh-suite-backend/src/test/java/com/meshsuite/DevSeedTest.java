@@ -21,7 +21,7 @@ class DevSeedTest extends AbstractIntegrationTest {
 
         assertThat(marina).isNotNull();
         assertThat(carlos).isNotNull();
-        assertThat(passwordEncoder.matches("MeshSuite@123", marina.getSenhaHash())).isTrue();
-        assertThat(passwordEncoder.matches("MeshSuite@123", carlos.getSenhaHash())).isTrue();
+        assertThat(passwordEncoder.matches("MeshSuite@123", marina.getPasswordHash())).isTrue();
+        assertThat(passwordEncoder.matches("MeshSuite@123", carlos.getPasswordHash())).isTrue();
     }
 }

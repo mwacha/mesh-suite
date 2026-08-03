@@ -6,9 +6,9 @@ import com.meshsuite.empresa.Empresa;
 import com.meshsuite.empresa.EmpresaRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
-    @Autowired UsuarioRepository usuarioRepository;
+    @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
 
@@ -45,13 +45,13 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
         empresa.setCnpj(cnpjEmpresa);
         empresaRepository.saveAndFlush(empresa);
 
-        Usuario usuario = new Usuario();
-        usuario.setTenantId(tenant.getId());
-        usuario.setNome("Marina");
-        usuario.setEmail(email);
-        usuario.setSenhaHash(passwordEncoder.encode("senha123"));
-        usuario.setPapel(Papel.ADMINISTRADOR);
-        usuarioRepository.saveAndFlush(usuario);
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName("Marina");
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode("senha123"));
+        user.setRole(Role.ADMIN);
+        userRepository.saveAndFlush(user);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 

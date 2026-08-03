@@ -12,9 +12,9 @@ import com.meshsuite.produto.Produto;
 import com.meshsuite.produto.ProdutoRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class PedidoControllerTest extends AbstractIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
     @Autowired EmpresaRepository empresaRepository;
-    @Autowired UsuarioRepository usuarioRepository;
+    @Autowired UserRepository userRepository;
     @Autowired ParceiroRepository parceiroRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired PasswordEncoder passwordEncoder;
@@ -58,21 +58,21 @@ class PedidoControllerTest extends AbstractIntegrationTest {
         empresa.setCnpj(cnpjEmpresa);
         empresaRepository.saveAndFlush(empresa);
 
-        Usuario usuarioLogin = new Usuario();
-        usuarioLogin.setTenantId(tenant.getId());
-        usuarioLogin.setNome("Marina");
-        usuarioLogin.setEmail(email);
-        usuarioLogin.setSenhaHash(passwordEncoder.encode("senha123"));
-        usuarioLogin.setPapel(Papel.ADMINISTRADOR);
-        usuarioRepository.saveAndFlush(usuarioLogin);
+        User userLogin = new User();
+        userLogin.setTenantId(tenant.getId());
+        userLogin.setName("Marina");
+        userLogin.setEmail(email);
+        userLogin.setPasswordHash(passwordEncoder.encode("senha123"));
+        userLogin.setRole(Role.ADMIN);
+        userRepository.saveAndFlush(userLogin);
 
-        Usuario vendedor = new Usuario();
+        User vendedor = new User();
         vendedor.setTenantId(tenant.getId());
-        vendedor.setNome("Carla Vendedora");
+        vendedor.setName("Carla Vendedora");
         vendedor.setEmail("carla-" + codigo + "@" + codigo + ".com.br");
-        vendedor.setSenhaHash("hash");
-        vendedor.setPapel(Papel.REPRESENTANTE);
-        usuarioRepository.saveAndFlush(vendedor);
+        vendedor.setPasswordHash("hash");
+        vendedor.setRole(Role.SALES_REP);
+        userRepository.saveAndFlush(vendedor);
 
         Parceiro cliente = new Parceiro();
         cliente.setTenantId(tenant.getId());

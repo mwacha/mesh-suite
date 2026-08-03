@@ -1,7 +1,7 @@
 package com.meshsuite.pedido;
 
 import com.meshsuite.parceiro.Parceiro;
-import com.meshsuite.usuario.Usuario;
+import com.meshsuite.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,7 +37,7 @@ public class Pedido {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendedor_id", nullable = false)
-    private Usuario vendedor;
+    private User vendedor;
 
     @Column(name = "data_pedido", nullable = false)
     private LocalDate dataPedido = LocalDate.now();

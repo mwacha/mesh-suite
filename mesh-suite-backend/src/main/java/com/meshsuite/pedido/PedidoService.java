@@ -6,9 +6,9 @@ import com.meshsuite.parceiro.ParceiroRepository;
 import com.meshsuite.pedido.dto.*;
 import com.meshsuite.produto.Produto;
 import com.meshsuite.produto.ProdutoRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,16 +26,16 @@ public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
     private final ParceiroRepository parceiroRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
     private final ProdutoRepository produtoRepository;
     private final EntityManager entityManager;
 
     public PedidoService(PedidoRepository pedidoRepository, ParceiroRepository parceiroRepository,
-                          UsuarioRepository usuarioRepository, ProdutoRepository produtoRepository,
+                          UserRepository userRepository, ProdutoRepository produtoRepository,
                           EntityManager entityManager) {
         this.pedidoRepository = pedidoRepository;
         this.parceiroRepository = parceiroRepository;
-        this.usuarioRepository = usuarioRepository;
+        this.userRepository = userRepository;
         this.produtoRepository = produtoRepository;
         this.entityManager = entityManager;
     }
@@ -64,7 +64,7 @@ public class PedidoService {
     @Transactional
     public PedidoResponse criar(UUID tenantId, PedidoRequest request) {
         Parceiro cliente = buscarClienteValido(request.clienteId());
-        Usuario vendedor = buscarVendedorValido(request.vendedorId());
+        User vendedor = buscarVendedorValido(request.vendedorId());
 
         Pedido pedido = new Pedido();
         pedido.setTenantId(tenantId);
@@ -76,7 +76,7 @@ public class PedidoService {
     @Transactional
     public PedidoResponse atualizar(UUID id, PedidoRequest request) {
         Parceiro cliente = buscarClienteValido(request.clienteId());
-        Usuario vendedor = buscarVendedorValido(request.vendedorId());
+        User vendedor = buscarVendedorValido(request.vendedorId());
 
         Pedido pedido = buscarEntidadePorId(id);
         aplicar(pedido, cliente, vendedor, request);
@@ -114,13 +114,13 @@ public class PedidoService {
         return parceiro;
     }
 
-    private Usuario buscarVendedorValido(UUID vendedorId) {
-        Usuario usuario = usuarioRepository.findById(vendedorId)
+    private User buscarVendedorValido(UUID vendedorId) {
+        User user = userRepository.findById(vendedorId)
                 .orElseThrow(() -> new PedidoValidacaoException("Vendedor não encontrado"));
-        if (usuario.getPapel() != Papel.REPRESENTANTE) {
+        if (user.getRole() != Role.SALES_REP) {
             throw new PedidoValidacaoException("O usuário selecionado não tem o papel Representante");
         }
-        return usuario;
+        return user;
     }
 
     // Atomic UPDATE ... RETURNING against the tenant's single pedido_contador row --
@@ -142,7 +142,7 @@ public class PedidoService {
         return ((Number) resultado).intValue();
     }
 
-    private void aplicar(Pedido pedido, Parceiro cliente, Usuario vendedor, PedidoRequest request) {
+    private void aplicar(Pedido pedido, Parceiro cliente, User vendedor, PedidoRequest request) {
         pedido.setCliente(cliente);
         pedido.setVendedor(vendedor);
         pedido.setDataPedido(request.dataPedido() != null ? request.dataPedido() : LocalDate.now());
@@ -170,7 +170,7 @@ public class PedidoService {
 
     private PedidoSummaryResponse toSummary(Pedido p) {
         return new PedidoSummaryResponse(p.getId(), p.getNumero(), p.getCliente().getNomeFantasia(),
-                p.getVendedor().getNome(), p.getDataPedido(), p.getTotal(), p.getStatus());
+                p.getVendedor().getName(), p.getDataPedido(), p.getTotal(), p.getStatus());
     }
 
     private PedidoResponse toResponse(Pedido p) {
@@ -179,7 +179,7 @@ public class PedidoService {
                         i.getQuantidade(), i.getValorUnitario(), i.getValorTotal()))
                 .toList();
         return new PedidoResponse(p.getId(), p.getNumero(), p.getCliente().getId(), p.getCliente().getNomeFantasia(),
-                p.getVendedor().getId(), p.getVendedor().getNome(), p.getDataPedido(), p.getDataEntrega(),
+                p.getVendedor().getId(), p.getVendedor().getName(), p.getDataPedido(), p.getDataEntrega(),
                 p.getStatus(), p.getDesconto(), p.getSubtotal(), p.getTotal(), itens);
     }
 }

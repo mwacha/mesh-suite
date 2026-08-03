@@ -5,12 +5,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import PedidoFormView from '@/views/PedidoFormView.vue'
 import * as pedidosApi from '@/api/pedidos'
 import * as parceirosApi from '@/api/parceiros'
-import * as usuariosApi from '@/api/usuarios'
+import * as usersApi from '@/api/users'
 import * as produtosApi from '@/api/produtos'
 
 vi.mock('@/api/pedidos')
 vi.mock('@/api/parceiros')
-vi.mock('@/api/usuarios')
+vi.mock('@/api/users')
 vi.mock('@/api/produtos')
 
 function mountWithRouter(path = '/pedidos/novo') {
@@ -34,7 +34,7 @@ const clienteBase = {
   documento: '11222333000144', cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO' as const,
 }
 
-const representanteBase = { id: 'v1', nome: 'Carla Vendedora' }
+const salesRepBase = { id: 'v1', name: 'Carla Vendedora' }
 
 const produtoBase = {
   id: 'p1', nome: 'Camiseta Polo', sku: 'P0001', marca: 'Marca Alpha',
@@ -45,7 +45,7 @@ describe('PedidoFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    vi.mocked(usuariosApi.listarRepresentantes).mockResolvedValue([representanteBase])
+    vi.mocked(usersApi.listSalesReps).mockResolvedValue([salesRepBase])
     vi.mocked(parceirosApi.listarParceiros).mockResolvedValue({
       content: [clienteBase], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
@@ -71,7 +71,7 @@ describe('PedidoFormView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    expect(usuariosApi.listarRepresentantes).toHaveBeenCalled()
+    expect(usersApi.listSalesReps).toHaveBeenCalled()
     expect(wrapper.find('[data-test="vendedor"]').text()).toContain('Carla Vendedora')
   })
 

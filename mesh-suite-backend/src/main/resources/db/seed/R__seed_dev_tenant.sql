@@ -13,13 +13,13 @@ INSERT INTO empresa (id, tenant_id, razao_social, cnpj, ativo) VALUES
     ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Confecção Aurora Ltda', '11222333000144', true);
 
 -- Password for both seeded users: MeshSuite@123
-INSERT INTO usuario (id, tenant_id, nome, email, senha_hash, papel, ativo) VALUES
-    ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', 'Marina Aurora', 'marina@aurora.com.br', '$2a$10$gc21cu8nxmoffokwJXbpaeCEhZLVpe1IX/zX0wyFFkx.XnMzBy.IS', 'ADMINISTRADOR', true);
+INSERT INTO app_user (id, tenant_id, name, email, password_hash, role, active) VALUES
+    ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', 'Marina Aurora', 'marina@aurora.com.br', '$2a$10$gc21cu8nxmoffokwJXbpaeCEhZLVpe1IX/zX0wyFFkx.XnMzBy.IS', 'ADMIN', true);
 
 SET LOCAL app.tenant_id = '22222222-2222-2222-2222-222222222222';
 
 INSERT INTO empresa (id, tenant_id, razao_social, cnpj, ativo) VALUES
     ('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222', 'Confecção Boreal Ltda', '55666777000188', true);
 
-INSERT INTO usuario (id, tenant_id, nome, email, senha_hash, papel, ativo) VALUES
-    ('66666666-6666-6666-6666-666666666666', '22222222-2222-2222-2222-222222222222', 'Carlos Boreal', 'carlos@boreal.com.br', '$2a$10$gc21cu8nxmoffokwJXbpaeCEhZLVpe1IX/zX0wyFFkx.XnMzBy.IS', 'ADMINISTRADOR', true);
+INSERT INTO app_user (id, tenant_id, name, email, password_hash, role, active) VALUES
+    ('66666666-6666-6666-6666-666666666666', '22222222-2222-2222-2222-222222222222', 'Carlos Boreal', 'carlos@boreal.com.br', '$2a$10$gc21cu8nxmoffokwJXbpaeCEhZLVpe1IX/zX0wyFFkx.XnMzBy.IS', 'ADMIN', true);

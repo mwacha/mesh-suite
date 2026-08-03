@@ -22,7 +22,7 @@
             <label class="field-label">Vendedor *</label>
             <select v-model="form.vendedorId" data-test="vendedor">
               <option value="">Selecione...</option>
-              <option v-for="r in representantes" :key="r.id" :value="r.id">{{ r.nome }}</option>
+              <option v-for="r in representantes" :key="r.id" :value="r.id">{{ r.name }}</option>
             </select>
             <p v-if="erros.vendedorId" class="field-error">{{ erros.vendedorId }}</p>
           </div>
@@ -121,7 +121,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import { buscarPedido, criarPedido, atualizarPedido, type PedidoRequest, type ItemPedidoRequest } from '@/api/pedidos'
 import { listarParceiros, type ParceiroSummary } from '@/api/parceiros'
-import { listarRepresentantes, type UsuarioRepresentante } from '@/api/usuarios'
+import { listSalesReps, type SalesRep } from '@/api/users'
 import { listarProdutos, type ProdutoSummary } from '@/api/produtos'
 
 const route = useRoute()
@@ -160,7 +160,7 @@ const salvando = ref(false)
 
 const clienteBusca = ref('')
 const resultadosClientes = ref<ParceiroSummary[]>([])
-const representantes = ref<UsuarioRepresentante[]>([])
+const representantes = ref<SalesRep[]>([])
 
 const produtoBusca = ref('')
 const resultadosProdutos = ref<ProdutoSummary[]>([])
@@ -240,7 +240,7 @@ function removerItem(index: number) {
 
 onMounted(async () => {
   try {
-    representantes.value = await listarRepresentantes()
+    representantes.value = await listSalesReps()
   } catch {
     erroGeral.value = 'Não foi possível carregar a lista de vendedores.'
   }

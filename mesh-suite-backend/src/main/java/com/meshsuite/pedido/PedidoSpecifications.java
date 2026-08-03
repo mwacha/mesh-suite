@@ -16,7 +16,7 @@ public final class PedidoSpecifications {
         return (root, query, cb) -> {
             var porTexto = cb.or(
                     cb.like(cb.lower(root.get("cliente").get("nomeFantasia")), termo),
-                    cb.like(cb.lower(root.get("vendedor").get("nome")), termo));
+                    cb.like(cb.lower(root.get("vendedor").get("name")), termo));
             if (numero != null) {
                 return cb.or(porTexto, cb.equal(root.get("numero"), numero));
             }

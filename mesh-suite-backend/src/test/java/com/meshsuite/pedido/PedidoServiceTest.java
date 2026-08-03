@@ -12,9 +12,9 @@ import com.meshsuite.produto.Produto;
 import com.meshsuite.produto.ProdutoRepository;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.usuario.Papel;
-import com.meshsuite.usuario.Usuario;
-import com.meshsuite.usuario.UsuarioRepository;
+import com.meshsuite.user.Role;
+import com.meshsuite.user.User;
+import com.meshsuite.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ class PedidoServiceTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
     @Autowired ParceiroRepository parceiroRepository;
-    @Autowired UsuarioRepository usuarioRepository;
+    @Autowired UserRepository userRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired PedidoService pedidoService;
     @Autowired EntityManager entityManager;
@@ -75,23 +75,23 @@ class PedidoServiceTest extends AbstractIntegrationTest {
     }
 
     private UUID criarVendedor(UUID tenantId, String email) {
-        Usuario u = new Usuario();
+        User u = new User();
         u.setTenantId(tenantId);
-        u.setNome("Marina");
+        u.setName("Marina");
         u.setEmail(email);
-        u.setSenhaHash("hash");
-        u.setPapel(Papel.REPRESENTANTE);
-        return usuarioRepository.saveAndFlush(u).getId();
+        u.setPasswordHash("hash");
+        u.setRole(Role.SALES_REP);
+        return userRepository.saveAndFlush(u).getId();
     }
 
     private UUID criarAdministrativo(UUID tenantId, String email) {
-        Usuario u = new Usuario();
+        User u = new User();
         u.setTenantId(tenantId);
-        u.setNome("Carlos");
+        u.setName("Carlos");
         u.setEmail(email);
-        u.setSenhaHash("hash");
-        u.setPapel(Papel.ADMINISTRATIVO);
-        return usuarioRepository.saveAndFlush(u).getId();
+        u.setPasswordHash("hash");
+        u.setRole(Role.ADMINISTRATIVE);
+        return userRepository.saveAndFlush(u).getId();
     }
 
     private UUID criarProduto(UUID tenantId, String sku, BigDecimal precoVenda) {
