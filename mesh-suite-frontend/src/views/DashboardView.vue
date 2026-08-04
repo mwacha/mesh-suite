@@ -5,10 +5,7 @@
         <span class="stat-icon">{{ stat.icon }}</span>
         <div class="stat-body">
           <div class="stat-label">{{ stat.label }}</div>
-          <div class="stat-value">
-            {{ stat.value }}
-            <span v-if="stat.delta" class="stat-delta">{{ stat.delta }}</span>
-          </div>
+          <div class="stat-value">{{ stat.value }}</div>
         </div>
       </div>
     </div>
@@ -17,15 +14,11 @@
       <section class="card orders-card">
         <div class="card-header">
           <h2>Últimos Pedidos</h2>
-          <button
-            type="button"
-            class="btn-secondary btn-inert"
-            title="Listagem de pedidos fora de escopo desta fatia"
-          >
+          <button type="button" class="btn-secondary" data-test="ver-todos-pedidos" @click="router.push({ name: 'pedidos' })">
             Ver todos
           </button>
         </div>
-        <table class="orders-table">
+        <table class="orders-table" v-if="pedidosRecentes.length">
           <thead>
             <tr>
               <th>#</th>
@@ -37,41 +30,40 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="pedido in pedidos" :key="pedido.numero">
+            <tr v-for="pedido in pedidosRecentes" :key="pedido.id">
               <td>{{ pedido.numero }}</td>
-              <td>{{ pedido.cliente }}</td>
-              <td>{{ pedido.data }}</td>
-              <td>{{ pedido.total }}</td>
+              <td>{{ pedido.clienteNome }}</td>
+              <td>{{ formatarData(pedido.dataPedido) }}</td>
+              <td>{{ formatarPreco(pedido.total) }}</td>
               <td>
-                <span class="badge" :class="`badge-${pedido.statusClasse}`">{{ pedido.status }}</span>
+                <span class="badge" :class="`badge-${pedido.status}`">{{ statusLabel(pedido.status) }}</span>
               </td>
               <td>
-                <span class="link-inert" title="Detalhe de pedido fora de escopo desta fatia">Ver</span>
+                <button
+                  type="button"
+                  class="link"
+                  @click="router.push({ name: 'pedidos-editar', params: { id: pedido.id } })"
+                >
+                  Ver
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
+        <p v-else class="empty-state">Nenhum pedido para exibir.</p>
       </section>
 
       <aside class="side-column">
         <section class="card">
           <h2>Ações Rápidas</h2>
           <div class="quick-actions">
-            <button
-              type="button"
-              class="btn-primary btn-inert"
-              title="Cadastro de pedidos fora de escopo desta fatia"
-            >
+            <button type="button" class="btn-primary" data-test="novo-pedido" @click="router.push({ name: 'pedidos-novo' })">
               + Novo Pedido
             </button>
             <button type="button" class="btn-secondary" @click="router.push({ name: 'clientes-novo' })">
               + Novo Cliente
             </button>
-            <button
-              type="button"
-              class="btn-secondary btn-inert"
-              title="Cadastro de produtos fora de escopo desta fatia"
-            >
+            <button type="button" class="btn-secondary" data-test="novo-produto" @click="router.push({ name: 'produtos-novo' })">
               + Novo Produto
             </button>
           </div>
@@ -79,13 +71,14 @@
 
         <section class="card">
           <h2>Status Pedidos</h2>
-          <ul class="status-list">
+          <ul class="status-list" v-if="statusPedidos.length">
             <li v-for="item in statusPedidos" :key="item.label">
               <span class="status-dot" :class="`dot-${item.classe}`"></span>
               <span class="status-label">{{ item.label }}</span>
               <span class="status-value">{{ item.value }}</span>
             </li>
           </ul>
+          <p v-else class="empty-state">Sem dados.</p>
         </section>
       </aside>
     </div>
@@ -93,59 +86,84 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import {
+  buscarResumoPedidos,
+  listarPedidos,
+  type PedidoResumo,
+  type PedidoSummary,
+  type StatusPedido,
+} from '@/api/pedidos'
+import { buscarResumoParceiros, type ParceiroResumo } from '@/api/parceiros'
+import { buscarResumoProdutos, type ProdutoResumo } from '@/api/produtos'
 
 const router = useRouter()
-
-type StatusPedido = 'pendente' | 'aprovado' | 'faturamento' | 'cancelado'
 
 interface Stat {
   icon: string
   label: string
   value: string
-  delta?: string
 }
 
-// Dados de exemplo fixos — sem chamada de API. Nenhum módulo de negócio
-// (Pedidos, Clientes, Produtos) existe ainda no backend; estes números
-// só demonstram o layout de referência.
-const stats: Stat[] = [
-  { icon: '📋', label: 'Pedidos hoje', value: '38', delta: '+12%' },
-  { icon: '👥', label: 'Clientes ativos', value: '1.240' },
-  { icon: '💰', label: 'Faturamento mês', value: 'R$ 42k', delta: '+8%' },
-  { icon: '📦', label: 'Produtos ativos', value: '856' },
-]
+// Each section is fetched and rendered independently -- a user without VIEW
+// permission on one module (Module.CUSTOMER/PRODUCT/ORDER) still sees the
+// rest of the dashboard; that section just falls back to "—" / an empty
+// state instead of blocking the whole page.
+const pedidoResumo = ref<PedidoResumo | null>(null)
+const parceiroResumo = ref<ParceiroResumo | null>(null)
+const produtoResumo = ref<ProdutoResumo | null>(null)
+const pedidosRecentes = ref<PedidoSummary[]>([])
 
-interface Pedido {
-  numero: string
-  cliente: string
-  data: string
-  total: string
-  status: string
-  statusClasse: StatusPedido
+const stats = computed<Stat[]>(() => [
+  { icon: '📋', label: 'Total de Pedidos', value: pedidoResumo.value ? String(pedidoResumo.value.total) : '—' },
+  { icon: '👥', label: 'Clientes Ativos', value: parceiroResumo.value ? String(parceiroResumo.value.ativos) : '—' },
+  { icon: '🧾', label: 'Pedidos Faturados', value: pedidoResumo.value ? String(pedidoResumo.value.faturados) : '—' },
+  { icon: '📦', label: 'Produtos Ativos', value: produtoResumo.value ? String(produtoResumo.value.ativos) : '—' },
+])
+
+const STATUS_LABEL: Record<StatusPedido, string> = {
+  DIGITADO: 'Digitado',
+  EM_PREPARO: 'Em Preparo',
+  FATURADO: 'Faturado',
 }
 
-const pedidos: Pedido[] = [
-  { numero: '#041', cliente: 'Mercado Silva', data: 'hoje', total: 'R$ 450', status: 'Pendente', statusClasse: 'pendente' },
-  { numero: '#040', cliente: 'Dist. ABC', data: 'hoje', total: 'R$ 1.200', status: 'Aprovado', statusClasse: 'aprovado' },
-  { numero: '#039', cliente: 'Loja XYZ', data: 'ontem', total: 'R$ 320', status: 'Faturamento', statusClasse: 'faturamento' },
-  { numero: '#038', cliente: 'Super M.', data: 'ontem', total: 'R$ 890', status: 'Cancelado', statusClasse: 'cancelado' },
-  { numero: '#037', cliente: 'Farmácia Z', data: '01/06', total: 'R$ 210', status: 'Pendente', statusClasse: 'pendente' },
-]
-
-interface StatusResumo {
-  label: string
-  value: number
-  classe: StatusPedido
+function statusLabel(status: StatusPedido) {
+  return STATUS_LABEL[status]
 }
 
-const statusPedidos: StatusResumo[] = [
-  { label: 'Pendentes', value: 12, classe: 'pendente' },
-  { label: 'Aprovados', value: 18, classe: 'aprovado' },
-  { label: 'Faturamento', value: 5, classe: 'faturamento' },
-  { label: 'Cancelados', value: 3, classe: 'cancelado' },
-]
+const statusPedidos = computed(() => {
+  const r = pedidoResumo.value
+  if (!r) return []
+  return [
+    { label: 'Digitados', value: r.digitados, classe: 'DIGITADO' as StatusPedido },
+    { label: 'Em Preparo', value: r.emPreparo, classe: 'EM_PREPARO' as StatusPedido },
+    { label: 'Faturados', value: r.faturados, classe: 'FATURADO' as StatusPedido },
+  ]
+})
+
+function formatarPreco(valor: number) {
+  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function formatarData(data: string) {
+  const [ano, mes, dia] = data.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
+onMounted(async () => {
+  const [pedidoR, parceiroR, produtoR, pedidosR] = await Promise.allSettled([
+    buscarResumoPedidos(),
+    buscarResumoParceiros(),
+    buscarResumoProdutos(),
+    listarPedidos({ page: 0, size: 5 }),
+  ])
+  if (pedidoR.status === 'fulfilled') pedidoResumo.value = pedidoR.value
+  if (parceiroR.status === 'fulfilled') parceiroResumo.value = parceiroR.value
+  if (produtoR.status === 'fulfilled') produtoResumo.value = produtoR.value
+  if (pedidosR.status === 'fulfilled') pedidosRecentes.value = pedidosR.value.content
+})
 </script>
 
 <style scoped>
@@ -178,18 +196,9 @@ const statusPedidos: StatusResumo[] = [
 }
 
 .stat-value {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
   font-size: 20px;
   font-weight: 700;
   color: var(--pm-text-dark);
-}
-
-.stat-delta {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--pm-success);
 }
 
 .dashboard-columns {
@@ -255,6 +264,12 @@ const statusPedidos: StatusResumo[] = [
   border-bottom: none;
 }
 
+.empty-state {
+  color: var(--pm-text-mid);
+  font-size: 13px;
+  margin: 0;
+}
+
 .badge {
   display: inline-flex;
   padding: 3px 10px;
@@ -263,24 +278,19 @@ const statusPedidos: StatusResumo[] = [
   font-weight: 600;
 }
 
-.badge-pendente {
-  background: var(--pm-warning-bg);
-  color: var(--pm-warning);
+.badge-DIGITADO {
+  background: var(--pm-bg);
+  color: var(--pm-text-mid);
 }
 
-.badge-aprovado {
+.badge-EM_PREPARO {
+  background: var(--pm-warning-bg, var(--pm-bg));
+  color: var(--pm-warning, var(--pm-text-mid));
+}
+
+.badge-FATURADO {
   background: var(--pm-success-bg);
   color: var(--pm-success);
-}
-
-.badge-faturamento {
-  background: var(--pm-accent-bg);
-  color: var(--pm-accent-text);
-}
-
-.badge-cancelado {
-  background: var(--pm-error-bg);
-  color: var(--pm-error);
 }
 
 .side-column {
@@ -306,6 +316,7 @@ const statusPedidos: StatusResumo[] = [
   font-weight: 600;
   font-family: var(--pm-font);
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .btn-primary {
@@ -320,14 +331,14 @@ const statusPedidos: StatusResumo[] = [
   border: 1px solid var(--pm-border-light);
 }
 
-.btn-inert,
-.link-inert {
-  cursor: not-allowed;
-}
-
-.link-inert {
+.link {
+  background: none;
+  border: none;
+  padding: 0;
   color: var(--pm-accent);
   font-size: 13px;
+  font-family: var(--pm-font);
+  cursor: pointer;
 }
 
 .status-list {
@@ -353,20 +364,16 @@ const statusPedidos: StatusResumo[] = [
   flex-shrink: 0;
 }
 
-.dot-pendente {
-  background: var(--pm-warning);
+.dot-DIGITADO {
+  background: var(--pm-text-mid);
 }
 
-.dot-aprovado {
+.dot-EM_PREPARO {
+  background: var(--pm-warning, var(--pm-text-mid));
+}
+
+.dot-FATURADO {
   background: var(--pm-success);
-}
-
-.dot-faturamento {
-  background: var(--pm-accent);
-}
-
-.dot-cancelado {
-  background: var(--pm-error);
 }
 
 .status-label {
