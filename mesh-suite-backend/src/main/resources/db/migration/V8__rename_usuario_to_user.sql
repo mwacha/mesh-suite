@@ -8,6 +8,15 @@ ALTER TABLE app_user RENAME COLUMN ultimo_acesso TO last_access_at;
 
 ALTER TABLE app_user DROP CONSTRAINT usuario_papel_check;
 
+-- Migrations run with no app.tenant_id set, so the standard tenant-isolation
+-- RLS policy (USING tenant_id = current_setting('app.tenant_id')) makes this
+-- table invisible to every row -- a plain UPDATE here would silently affect
+-- zero rows, leaving old Portuguese role values in place and failing the
+-- CHECK constraint below instead of translating the data. meshsuite_app owns
+-- this table, so it can toggle RLS off for just this statement; FORCE is
+-- restored immediately after.
+ALTER TABLE app_user DISABLE ROW LEVEL SECURITY;
+
 UPDATE app_user SET role = CASE role
     WHEN 'ADMINISTRATIVO' THEN 'ADMINISTRATIVE'
     WHEN 'REPRESENTANTE' THEN 'SALES_REP'
@@ -15,6 +24,9 @@ UPDATE app_user SET role = CASE role
     WHEN 'TERCEIRIZADO' THEN 'OUTSOURCED'
     WHEN 'ADMINISTRADOR' THEN 'ADMIN'
 END;
+
+ALTER TABLE app_user ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_user FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE app_user ADD CONSTRAINT app_user_role_check
     CHECK (role IN ('ADMINISTRATIVE','SALES_REP','PRODUCTION','OUTSOURCED','ADMIN'));
