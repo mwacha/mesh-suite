@@ -63,7 +63,7 @@ Este documento cobre **apenas o sub-projeto 1**. Os demais serão brainstormados
 | `id` | UUID | PK |
 | `purchaseOrder` | FK → `PurchaseOrder` | |
 | `product` | FK → `Produto` | |
-| `quantity` | Integer | > 0 |
+| `quantity` | BigDecimal(12,3) | > 0, mesmo tipo de `ItemPedido.quantidade` |
 | `unitPrice` | BigDecimal(12,2) | client-submitted/editável, mesmo padrão já aprovado em `ItemPedido.valorUnitario` |
 | `totalValue` | BigDecimal(12,2) | `quantity * unitPrice`, calculado no service |
 
@@ -78,13 +78,13 @@ Mesmo mecanismo de numeração sequencial já usado em Pedido.
 3. Ordem precisa de ao menos um item.
 4. Desconto não pode exceder o subtotal (regra 6 do PRD-07, preservada).
 5. Transição de status só é permitida a partir de `OPEN`; uma vez `RECEIVED` ou `CANCELLED`, a ordem é terminal — sem edição de fornecedor/comprador/itens a partir daí (mesma trava que Pedido aplica após `FATURADO`).
-6. Sem exclusão física — só cancelamento via status (mesmo padrão de Pedido/Parceiro/Produto).
+6. Exclusão física suportada (`DELETE /api/purchase-orders/{id}`) — correção em relação à primeira versão desta spec: Pedido/Parceiro/Produto **têm**, sim, exclusão física real (não só mudança de status); só User não tem, por causa de uma FK sem cascade que não se aplica aqui. Mantém consistência com o padrão real das fatias irmãs.
 7. `subtotal`/`total` sempre recalculados no service a partir dos itens recebidos, nunca confiados ao client como valor final (mesmo padrão de `PedidoService`).
 
 ## 5. Telas
 
 ### `PurchaseOrdersListView.vue` (rota `/compras`)
-Mesmo padrão visual/estrutural de `PedidosListView.vue`: busca, filtro por status, tabela paginada, dropdown de Ações (Editar, Avançar status via ação explícita "Marcar como Recebida"/"Cancelar", sem exclusão).
+Mesmo padrão visual/estrutural de `PedidosListView.vue`: busca, filtro por status, tabela paginada, dropdown de Ações (Editar, "Marcar como Recebida"/"Cancelar" quando `OPEN`, Excluir).
 
 ### `PurchaseOrderFormView.vue` (rotas `/compras/novo` e `/compras/:id/editar`)
 Mesmo padrão de `PedidoFormView.vue`: seletor de fornecedor (busca/dropdown, reaproveitando o padrão do seletor de cliente), seletor de comprador (reaproveitando o padrão do seletor de vendedor), lista de itens com busca de produto, cálculo de totais ao vivo, tratamento de 403 na submissão.
@@ -100,6 +100,7 @@ Novo item "Compras" (ícone a definir — não há mockup de referência no `lay
 - `POST /api/purchase-orders`
 - `PUT /api/purchase-orders/{id}`
 - `PATCH /api/purchase-orders/{id}/status` — recebe o status-alvo explicitamente (`RECEIVED` ou `CANCELLED`), diferente do "avançar" de Pedido, já que aqui `OPEN` tem dois destinos possíveis em vez de uma cadeia linear única.
+- `DELETE /api/purchase-orders/{id}` — exclusão física, mesmo padrão de Pedido/Parceiro/Produto.
 
 Todos os métodos de `PurchaseOrderService` protegidos por `@RequiresPermission(module = Module.PURCHASE, action = ...)`. `Module.PURCHASE` é um novo valor no enum `com.meshsuite.auth.Module`, cobrindo esta fatia e a futura Compra.
 
