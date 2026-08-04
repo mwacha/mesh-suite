@@ -73,8 +73,8 @@ Mesmo mecanismo de numeração sequencial já usado em Pedido.
 
 ## 4. Regras de negócio
 
-1. Fornecedor deve ter o papel `FORNECEDOR` e estar ativo (validado no service, mesmo padrão de `buscarVendedorValido` em `PedidoService`, adaptado pra `buscarFornecedorValido`).
-2. Comprador deve ter `Role.ADMINISTRATIVE` e estar ativo.
+1. Fornecedor deve ter o papel `FORNECEDOR` (validado no service, mesmo padrão de `buscarVendedorValido` em `PedidoService`, adaptado pra `buscarFornecedorValido`). Sem checagem de status ativo/inativo — `PedidoService.buscarClienteValido`/`buscarVendedorValido` também não checam, só o papel/role; mantendo o mesmo padrão aqui.
+2. Comprador deve ter `Role.ADMINISTRATIVE` (mesma ressalva acima — sem checagem de ativo).
 3. Ordem precisa de ao menos um item.
 4. Desconto não pode exceder o subtotal (regra 6 do PRD-07, preservada).
 5. Transição de status só é permitida a partir de `OPEN`; uma vez `RECEIVED` ou `CANCELLED`, a ordem é terminal — sem edição de fornecedor/comprador/itens a partir daí (mesma trava que Pedido aplica após `FATURADO`).
