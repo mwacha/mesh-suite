@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -42,6 +43,14 @@ public class UserController {
     // Deliberately bypasses UserService/@RequiresPermission -- support lookup for
     // the Pedido form's vendor picker, not "viewing the Users module". See the
     // Global Constraints note.
+    //
+    // Still needs its own @Transactional: TenantContextAspect only fires around
+    // methods carrying that annotation directly (see its class comment), and
+    // findByRoleOrderByName's RLS-scoped query is invisible to every tenant
+    // without app.tenant_id set. Without this, the endpoint silently returns an
+    // empty list instead of erroring -- caught live, not by the existing test,
+    // which only asserted 200 + array shape and never a specific result.
+    @Transactional(readOnly = true)
     @GetMapping("/sales-reps")
     public List<SalesRepResponse> salesReps() {
         return userRepository.findByRoleOrderByName(Role.SALES_REP).stream()

@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -185,9 +186,30 @@ class UserControllerTest extends AbstractIntegrationTest {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144", false);
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
+        Tenant tenant = tenantRepository.findAll().stream()
+                .filter(t -> "aurora".equals(t.getCodigo()))
+                .findFirst().orElseThrow();
+
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
+        User salesRep = new User();
+        salesRep.setTenantId(tenant.getId());
+        salesRep.setName("Carla Vendedora");
+        salesRep.setEmail("carla-vendedora@aurora.com.br");
+        salesRep.setPasswordHash(passwordEncoder.encode("senha123"));
+        salesRep.setRole(Role.SALES_REP);
+        salesRep.setProfile(Profile.SALES);
+        userRepository.saveAndFlush(salesRep);
+        // Explicitly reset before the call under test -- without this, the SET
+        // LOCAL above (or the earlier login's) would still be in effect for the
+        // rest of this @Transactional test method regardless of whether the
+        // endpoint sets its own tenant context, silently masking exactly the bug
+        // this test exists to catch (see UserController.salesReps()'s comment).
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
+
         mockMvc.perform(get("/api/users/sales-reps").cookie(cookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("Carla Vendedora"));
     }
 
     @Test
