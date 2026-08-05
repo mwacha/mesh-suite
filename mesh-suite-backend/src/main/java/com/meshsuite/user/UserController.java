@@ -1,6 +1,8 @@
 package com.meshsuite.user;
 
+import com.meshsuite.auth.Action;
 import com.meshsuite.auth.AuthContextService;
+import com.meshsuite.auth.Module;
 import com.meshsuite.user.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -63,12 +65,19 @@ public class UserController {
     // module". Needs its own @Transactional for the same reason /sales-reps
     // does (see that method's comment above): TenantContextAspect only fires
     // around methods carrying that annotation directly, and
-    // findByRoleOrderByName's RLS-scoped query is invisible to every tenant
-    // without app.tenant_id set.
+    // findByRoleInAndPermission's RLS-scoped query is invisible to every
+    // tenant without app.tenant_id set.
+    //
+    // Role alone isn't enough here: a user can be ADMIN/ADMINISTRATIVE by
+    // role but have no PURCHASE+CREATE grant in user_permission (e.g. a
+    // seeded/legacy user predating the permission system), in which case
+    // picking them as buyer would let a purchase order reference someone who
+    // can't actually create one.
     @Transactional(readOnly = true)
     @GetMapping("/buyers")
     public List<BuyerResponse> buyers() {
-        return userRepository.findByRoleOrderByName(Role.ADMINISTRATIVE).stream()
+        return userRepository.findByRoleInAndPermission(
+                        List.of(Role.ADMIN, Role.ADMINISTRATIVE), Module.PURCHASE, Action.CREATE).stream()
                 .map(u -> new BuyerResponse(u.getId(), u.getName()))
                 .toList();
     }

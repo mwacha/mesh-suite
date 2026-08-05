@@ -19,4 +19,11 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     @Query("SELECT COUNT(u) > 0 FROM User u JOIN u.permissions p " +
             "WHERE u.id = :userId AND p.module = :module AND p.action = :action")
     boolean hasPermission(@Param("userId") UUID userId, @Param("module") Module module, @Param("action") Action action);
+
+    @Query("SELECT DISTINCT u FROM User u JOIN u.permissions p " +
+            "WHERE u.role IN :roles AND p.module = :module AND p.action = :action " +
+            "ORDER BY u.name")
+    List<User> findByRoleInAndPermission(@Param("roles") List<Role> roles,
+                                          @Param("module") Module module,
+                                          @Param("action") Action action);
 }
