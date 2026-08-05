@@ -102,8 +102,9 @@ public class ParceiroService {
             throw new ParceiroValidacaoException("Selecione ao menos o papel Cliente ou Fornecedor");
         }
 
+        String documento = normalizarDocumento(request.documento());
         int tamanhoEsperado = request.tipoPessoa() == TipoPessoa.FISICA ? 11 : 14;
-        if (request.documento().length() != tamanhoEsperado) {
+        if (documento.length() != tamanhoEsperado) {
             throw new ParceiroValidacaoException(
                     request.tipoPessoa() == TipoPessoa.FISICA
                             ? "CPF deve ter 11 dígitos"
@@ -111,16 +112,22 @@ public class ParceiroService {
         }
 
         boolean duplicado = idAtual == null
-                ? parceiroRepository.existsByDocumento(request.documento())
-                : parceiroRepository.existsByDocumentoAndIdNot(request.documento(), idAtual);
+                ? parceiroRepository.existsByDocumento(documento)
+                : parceiroRepository.existsByDocumentoAndIdNot(documento, idAtual);
         if (duplicado) {
             throw new DocumentoDuplicadoException();
         }
     }
 
+    // Aceita CNPJ/CPF digitados ou colados com a máscara usual (pontos, barra,
+    // hífen) -- só os dígitos são validados e persistidos.
+    private static String normalizarDocumento(String documento) {
+        return documento.replaceAll("\\D", "");
+    }
+
     private void aplicar(Parceiro parceiro, ParceiroRequest request) {
         parceiro.setTipoPessoa(request.tipoPessoa());
-        parceiro.setDocumento(request.documento());
+        parceiro.setDocumento(normalizarDocumento(request.documento()));
         parceiro.setNomeFantasia(request.nomeFantasia());
         parceiro.setRazaoSocial(request.razaoSocial());
         parceiro.setPapeis(new HashSet<>(request.papeis()));
