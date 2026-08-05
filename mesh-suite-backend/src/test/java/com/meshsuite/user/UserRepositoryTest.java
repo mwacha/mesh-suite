@@ -1,6 +1,8 @@
 package com.meshsuite.user;
 
 import com.meshsuite.AbstractIntegrationTest;
+import com.meshsuite.auth.Action;
+import com.meshsuite.auth.Module;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
 import jakarta.persistence.EntityManager;
@@ -8,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -146,5 +149,53 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         var result = userRepository.findByRoleOrderByName(Role.SALES_REP);
 
         assertThat(result).extracting(User::getName).containsExactly("Ana", "Bruno");
+    }
+
+    @Test
+    @Transactional
+    void findsByRoleInAndPermissionOnlyReturnsAdminsWithPurchaseCreateGranted() {
+        Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+
+        User adminComPermissao = new User();
+        adminComPermissao.setTenantId(tenant.getId());
+        adminComPermissao.setName("Duda Admin");
+        adminComPermissao.setEmail("duda@aurora.com.br");
+        adminComPermissao.setPasswordHash("hash");
+        adminComPermissao.setRole(Role.ADMIN);
+        adminComPermissao.getPermissions().add(new UserPermissionGrant(Module.PURCHASE, Action.CREATE));
+        userRepository.saveAndFlush(adminComPermissao);
+
+        User administrativoComPermissao = new User();
+        administrativoComPermissao.setTenantId(tenant.getId());
+        administrativoComPermissao.setName("Breno Administrativo");
+        administrativoComPermissao.setEmail("breno@aurora.com.br");
+        administrativoComPermissao.setPasswordHash("hash");
+        administrativoComPermissao.setRole(Role.ADMINISTRATIVE);
+        administrativoComPermissao.getPermissions().add(new UserPermissionGrant(Module.PURCHASE, Action.CREATE));
+        userRepository.saveAndFlush(administrativoComPermissao);
+
+        User adminSemPermissao = new User();
+        adminSemPermissao.setTenantId(tenant.getId());
+        adminSemPermissao.setName("Ana Sem Permissao");
+        adminSemPermissao.setEmail("ana-sem-permissao@aurora.com.br");
+        adminSemPermissao.setPasswordHash("hash");
+        adminSemPermissao.setRole(Role.ADMIN);
+        userRepository.saveAndFlush(adminSemPermissao);
+
+        User vendedorComPermissao = new User();
+        vendedorComPermissao.setTenantId(tenant.getId());
+        vendedorComPermissao.setName("Zeca Vendedor");
+        vendedorComPermissao.setEmail("zeca@aurora.com.br");
+        vendedorComPermissao.setPasswordHash("hash");
+        vendedorComPermissao.setRole(Role.SALES_REP);
+        vendedorComPermissao.getPermissions().add(new UserPermissionGrant(Module.PURCHASE, Action.CREATE));
+        userRepository.saveAndFlush(vendedorComPermissao);
+
+        var result = userRepository.findByRoleInAndPermission(
+                List.of(Role.ADMIN, Role.ADMINISTRATIVE), Module.PURCHASE, Action.CREATE);
+
+        assertThat(result).extracting(User::getName)
+                .containsExactly("Breno Administrativo", "Duda Admin");
     }
 }
