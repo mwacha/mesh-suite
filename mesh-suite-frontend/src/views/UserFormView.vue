@@ -132,12 +132,13 @@ const PROFILE_LABELS: Record<Profile, string> = {
   SALES: 'Vendedor',
   VIEWER: 'Visualizador',
 }
-const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER']
+const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER', 'PURCHASE']
 const MODULE_LABELS: Record<ModuleName, string> = {
   CUSTOMER: 'Clientes',
   PRODUCT: 'Produtos',
   ORDER: 'Pedidos',
   USER: 'Usuários',
+  PURCHASE: 'Compras',
 }
 const ACTIONS: ActionName[] = ['VIEW', 'CREATE', 'EDIT', 'DELETE']
 const ACTION_LABELS: Record<ActionName, string> = {
@@ -158,6 +159,7 @@ const DEFAULT_MATRIX: Record<Profile, Permission[]> = {
     { module: 'CUSTOMER', action: 'VIEW' }, { module: 'CUSTOMER', action: 'CREATE' }, { module: 'CUSTOMER', action: 'EDIT' },
     { module: 'PRODUCT', action: 'VIEW' }, { module: 'PRODUCT', action: 'CREATE' }, { module: 'PRODUCT', action: 'EDIT' },
     { module: 'ORDER', action: 'VIEW' }, { module: 'ORDER', action: 'CREATE' }, { module: 'ORDER', action: 'EDIT' },
+    { module: 'PURCHASE', action: 'VIEW' }, { module: 'PURCHASE', action: 'CREATE' }, { module: 'PURCHASE', action: 'EDIT' },
     { module: 'USER', action: 'VIEW' },
   ],
   SALES: [
@@ -169,6 +171,7 @@ const DEFAULT_MATRIX: Record<Profile, Permission[]> = {
     { module: 'CUSTOMER', action: 'VIEW' },
     { module: 'PRODUCT', action: 'VIEW' },
     { module: 'ORDER', action: 'VIEW' },
+    { module: 'PURCHASE', action: 'VIEW' },
   ],
 }
 

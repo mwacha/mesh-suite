@@ -65,6 +65,18 @@ describe('UserFormView', () => {
     expect((wrapper.find('[data-test="perm-CUSTOMER-CREATE"]').element as HTMLInputElement).checked).toBe(false)
   })
 
+  it('includes Compras in the permission grid and pre-checks it for the Admin profile', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="profile"]').setValue('ADMIN')
+    await wrapper.find('[data-test="profile"]').trigger('change')
+
+    expect(wrapper.text()).toContain('Compras')
+    expect((wrapper.find('[data-test="perm-PURCHASE-VIEW"]').element as HTMLInputElement).checked).toBe(true)
+    expect((wrapper.find('[data-test="perm-PURCHASE-CREATE"]').element as HTMLInputElement).checked).toBe(true)
+  })
+
   it('submits the form and navigates to the list on success', async () => {
     vi.mocked(usersApi.createUser).mockResolvedValue({} as any)
     const { router, wrapper } = await mountWithRouter()
