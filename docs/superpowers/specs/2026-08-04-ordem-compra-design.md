@@ -95,7 +95,7 @@ Novo item "Compras" (ícone a definir — não há mockup de referência no `lay
 ## 6. API (backend)
 
 - `GET /api/purchase-orders` — lista paginada, filtros `busca`/`status`.
-- `GET /api/purchase-orders/resumo` — contagens por status, mesmo padrão de `PedidoResumoResponse`.
+- `GET /api/purchase-orders/counts` — contagens por status (`PurchaseOrderCountsResponse`). Nome da rota segue o precedente em inglês já estabelecido por `UserController`/`UserService.counts()`, não o `/resumo` de Pedido.
 - `GET /api/purchase-orders/{id}`
 - `POST /api/purchase-orders`
 - `PUT /api/purchase-orders/{id}`
