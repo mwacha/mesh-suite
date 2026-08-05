@@ -1,7 +1,9 @@
 package com.meshsuite.purchaseorder;
 
 import com.meshsuite.auth.Action;
+import com.meshsuite.auth.AuthContextService;
 import com.meshsuite.auth.Module;
+import com.meshsuite.auth.PermissionDeniedException;
 import com.meshsuite.auth.RequiresPermission;
 import com.meshsuite.parceiro.PapelParceiro;
 import com.meshsuite.parceiro.Parceiro;
@@ -16,6 +18,8 @@ import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,6 +74,7 @@ public class PurchaseOrderService {
     @Transactional
     @RequiresPermission(module = Module.PURCHASE, action = Action.CREATE)
     public PurchaseOrderResponse create(UUID tenantId, PurchaseOrderRequest request) {
+        garantirPapelAutorizado();
         Parceiro supplier = findValidSupplier(request.supplierId());
         User buyer = findValidBuyer(request.buyerId());
 
@@ -83,6 +88,7 @@ public class PurchaseOrderService {
     @Transactional
     @RequiresPermission(module = Module.PURCHASE, action = Action.EDIT)
     public PurchaseOrderResponse update(UUID id, PurchaseOrderRequest request) {
+        garantirPapelAutorizado();
         Parceiro supplier = findValidSupplier(request.supplierId());
         User buyer = findValidBuyer(request.buyerId());
 
@@ -132,10 +138,23 @@ public class PurchaseOrderService {
     private User findValidBuyer(UUID buyerId) {
         User user = userRepository.findById(buyerId)
                 .orElseThrow(() -> new PurchaseOrderValidationException("Comprador não encontrado"));
-        if (user.getRole() != Role.ADMINISTRATIVE) {
-            throw new PurchaseOrderValidationException("O usuário selecionado não tem o papel Administrativo");
+        if (user.getRole() != Role.ADMINISTRATIVE && user.getRole() != Role.ADMIN) {
+            throw new PurchaseOrderValidationException("O usuário selecionado não tem o papel Administrador ou Administrativo");
         }
         return user;
+    }
+
+    // @RequiresPermission(PURCHASE, CREATE/EDIT) above only checks the grant in
+    // user_permission -- it says nothing about the caller's role. A user could in
+    // theory hold that grant without being ADMIN/ADMINISTRATIVE (e.g. a role change
+    // that didn't clean up permissions), so this is an explicit second gate on top
+    // of the annotation, not a replacement for it.
+    private void garantirPapelAutorizado() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        AuthContextService.Context principal = (AuthContextService.Context) auth.getPrincipal();
+        if (!principal.papel().equals(Role.ADMIN.name()) && !principal.papel().equals(Role.ADMINISTRATIVE.name())) {
+            throw new PermissionDeniedException();
+        }
     }
 
     // Atomic UPDATE ... RETURNING against the tenant's single

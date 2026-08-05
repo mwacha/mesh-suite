@@ -4,6 +4,7 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.Action;
 import com.meshsuite.auth.AuthContextService;
 import com.meshsuite.auth.Module;
+import com.meshsuite.auth.PermissionDeniedException;
 import com.meshsuite.auth.TenantContext;
 import com.meshsuite.parceiro.PapelParceiro;
 import com.meshsuite.parceiro.Parceiro;
@@ -189,6 +190,33 @@ class PurchaseOrderServiceTest extends AbstractIntegrationTest {
 
         assertThrows(PurchaseOrderValidationException.class,
                 () -> purchaseOrderService.create(tenantId, request(supplierId, vendedorId, items, BigDecimal.ZERO)));
+    }
+
+    @Test
+    void rejectsCreationWhenLoggedInUserIsNotAdminOrAdministrative() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID supplierId = criarFornecedor(tenantId, "11222333000144");
+        UUID buyerId = criarComprador(tenantId, "carlos@aurora.com.br");
+        UUID productId = criarProduto(tenantId, "P0001", new BigDecimal("25.00"));
+        var items = List.of(new PurchaseOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("25.00")));
+
+        // Tem o grant PURCHASE.CREATE, mas não o papel exigido -- prova que a checagem
+        // de papel em garantirPapelAutorizado() é independente do @RequiresPermission.
+        User vendedorComPermissao = new User();
+        vendedorComPermissao.setTenantId(tenantId);
+        vendedorComPermissao.setName("Zeca Vendedor");
+        vendedorComPermissao.setEmail("zeca-" + UUID.randomUUID() + "@aurora.com.br");
+        vendedorComPermissao.setPasswordHash("hash");
+        vendedorComPermissao.setRole(Role.SALES_REP);
+        vendedorComPermissao.getPermissions().add(new UserPermissionGrant(Module.PURCHASE, Action.CREATE));
+        User savedVendedor = userRepository.saveAndFlush(vendedorComPermissao);
+
+        var principal = new AuthContextService.Context(savedVendedor.getId(), tenantId, Role.SALES_REP.name());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+
+        assertThrows(PermissionDeniedException.class,
+                () -> purchaseOrderService.create(tenantId, request(supplierId, buyerId, items, BigDecimal.ZERO)));
     }
 
     @Test
