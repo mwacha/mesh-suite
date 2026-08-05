@@ -187,6 +187,26 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void rejectsNegativeDiscountWithBadRequest() throws Exception {
+        Contexto ctx = loginAndSetUp("aurora", "carlos@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
+
+        mockMvc.perform(post("/api/purchase-orders").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "supplierId": "%s",
+                                  "buyerId": "%s",
+                                  "discount": -10.00,
+                                  "items": [
+                                    { "productId": "%s", "quantity": 2, "unitPrice": 100.00 }
+                                  ]
+                                }
+                                """.formatted(ctx.supplierId(), ctx.buyerId(), ctx.productId())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void rejectsSupplierWithoutFornecedorPapelWithBadRequest() throws Exception {
         Contexto ctx = loginAndSetUp("aurora", "carlos@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());

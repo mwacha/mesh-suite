@@ -1,6 +1,7 @@
 package com.meshsuite.purchaseorder.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
@@ -14,6 +15,6 @@ public record PurchaseOrderRequest(
         @NotNull UUID buyerId,
         LocalDate orderDate,
         LocalDate expectedDeliveryDate,
-        BigDecimal discount,
+        @DecimalMin(value = "0.00") BigDecimal discount,
         @NotEmpty List<@Valid PurchaseOrderItemRequest> items) {
 }
