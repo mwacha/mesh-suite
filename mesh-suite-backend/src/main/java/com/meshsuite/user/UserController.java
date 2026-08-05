@@ -58,6 +58,21 @@ public class UserController {
                 .toList();
     }
 
+    // Deliberately bypasses UserService/@RequiresPermission -- support lookup
+    // for the Ordem de Compra form's buyer picker, not "viewing the Users
+    // module". Needs its own @Transactional for the same reason /sales-reps
+    // does (see that method's comment above): TenantContextAspect only fires
+    // around methods carrying that annotation directly, and
+    // findByRoleOrderByName's RLS-scoped query is invisible to every tenant
+    // without app.tenant_id set.
+    @Transactional(readOnly = true)
+    @GetMapping("/buyers")
+    public List<BuyerResponse> buyers() {
+        return userRepository.findByRoleOrderByName(Role.ADMINISTRATIVE).stream()
+                .map(u -> new BuyerResponse(u.getId(), u.getName()))
+                .toList();
+    }
+
     @GetMapping("/{id}")
     public UserResponse findById(@PathVariable UUID id) {
         return userService.findById(id);

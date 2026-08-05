@@ -85,4 +85,16 @@ public class GlobalExceptionHandler {
             com.meshsuite.pedido.PedidoValidacaoException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.purchaseorder.PurchaseOrderNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePurchaseOrderNotFound(
+            com.meshsuite.purchaseorder.PurchaseOrderNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.purchaseorder.PurchaseOrderValidationException.class)
+    public ResponseEntity<Map<String, String>> handlePurchaseOrderValidation(
+            com.meshsuite.purchaseorder.PurchaseOrderValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
