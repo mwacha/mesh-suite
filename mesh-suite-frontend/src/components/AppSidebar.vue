@@ -55,6 +55,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: '🏠', label: 'Home', route: '/' },
   { icon: '👥', label: 'Clientes', route: '/clientes' },
+  { icon: '📥', label: 'Compras', route: '/compras' },
   { icon: '🏢', label: 'Empresa', route: null },
   { icon: '🏷', label: 'Marcas', route: null },
   { icon: '💳', label: 'Pagamentos', route: null },

@@ -13,6 +13,8 @@ import PedidoFormView from '@/views/PedidoFormView.vue'
 import PedidosListView from '@/views/PedidosListView.vue'
 import UserFormView from '@/views/UserFormView.vue'
 import UsersListView from '@/views/UsersListView.vue'
+import PurchaseOrderFormView from '@/views/PurchaseOrderFormView.vue'
+import PurchaseOrdersListView from '@/views/PurchaseOrdersListView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -34,6 +36,9 @@ const router = createRouter({
     { path: '/usuarios', name: 'usuarios', component: UsersListView },
     { path: '/usuarios/novo', name: 'usuarios-novo', component: UserFormView },
     { path: '/usuarios/:id/editar', name: 'usuarios-editar', component: UserFormView },
+    { path: '/compras', name: 'compras', component: PurchaseOrdersListView },
+    { path: '/compras/novo', name: 'compras-novo', component: PurchaseOrderFormView },
+    { path: '/compras/:id/editar', name: 'compras-editar', component: PurchaseOrderFormView },
   ],
 })
 

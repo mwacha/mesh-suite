@@ -10,9 +10,19 @@ export async function listSalesReps(): Promise<SalesRep[]> {
   return data
 }
 
+export interface Buyer {
+  id: string
+  name: string
+}
+
+export async function listBuyers(): Promise<Buyer[]> {
+  const { data } = await apiClient.get<Buyer[]>('/users/buyers')
+  return data
+}
+
 export type Role = 'ADMINISTRATIVE' | 'SALES_REP' | 'PRODUCTION' | 'OUTSOURCED' | 'ADMIN'
 export type Profile = 'ADMIN' | 'MANAGER' | 'SALES' | 'VIEWER'
-export type ModuleName = 'CUSTOMER' | 'PRODUCT' | 'ORDER' | 'USER'
+export type ModuleName = 'CUSTOMER' | 'PRODUCT' | 'ORDER' | 'USER' | 'PURCHASE'
 export type ActionName = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE'
 
 export interface Permission {

@@ -89,4 +89,20 @@ describe('AppSidebar', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-test="nav-Clientes"]').classes()).toContain('nav-item-active')
   })
+
+  it('navigates to /compras when Compras is clicked', async () => {
+    const router = createRouter({
+      history: createWebHistory(),
+      routes: [
+        { path: '/', name: 'dashboard', component: { template: '<div />' } },
+        { path: '/compras', name: 'compras', component: { template: '<div />' } },
+      ],
+    })
+    const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
+
+    await wrapper.find('[data-test="nav-Compras"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/compras')
+  })
 })
