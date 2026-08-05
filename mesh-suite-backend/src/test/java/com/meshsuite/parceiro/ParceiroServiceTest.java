@@ -95,6 +95,16 @@ class ParceiroServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void aceitaCnpjComMascaraEArmazenaSomenteDigitos() {
+        setUpTenant("aurora");
+
+        var criado = parceiroService.criar(TenantContext.get(),
+                request("00.062.452/0001-06", Set.of(PapelParceiro.FORNECEDOR)));
+
+        assertThat(criado.documento()).isEqualTo("00062452000106");
+    }
+
+    @Test
     void rejeitaParceiroSemPapelClienteOuFornecedor() {
         setUpTenant("aurora");
 
