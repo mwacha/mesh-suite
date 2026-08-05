@@ -237,6 +237,37 @@ class PurchaseOrderServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void updatesOpenPurchaseOrder() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID supplierId = criarFornecedor(tenantId, "11222333000144");
+        UUID buyerId = criarComprador(tenantId, "carlos@aurora.com.br");
+        UUID productId = criarProduto(tenantId, "P0001", new BigDecimal("25.00"));
+        var items = List.of(new PurchaseOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("25.00")));
+        var created = purchaseOrderService.create(tenantId, request(supplierId, buyerId, items, BigDecimal.ZERO));
+
+        var updatedItems = List.of(new PurchaseOrderItemRequest(productId, new BigDecimal("10"), new BigDecimal("25.00")));
+        var updated = purchaseOrderService.update(created.id(), request(supplierId, buyerId, updatedItems, BigDecimal.ZERO));
+
+        assertThat(updated.total()).isEqualByComparingTo("250.00");
+        assertThat(updated.items()).hasSize(1);
+        assertThat(updated.items().get(0).quantity()).isEqualByComparingTo("10");
+    }
+
+    @Test
+    void rejectsUpdateOnceReceived() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID supplierId = criarFornecedor(tenantId, "11222333000144");
+        UUID buyerId = criarComprador(tenantId, "carlos@aurora.com.br");
+        UUID productId = criarProduto(tenantId, "P0001", new BigDecimal("25.00"));
+        var items = List.of(new PurchaseOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("25.00")));
+        var created = purchaseOrderService.create(tenantId, request(supplierId, buyerId, items, BigDecimal.ZERO));
+        purchaseOrderService.updateStatus(created.id(), PurchaseOrderStatus.RECEIVED);
+
+        assertThrows(PurchaseOrderValidationException.class,
+                () -> purchaseOrderService.update(created.id(), request(supplierId, buyerId, items, BigDecimal.ZERO)));
+    }
+
+    @Test
     void marksAsReceivedFromOpen() {
         UUID tenantId = setUpTenant("aurora");
         UUID supplierId = criarFornecedor(tenantId, "11222333000144");
