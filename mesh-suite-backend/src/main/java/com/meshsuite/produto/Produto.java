@@ -1,5 +1,6 @@
 package com.meshsuite.produto;
 
+import com.meshsuite.fiscal.FiscalRegistration;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -78,4 +79,8 @@ public class Produto {
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm = Instant.now();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fiscal_registration_id")
+    private FiscalRegistration fiscalRegistration;
 }
