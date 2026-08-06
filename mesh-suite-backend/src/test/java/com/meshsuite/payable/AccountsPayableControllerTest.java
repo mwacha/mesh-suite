@@ -129,6 +129,29 @@ class AccountsPayableControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void tenantACannotUpdateTenantBsAccountsPayableStatus() throws Exception {
+        Contexto ctxA = loginAndSetUp("aurora", "carlos@aurora.com.br", "11222333000144");
+
+        var created = accountsPayableService.createInstallments(ctxA.tenantId(), ctxA.supplierId(), null,
+                List.of(new AccountsPayableInstallmentInput(new BigDecimal("50.00"), LocalDate.now().plusDays(30))));
+        String id = created.get(0).id().toString();
+
+        Contexto ctxB = loginAndSetUp("boreal", "marina@boreal.com.br", "55666777000155");
+        Cookie cookieB = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctxB.cookie());
+
+        // Without this, Hibernate's first-level cache (shared across this whole
+        // @Transactional test method) can return tenant A's already-managed
+        // entity for this id without re-issuing SQL, masking RLS behind a false
+        // 200 instead of the expected 404 -- see the Global Constraints note.
+        entityManager.clear();
+
+        mockMvc.perform(patch("/api/accounts-payable/" + id + "/status").cookie(cookieB)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PAID\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void unauthenticatedRequestIsRejected() throws Exception {
         mockMvc.perform(get("/api/accounts-payable"))
                 .andExpect(status().isUnauthorized());
