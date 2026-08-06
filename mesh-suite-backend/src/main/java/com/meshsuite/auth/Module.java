@@ -5,5 +5,6 @@ public enum Module {
     PRODUCT,
     ORDER,
     USER,
-    PURCHASE
+    PURCHASE,
+    STOCK
 }
