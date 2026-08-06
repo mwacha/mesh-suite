@@ -97,4 +97,10 @@ public class GlobalExceptionHandler {
             com.meshsuite.purchaseorder.PurchaseOrderValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.stock.StockValidationException.class)
+    public ResponseEntity<Map<String, String>> handleStockValidation(
+            com.meshsuite.stock.StockValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
