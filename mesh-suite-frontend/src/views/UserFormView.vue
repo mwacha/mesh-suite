@@ -132,13 +132,14 @@ const PROFILE_LABELS: Record<Profile, string> = {
   SALES: 'Vendedor',
   VIEWER: 'Visualizador',
 }
-const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER', 'PURCHASE']
+const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER', 'PURCHASE', 'PAYABLE']
 const MODULE_LABELS: Record<ModuleName, string> = {
   CUSTOMER: 'Clientes',
   PRODUCT: 'Produtos',
   ORDER: 'Pedidos',
   USER: 'Usuários',
   PURCHASE: 'Compras',
+  PAYABLE: 'Contas a Pagar',
 }
 const ACTIONS: ActionName[] = ['VIEW', 'CREATE', 'EDIT', 'DELETE']
 const ACTION_LABELS: Record<ActionName, string> = {
@@ -153,13 +154,16 @@ const ACTION_LABELS: Record<ActionName, string> = {
 // backend never recomputes this, it persists whatever is checked at submit time.
 const DEFAULT_MATRIX: Record<Profile, Permission[]> = {
   ADMIN: [
-    ...MODULES.flatMap((m) => ACTIONS.filter((a) => !(m === 'USER' && a === 'DELETE')).map((a) => ({ module: m, action: a }))),
+    ...MODULES.flatMap((m) => ACTIONS.filter((a) =>
+      !(m === 'USER' && a === 'DELETE') && !(m === 'PAYABLE' && (a === 'CREATE' || a === 'DELETE')),
+    ).map((a) => ({ module: m, action: a }))),
   ],
   MANAGER: [
     { module: 'CUSTOMER', action: 'VIEW' }, { module: 'CUSTOMER', action: 'CREATE' }, { module: 'CUSTOMER', action: 'EDIT' },
     { module: 'PRODUCT', action: 'VIEW' }, { module: 'PRODUCT', action: 'CREATE' }, { module: 'PRODUCT', action: 'EDIT' },
     { module: 'ORDER', action: 'VIEW' }, { module: 'ORDER', action: 'CREATE' }, { module: 'ORDER', action: 'EDIT' },
     { module: 'PURCHASE', action: 'VIEW' }, { module: 'PURCHASE', action: 'CREATE' }, { module: 'PURCHASE', action: 'EDIT' },
+    { module: 'PAYABLE', action: 'VIEW' }, { module: 'PAYABLE', action: 'EDIT' },
     { module: 'USER', action: 'VIEW' },
   ],
   SALES: [
@@ -172,6 +176,7 @@ const DEFAULT_MATRIX: Record<Profile, Permission[]> = {
     { module: 'PRODUCT', action: 'VIEW' },
     { module: 'ORDER', action: 'VIEW' },
     { module: 'PURCHASE', action: 'VIEW' },
+    { module: 'PAYABLE', action: 'VIEW' },
   ],
 }
 

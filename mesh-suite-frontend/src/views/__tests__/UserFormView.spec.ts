@@ -77,6 +77,20 @@ describe('UserFormView', () => {
     expect((wrapper.find('[data-test="perm-PURCHASE-CREATE"]').element as HTMLInputElement).checked).toBe(true)
   })
 
+  it('includes Contas a Pagar in the permission grid, pre-checked for Admin but without Create/Delete', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="profile"]').setValue('ADMIN')
+    await wrapper.find('[data-test="profile"]').trigger('change')
+
+    expect(wrapper.text()).toContain('Contas a Pagar')
+    expect((wrapper.find('[data-test="perm-PAYABLE-VIEW"]').element as HTMLInputElement).checked).toBe(true)
+    expect((wrapper.find('[data-test="perm-PAYABLE-EDIT"]').element as HTMLInputElement).checked).toBe(true)
+    expect((wrapper.find('[data-test="perm-PAYABLE-CREATE"]').element as HTMLInputElement).checked).toBe(false)
+    expect((wrapper.find('[data-test="perm-PAYABLE-DELETE"]').element as HTMLInputElement).checked).toBe(false)
+  })
+
   it('submits the form and navigates to the list on success', async () => {
     vi.mocked(usersApi.createUser).mockResolvedValue({} as any)
     const { router, wrapper } = await mountWithRouter()
