@@ -103,4 +103,16 @@ public class GlobalExceptionHandler {
             com.meshsuite.stock.StockValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.payable.AccountsPayableNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleAccountsPayableNotFound(
+            com.meshsuite.payable.AccountsPayableNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.payable.AccountsPayableValidationException.class)
+    public ResponseEntity<Map<String, String>> handleAccountsPayableValidation(
+            com.meshsuite.payable.AccountsPayableValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
