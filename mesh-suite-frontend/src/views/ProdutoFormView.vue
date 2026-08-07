@@ -179,6 +179,26 @@ onMounted(async () => {
     try {
       const produto = await buscarProduto(id)
       Object.assign(form, produto)
+
+      // An inactive categoria is filtered out of the `ativo: true` list above,
+      // but per design spec it must stay visible in the dropdown when it's
+      // already linked to this produto (it just can't be picked as a new
+      // option for produtos without one). Splice in a minimal synthetic entry
+      // from the produto response itself so the <select> has a matching
+      // <option> to bind to -- a full CategoriaResponse isn't needed since
+      // the template only reads `id`/`nome`.
+      if (
+        produto.categoriaId &&
+        !categorias.value.some((categoria) => categoria.id === produto.categoriaId)
+      ) {
+        categorias.value = [
+          ...categorias.value,
+          {
+            id: produto.categoriaId,
+            nome: produto.categoriaNome ?? '',
+          } as CategoriaResponse,
+        ]
+      }
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados do produto.'
     }
