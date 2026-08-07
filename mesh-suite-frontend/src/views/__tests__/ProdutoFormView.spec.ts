@@ -6,6 +6,7 @@ import ProdutoFormView from '@/views/ProdutoFormView.vue'
 import * as produtosApi from '@/api/produtos'
 
 vi.mock('@/api/produtos')
+vi.mock('@/api/categorias')
 
 function mountWithRouter(path = '/produtos/novo') {
   const router = createRouter({
@@ -118,8 +119,8 @@ describe('ProdutoFormView', () => {
 
   it('loads existing produto data in edit mode', async () => {
     vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
-      id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '', categoria: '',
-      precoVenda: 59.9, precoCusto: null, status: 'ATIVO', descricao: '', quantidadeEstoque: 10,
+      id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '', categoriaId: null,
+      categoriaNome: null, precoVenda: 59.9, precoCusto: null, status: 'ATIVO', descricao: '', quantidadeEstoque: 10,
       unidadeMedida: 'UN', estoqueMinimo: null, estoqueMaximo: null, peso: null, comprimento: null,
       largura: null, altura: null,
     } as any)
@@ -138,5 +139,28 @@ describe('ProdutoFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Não foi possível carregar os dados do produto.')
+  })
+
+  it('loads categorias into the dropdown and lets the user pick one', async () => {
+    const categoriasApi = await import('@/api/categorias')
+    vi.mocked(categoriasApi.listarCategorias).mockResolvedValue({
+      content: [
+        { id: 'cat-1', nome: 'Camisas', descricao: null, ativo: true, produtosVinculados: 0, criadoEm: '2026-01-01T00:00:00Z' },
+      ],
+      totalElements: 1, totalPages: 1, number: 0, size: 100,
+    })
+    vi.mocked(produtosApi.criarProduto).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('P0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
+    await wrapper.find('[data-test="categoria"]').setValue('cat-1')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const payload = vi.mocked(produtosApi.criarProduto).mock.calls[0][0]
+    expect(payload.categoriaId).toBe('cat-1')
   })
 })

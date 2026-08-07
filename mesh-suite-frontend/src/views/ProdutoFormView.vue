@@ -28,7 +28,12 @@
         <div class="grid grid-3">
           <div>
             <label class="field-label">Categoria</label>
-            <input v-model="form.categoria" />
+            <select v-model="form.categoriaId" data-test="categoria">
+              <option :value="null">Sem categoria</option>
+              <option v-for="categoria in categorias" :key="categoria.id" :value="categoria.id">
+                {{ categoria.nome }}
+              </option>
+            </select>
           </div>
           <div>
             <label class="field-label">Preço de Venda *</label>
@@ -122,6 +127,7 @@ import {
   type ProdutoRequest,
   type UnidadeMedida,
 } from '@/api/produtos'
+import { listarCategorias, type CategoriaResponse } from '@/api/categorias'
 
 const UNIDADES: UnidadeMedida[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
 
@@ -136,7 +142,7 @@ function novoFormulario(): ProdutoRequest {
     sku: '',
     codigoBarras: '',
     marca: '',
-    categoria: '',
+    categoriaId: null,
     precoVenda: 0,
     precoCusto: null,
     status: 'ATIVO',
@@ -156,8 +162,18 @@ const form = reactive<ProdutoRequest>(novoFormulario())
 const erros = reactive<{ nome?: string; sku?: string; precoVenda?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
+const categorias = ref<CategoriaResponse[]>([])
 
 onMounted(async () => {
+  try {
+    const pagina = await listarCategorias({ ativo: true, size: 100 })
+    categorias.value = pagina.content
+  } catch {
+    // Categoria list is a convenience dropdown, not a required field --
+    // if it fails to load, the form still works with "Sem categoria" as
+    // the only option, and the current value (if editing) still round-trips.
+  }
+
   const id = route.params.id
   if (typeof id === 'string') {
     try {
