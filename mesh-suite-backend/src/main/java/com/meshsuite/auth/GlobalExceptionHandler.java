@@ -115,4 +115,22 @@ public class GlobalExceptionHandler {
             com.meshsuite.payable.AccountsPayableValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.produto.CategoriaNaoEncontradaException.class)
+    public ResponseEntity<Map<String, String>> handleCategoriaNaoEncontrada(
+            com.meshsuite.produto.CategoriaNaoEncontradaException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.produto.CategoriaNomeDuplicadoException.class)
+    public ResponseEntity<Map<String, String>> handleCategoriaNomeDuplicado(
+            com.meshsuite.produto.CategoriaNomeDuplicadoException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.produto.CategoriaEmUsoException.class)
+    public ResponseEntity<Map<String, String>> handleCategoriaEmUso(
+            com.meshsuite.produto.CategoriaEmUsoException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
