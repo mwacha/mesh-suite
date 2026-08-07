@@ -150,4 +150,38 @@ class CategoriaServiceTest extends AbstractIntegrationTest {
 
         assertThat(ativas.getContent()).extracting("nome").containsExactly("Camisas");
     }
+
+    @Test
+    @Transactional
+    void listAggregatesProdutosVinculadosPerCategoriaInASingleBatch() {
+        setUpTenant("aurora-cat");
+        var camisas = categoriaService.criar(TenantContext.get(), request("Camisas"));
+        var calcas = categoriaService.criar(TenantContext.get(), request("Calças"));
+        var semProdutos = categoriaService.criar(TenantContext.get(), request("Acessórios"));
+
+        produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
+                "Camiseta Polo", "P0001", null, null, camisas.id(),
+                new BigDecimal("59.90"), null, StatusProduto.ATIVO, null,
+                new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
+        produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
+                "Camiseta Regata", "P0002", null, null, camisas.id(),
+                new BigDecimal("39.90"), null, StatusProduto.ATIVO, null,
+                new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
+        produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
+                "Calça Jeans", "P0003", null, null, calcas.id(),
+                new BigDecimal("119.90"), null, StatusProduto.ATIVO, null,
+                new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
+
+        var pagina = categoriaService.listar(null, null, PageRequest.of(0, 10));
+
+        assertThat(pagina.getContent())
+                .filteredOn(c -> c.id().equals(camisas.id())).first()
+                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(2L));
+        assertThat(pagina.getContent())
+                .filteredOn(c -> c.id().equals(calcas.id())).first()
+                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(1L));
+        assertThat(pagina.getContent())
+                .filteredOn(c -> c.id().equals(semProdutos.id())).first()
+                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(0L));
+    }
 }

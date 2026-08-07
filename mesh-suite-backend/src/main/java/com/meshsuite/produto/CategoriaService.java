@@ -11,7 +11,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoriaService {
@@ -30,7 +33,17 @@ public class CategoriaService {
         Specification<Categoria> spec = Specification.allOf(
                 CategoriaSpecifications.comBusca(busca),
                 CategoriaSpecifications.comAtivo(ativo));
-        return categoriaRepository.findAll(spec, pageable).map(this::toResponse);
+        Page<Categoria> pagina = categoriaRepository.findAll(spec, pageable);
+
+        List<UUID> ids = pagina.getContent().stream().map(Categoria::getId).toList();
+        Map<UUID, Long> contagens = ids.isEmpty()
+                ? Map.of()
+                : produtoRepository.countByCategoriaIdIn(ids).stream()
+                        .collect(Collectors.toMap(
+                                ProdutoRepository.CategoriaProdutoCount::getCategoriaId,
+                                ProdutoRepository.CategoriaProdutoCount::getTotal));
+
+        return pagina.map(categoria -> toResponse(categoria, contagens.getOrDefault(categoria.getId(), 0L)));
     }
 
     @Transactional(readOnly = true)
@@ -91,7 +104,10 @@ public class CategoriaService {
     }
 
     private CategoriaResponse toResponse(Categoria categoria) {
-        long produtosVinculados = produtoRepository.countByCategoriaId(categoria.getId());
+        return toResponse(categoria, produtoRepository.countByCategoriaId(categoria.getId()));
+    }
+
+    private CategoriaResponse toResponse(Categoria categoria, long produtosVinculados) {
         return new CategoriaResponse(
                 categoria.getId(), categoria.getNome(), categoria.getDescricao(), categoria.getAtivo(),
                 produtosVinculados, categoria.getCriadoEm());
