@@ -105,7 +105,7 @@ const navGroups: NavGroup[] = [
     title: 'CATÁLOGO',
     items: [
       { icon: '📦', label: 'Produtos', route: '/produtos' },
-      { icon: '🗂', label: 'Categorias', route: null },
+      { icon: '🗂', label: 'Categorias', route: '/categorias' },
       { icon: '🏷', label: 'Marcas', route: null },
       { icon: '🎨', label: 'Cores / Estampas', route: null },
     ],

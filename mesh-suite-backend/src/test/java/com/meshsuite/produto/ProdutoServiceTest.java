@@ -73,7 +73,7 @@ class ProdutoServiceTest extends AbstractIntegrationTest {
 
     private ProdutoRequest request(String sku, BigDecimal precoVenda) {
         return new ProdutoRequest(
-                "Camiseta Polo Masculina", sku, "7891234567890", "Marca Alpha", "Vestuário",
+                "Camiseta Polo Masculina", sku, "7891234567890", "Marca Alpha", null,
                 precoVenda, new BigDecimal("25.00"), StatusProduto.ATIVO, "Descrição de teste",
                 new BigDecimal("10"), UnidadeMedida.UN, new BigDecimal("2"), new BigDecimal("50"),
                 new BigDecimal("0.300"), new BigDecimal("30"), new BigDecimal("20"), new BigDecimal("2"));

@@ -129,10 +129,15 @@ describe('AppSidebar', () => {
     // items not yet backed by a screen still show, same route:null/inert
     // pattern used by Empresa/Marcas/Tab. Preços/Permissões.
     await wrapper.find('[data-test="group-catalogo"]').trigger('click')
-    for (const label of ['Categorias', 'Cores / Estampas']) {
+    for (const label of ['Cores / Estampas']) {
       expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
       expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).toContain('nav-item-inert')
     }
+    // Categorias now routes to /categorias (Task 3), so it's no longer inert.
+    // Checked here, while "catalogo" is still the open group -- accordion
+    // behavior means opening "cadastros" below would close it again.
+    expect(wrapper.find('[data-test="nav-Categorias"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="nav-Categorias"]').classes()).not.toContain('nav-item-inert')
 
     await wrapper.find('[data-test="group-cadastros"]').trigger('click')
     for (const label of ['Fornecedores', 'Transportadoras']) {

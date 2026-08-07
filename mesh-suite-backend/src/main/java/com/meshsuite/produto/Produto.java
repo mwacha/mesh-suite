@@ -36,8 +36,9 @@ public class Produto {
     @Column(length = 100)
     private String marca;
 
-    @Column(length = 100)
-    private String categoria;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id")
+    private Categoria categoria;
 
     @Column(name = "preco_venda", nullable = false, precision = 12, scale = 2)
     private BigDecimal precoVenda;

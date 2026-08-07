@@ -17,9 +17,11 @@ import java.util.UUID;
 public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
+    private final CategoriaRepository categoriaRepository;
 
-    public ProdutoService(ProdutoRepository produtoRepository) {
+    public ProdutoService(ProdutoRepository produtoRepository, CategoriaRepository categoriaRepository) {
         this.produtoRepository = produtoRepository;
+        this.categoriaRepository = categoriaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -98,7 +100,9 @@ public class ProdutoService {
         produto.setSku(request.sku());
         produto.setCodigoBarras(request.codigoBarras());
         produto.setMarca(request.marca());
-        produto.setCategoria(request.categoria());
+        produto.setCategoria(request.categoriaId() != null
+                ? categoriaRepository.findById(request.categoriaId()).orElseThrow(CategoriaNaoEncontradaException::new)
+                : null);
         produto.setPrecoVenda(request.precoVenda());
         produto.setPrecoCusto(request.precoCusto());
         produto.setStatus(request.status() != null ? request.status() : StatusProduto.ATIVO);
@@ -120,7 +124,9 @@ public class ProdutoService {
 
     private ProdutoResponse toResponse(Produto p) {
         return new ProdutoResponse(
-                p.getId(), p.getNome(), p.getSku(), p.getCodigoBarras(), p.getMarca(), p.getCategoria(),
+                p.getId(), p.getNome(), p.getSku(), p.getCodigoBarras(), p.getMarca(),
+                p.getCategoria() != null ? p.getCategoria().getId() : null,
+                p.getCategoria() != null ? p.getCategoria().getNome() : null,
                 p.getPrecoVenda(), p.getPrecoCusto(), p.getStatus(), p.getDescricao(), p.getQuantidadeEstoque(),
                 p.getUnidadeMedida(), p.getEstoqueMinimo(), p.getEstoqueMaximo(), p.getPeso(), p.getComprimento(),
                 p.getLargura(), p.getAltura());
