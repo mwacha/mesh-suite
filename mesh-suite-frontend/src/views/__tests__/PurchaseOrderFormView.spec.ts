@@ -31,7 +31,8 @@ function mountWithRouter(path = '/compras/novo') {
 
 const fornecedorBase = {
   id: 'f1', nomeFantasia: 'Tecidos Aurora', razaoSocial: 'Tecidos Aurora Ltda',
-  documento: '11222333000144', cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO' as const,
+  documento: '11222333000144', tipoPessoa: 'JURIDICA' as const,
+  cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO' as const,
 }
 
 const compradorBase = { id: 'b1', name: 'Carlos Comprador' }

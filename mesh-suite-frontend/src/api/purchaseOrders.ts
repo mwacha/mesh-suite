@@ -61,6 +61,7 @@ export interface ListPurchaseOrdersParams {
   status?: PurchaseOrderStatus
   page?: number
   size?: number
+  sort?: string
 }
 
 export interface PurchaseOrderCounts {

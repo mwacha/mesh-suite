@@ -63,12 +63,24 @@ describe('AccountsPayableListView', () => {
     expect(accountsPayableApi.listAccountsPayable).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'PAID' }))
   })
 
+  it('re-fetches with the sort param when a sortable column header is clicked', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="col-vencimento"]').trigger('click')
+    await flushPromises()
+
+    expect(accountsPayableApi.listAccountsPayable).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort: 'dueDate,asc' }),
+    )
+  })
+
   it('gives baixa via the Ações menu', async () => {
     vi.mocked(accountsPayableApi.updateAccountsPayableStatus).mockResolvedValue()
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-ap1"]').trigger('click')
     await wrapper.find('[data-test="acao-baixa"]').trigger('click')
     await flushPromises()
 
@@ -83,7 +95,7 @@ describe('AccountsPayableListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-ap2"]').trigger('click')
     await wrapper.find('[data-test="acao-reverter"]').trigger('click')
     await flushPromises()
 
@@ -97,7 +109,7 @@ describe('AccountsPayableListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-ap2"]').trigger('click')
 
     expect(wrapper.find('[data-test="acao-baixa"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="acao-reverter"]').exists()).toBe(true)

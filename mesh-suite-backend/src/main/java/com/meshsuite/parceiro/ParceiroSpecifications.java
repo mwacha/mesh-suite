@@ -2,6 +2,8 @@ package com.meshsuite.parceiro;
 
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 public final class ParceiroSpecifications {
 
     private ParceiroSpecifications() {
@@ -17,32 +19,44 @@ public final class ParceiroSpecifications {
                 cb.like(cb.lower(root.get("razaoSocial")), termo));
     }
 
-    public static Specification<Parceiro> comStatus(StatusParceiro status) {
-        if (status == null) {
+    public static Specification<Parceiro> comStatus(List<StatusParceiro> status) {
+        if (status == null || status.isEmpty()) {
             return null;
         }
-        return (root, query, cb) -> cb.equal(root.get("status"), status);
+        return (root, query, cb) -> root.get("status").in(status);
     }
 
-    public static Specification<Parceiro> comTipoPessoa(TipoPessoa tipoPessoa) {
-        if (tipoPessoa == null) {
+    public static Specification<Parceiro> comTipoPessoa(List<TipoPessoa> tipoPessoa) {
+        if (tipoPessoa == null || tipoPessoa.isEmpty()) {
             return null;
         }
-        return (root, query, cb) -> cb.equal(root.get("tipoPessoa"), tipoPessoa);
+        return (root, query, cb) -> root.get("tipoPessoa").in(tipoPessoa);
     }
 
-    public static Specification<Parceiro> comUf(String uf) {
-        if (uf == null || uf.isBlank()) {
+    public static Specification<Parceiro> comUf(List<String> uf) {
+        if (uf == null || uf.isEmpty()) {
             return null;
         }
-        return (root, query, cb) -> cb.equal(root.get("uf"), uf);
+        return (root, query, cb) -> root.get("uf").in(uf);
     }
 
-    public static Specification<Parceiro> comCidade(String cidade) {
-        if (cidade == null || cidade.isBlank()) {
+    public static Specification<Parceiro> comCidade(List<String> cidade) {
+        if (cidade == null || cidade.isEmpty()) {
             return null;
         }
-        return (root, query, cb) -> cb.equal(root.get("cidade"), cidade);
+        return (root, query, cb) -> root.get("cidade").in(cidade);
+    }
+
+    public static Specification<Parceiro> comDocumento(String documento) {
+        if (documento == null || documento.isBlank()) {
+            return null;
+        }
+        String digitos = documento.replaceAll("\\D", "");
+        if (digitos.isBlank()) {
+            return null;
+        }
+        String termo = "%" + digitos + "%";
+        return (root, query, cb) -> cb.like(root.get("documento"), termo);
     }
 
     public static Specification<Parceiro> comPapel(PapelParceiro papel) {

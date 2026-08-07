@@ -2,89 +2,108 @@
   <AppShell title="Clientes">
     <p v-if="erro" class="error-geral">{{ erro }}</p>
 
-    <div class="toolbar">
-      <input
-        v-model="filtros.busca"
-        class="busca"
-        placeholder="Buscar cliente por nome..."
-        data-test="busca"
-        @input="carregar(0)"
-      />
-      <select v-model="filtros.status" @change="carregar(0)">
-        <option value="">Status</option>
-        <option value="ATIVO">Ativo</option>
-        <option value="EM_RISCO">Em Risco</option>
-        <option value="BLOQUEADO">Bloqueado</option>
-      </select>
-      <select v-model="filtros.tipoDocumento" @change="carregar(0)">
-        <option value="">Tipo de Documento</option>
-        <option value="JURIDICA">CNPJ</option>
-        <option value="FISICA">CPF</option>
-      </select>
-      <input v-model="filtros.uf" placeholder="UF" @change="carregar(0)" />
-      <input v-model="filtros.cidade" placeholder="Cidade" @change="carregar(0)" />
+    <PageHeader title="Clientes" :count="countLabel">
       <button type="button" class="btn-primary" data-test="novo-cliente" @click="novoCliente">+ Novo Cliente</button>
-    </div>
+    </PageHeader>
 
-    <div v-if="resumo" class="resumo">
-      <span class="resumo-item">{{ resumo.total }} Total</span>
-      <span class="resumo-item resumo-ativo">{{ resumo.ativos }} Ativos</span>
-      <span class="resumo-item resumo-risco">{{ resumo.emRisco }} Em Risco</span>
-      <span class="resumo-item resumo-bloqueado">{{ resumo.bloqueados }} Bloqueados</span>
-    </div>
+    <FilterBar
+      :search="filtros.busca"
+      search-placeholder="Buscar cliente por nome..."
+      :categories="categorias"
+      :value-map="valueMap"
+      :custom-categories="['Nr. Documento']"
+      @update:search="onBuscaChange"
+      @update:filters="onFiltrosChange"
+    >
+      <template #custom-panel="{ apply }">
+        <div class="documento-filtro">
+          <div class="documento-filtro-tipo">
+            <label class="documento-filtro-radio">
+              <input type="radio" value="CNPJ" v-model="tipoDocFiltro" data-test="documento-filtro-tipo-cnpj" />
+              CNPJ
+            </label>
+            <label class="documento-filtro-radio">
+              <input type="radio" value="CPF" v-model="tipoDocFiltro" data-test="documento-filtro-tipo-cpf" />
+              CPF
+            </label>
+          </div>
+          <TextField
+            v-model="numeroDocFiltro"
+            placeholder="Número do documento"
+            :mask="(v) => maskDocumento(v, TIPO_LABELS[tipoDocFiltro] ?? 'JURIDICA')"
+            test-id="documento-filtro-numero"
+          />
+          <button
+            type="button"
+            class="documento-filtro-aplicar"
+            data-test="documento-filtro-aplicar"
+            @click="apply(tipoDocFiltro && numeroDocFiltro.trim() ? `${tipoDocFiltro}: ${numeroDocFiltro.trim()}` : null)"
+          >
+            Aplicar
+          </button>
+        </div>
+      </template>
+    </FilterBar>
 
-    <section class="card">
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th>Nome / Razão Social</th>
-            <th>Cidade</th>
-            <th>Telefone</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="parceiro in pagina.content" :key="parceiro.id">
-            <td>{{ parceiro.nomeFantasia }}</td>
-            <td>{{ parceiro.cidade }}</td>
-            <td>{{ parceiro.whatsapp }}</td>
-            <td><span class="badge" :class="`badge-${parceiro.status}`">{{ statusLabel(parceiro.status) }}</span></td>
-            <td class="acoes">
-              <button
-                type="button"
-                class="btn-acoes"
-                data-test="btn-acoes"
-                @click="toggleAcoes(parceiro.id, $event)"
-              >
-                Ações
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <section class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-title">Lista de Clientes</span>
+        <div v-if="resumo" class="table-card-stats">
+          <StatPill :value="resumo.total" label="Total" color="dark" />
+          <StatPill :value="resumo.ativos" label="Ativos" color="green" />
+          <StatPill :value="resumo.emRisco" label="Em Risco" color="amber" />
+          <StatPill :value="resumo.bloqueados" label="Bloqueados" color="red" />
+        </div>
+      </div>
+
+      <div class="table-grid">
+        <div class="table-grid-header">
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-nome" @click="toggleSort('nomeFantasia')">
+            Nome / Razão Social
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'nomeFantasia' }">{{ sortIcon('nomeFantasia') }}</span>
+          </div>
+          <div class="table-grid-col">Documento</div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-cidade" @click="toggleSort('cidade')">
+            Cidade
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'cidade' }">{{ sortIcon('cidade') }}</span>
+          </div>
+          <div class="table-grid-col" data-test="col-telefone">Telefone</div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-status" @click="toggleSort('status')">
+            Status
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'status' }">{{ sortIcon('status') }}</span>
+          </div>
+          <div class="table-grid-col"></div>
+        </div>
+
+        <div
+          v-for="parceiro in pagina.content"
+          :key="parceiro.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${parceiro.id}`"
+          @click="editarCliente(parceiro.id)"
+        >
+          <div class="table-grid-cell table-grid-cell-nome">{{ parceiro.nomeFantasia }}</div>
+          <div class="table-grid-cell">{{ maskDocumento(parceiro.documento, parceiro.tipoPessoa) }}</div>
+          <div class="table-grid-cell">{{ parceiro.cidade }}</div>
+          <div class="table-grid-cell">{{ maskTelefone(parceiro.whatsapp) }}</div>
+          <div class="table-grid-cell">
+            <StatusBadge :label="statusLabel(parceiro.status)" :color="statusColor(parceiro.status)" />
+          </div>
+          <div class="table-grid-cell" @click.stop>
+            <ActionsMenu :items="acoesPara(parceiro)" :test-id="`btn-acoes-${parceiro.id}`" />
+          </div>
+        </div>
+      </div>
     </section>
 
-    <Teleport to="body">
-      <div
-        v-if="parceiroAcoesAtual"
-        class="dropdown-acoes"
-        :style="{ top: posicaoDropdown.top, left: posicaoDropdown.left }"
-      >
-        <div data-test="acao-ver" @click="abrirCliente(parceiroAcoesAtual.id)">Ver</div>
-        <div @click="editarCliente(parceiroAcoesAtual.id)">Editar</div>
-        <div @click="alternarStatus(parceiroAcoesAtual)">
-          {{ parceiroAcoesAtual.status === 'BLOQUEADO' ? 'Ativar' : 'Bloquear' }}
-        </div>
-        <div class="acao-excluir" @click="excluir(parceiroAcoesAtual)">Excluir</div>
-      </div>
-    </Teleport>
-
-    <div class="paginacao">
-      <button type="button" :disabled="pagina.number === 0" @click="carregar(pagina.number - 1)">‹</button>
-      <span>Página {{ pagina.number + 1 }} de {{ Math.max(pagina.totalPages, 1) }}</span>
-      <button type="button" :disabled="pagina.number + 1 >= pagina.totalPages" @click="carregar(pagina.number + 1)">›</button>
-    </div>
+    <Pagination
+      :number="pagina.number"
+      :total-pages="pagina.totalPages"
+      :total-elements="pagina.totalElements"
+      :size="pagina.size"
+      @update:page="carregar"
+      @update:size="onSizeChange"
+    />
   </AppShell>
 </template>
 
@@ -92,6 +111,14 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
+import TextField from '@/components/TextField.vue'
+import StatusBadge, { type StatusBadgeColor } from '@/components/StatusBadge.vue'
+import StatPill from '@/components/StatPill.vue'
+import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
+import Pagination from '@/components/Pagination.vue'
+import type { Page } from '@/api/types'
 import {
   listarParceiros,
   buscarResumoParceiros,
@@ -99,37 +126,100 @@ import {
   excluirParceiro,
   type ParceiroSummary,
   type ParceiroResumo,
-  type Page as ApiPage,
   type StatusParceiro,
   type TipoPessoa,
 } from '@/api/parceiros'
+import { listarMunicipios } from '@/api/municipios'
+import { maskTelefone, maskDocumento } from '@/utils/masks'
 
 const router = useRouter()
 
-const filtros = reactive({ busca: '', status: '', tipoDocumento: '', uf: '', cidade: '' })
-const pagina = ref<ApiPage<ParceiroSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+const STATUS_LABELS: Record<string, StatusParceiro> = { Ativo: 'ATIVO', 'Em Risco': 'EM_RISCO', Bloqueado: 'BLOQUEADO' }
+const TIPO_LABELS: Record<string, TipoPessoa> = { CNPJ: 'JURIDICA', CPF: 'FISICA' }
+const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
+  'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
+
+const categorias = ['Status', 'Nr. Documento', 'UF', 'Cidade']
+const cidades = ref<string[]>([])
+const valueMap = computed<Record<string, string[]>>(() => ({
+  Status: Object.keys(STATUS_LABELS),
+  UF: UFS,
+  Cidade: cidades.value,
+}))
+
+const tipoDocFiltro = ref<'CNPJ' | 'CPF' | ''>('')
+const numeroDocFiltro = ref('')
+
+const filtros = reactive({ busca: '' })
+const filtrosAvancados = ref<Record<string, string[]>>({})
+const sortField = ref<'nomeFantasia' | 'cidade' | 'status' | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
+
+const pagina = ref<Page<ParceiroSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const resumo = ref<ParceiroResumo | null>(null)
-const acoesAbertas = ref<string | null>(null)
-const posicaoDropdown = ref({ top: '0px', left: '0px' })
 const erro = ref('')
 
-const parceiroAcoesAtual = computed(() =>
-  pagina.value.content.find((p) => p.id === acoesAbertas.value) ?? null,
-)
+const countLabel = computed(() => (resumo.value ? `${resumo.value.total} clientes cadastrados` : undefined))
 
 function statusLabel(status: StatusParceiro) {
   return { ATIVO: 'Ativo', EM_RISCO: 'Em Risco', BLOQUEADO: 'Bloqueado' }[status]
 }
 
+function statusColor(status: StatusParceiro): StatusBadgeColor {
+  return { ATIVO: 'green', EM_RISCO: 'amber', BLOQUEADO: 'red' }[status] as StatusBadgeColor
+}
+
+function sortIcon(field: 'nomeFantasia' | 'cidade' | 'status') {
+  if (sortField.value !== field) {
+    return '⇅'
+  }
+  return sortDir.value === 'asc' ? '▲' : '▼'
+}
+
+function toggleSort(field: 'nomeFantasia' | 'cidade' | 'status') {
+  if (sortField.value === field) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDir.value = 'asc'
+  }
+  carregar(0)
+}
+
+function labelsFor(categoria: string): string[] {
+  return filtrosAvancados.value[categoria] ?? []
+}
+
+function parseFiltroDocumento(): { tipoDocumento?: TipoPessoa[]; documento?: string } {
+  const valor = labelsFor('Nr. Documento')[0]
+  if (!valor) {
+    return {}
+  }
+  const [tipo, ...resto] = valor.split(': ')
+  const tipoPessoa = TIPO_LABELS[tipo]
+  const documento = resto.join(': ').trim()
+  if (!tipoPessoa || !documento) {
+    return {}
+  }
+  return { tipoDocumento: [tipoPessoa], documento }
+}
+
 async function carregar(page: number) {
   erro.value = ''
+  const status = labelsFor('Status').map((l) => STATUS_LABELS[l])
+  const { tipoDocumento, documento } = parseFiltroDocumento()
+  const uf = labelsFor('UF')
+  const cidade = labelsFor('Cidade')
   try {
     pagina.value = await listarParceiros({
       busca: filtros.busca || undefined,
-      status: (filtros.status || undefined) as StatusParceiro | undefined,
-      tipoDocumento: (filtros.tipoDocumento || undefined) as TipoPessoa | undefined,
-      uf: filtros.uf || undefined,
-      cidade: filtros.cidade || undefined,
+      papel: 'CLIENTE',
+      status: status.length ? status : undefined,
+      tipoDocumento,
+      documento,
+      uf: uf.length ? uf : undefined,
+      cidade: cidade.length ? cidade : undefined,
+      sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,
       size: pagina.value.size,
     })
@@ -141,10 +231,40 @@ async function carregar(page: number) {
 async function carregarResumo() {
   erro.value = ''
   try {
-    resumo.value = await buscarResumoParceiros()
+    resumo.value = await buscarResumoParceiros('CLIENTE')
   } catch {
     erro.value = 'Não foi possível carregar o resumo de clientes.'
   }
+}
+
+async function carregarCidades() {
+  const ufsSelecionadas = labelsFor('UF')
+  const uf = ufsSelecionadas.length === 1 ? ufsSelecionadas[0] : undefined
+  try {
+    cidades.value = await listarMunicipios({ uf })
+  } catch {
+    cidades.value = []
+  }
+}
+
+function onBuscaChange(valor: string) {
+  filtros.busca = valor
+  carregar(0)
+}
+
+async function onFiltrosChange(filtrosNovos: Record<string, string[]>) {
+  const ufAnterior = labelsFor('UF')[0]
+  filtrosAvancados.value = filtrosNovos
+  const ufNova = labelsFor('UF')[0]
+  if (ufNova !== ufAnterior) {
+    await carregarCidades()
+  }
+  carregar(0)
+}
+
+function onSizeChange(novoSize: number) {
+  pagina.value.size = novoSize
+  carregar(0)
 }
 
 function novoCliente() {
@@ -152,30 +272,14 @@ function novoCliente() {
 }
 
 function abrirCliente(id: string) {
-  acoesAbertas.value = null
   router.push({ name: 'clientes-detalhe', params: { id } })
 }
 
 function editarCliente(id: string) {
-  acoesAbertas.value = null
   router.push({ name: 'clientes-editar', params: { id } })
 }
 
-function toggleAcoes(id: string, event: MouseEvent) {
-  if (acoesAbertas.value === id) {
-    acoesAbertas.value = null
-    return
-  }
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  posicaoDropdown.value = {
-    top: `${rect.bottom + 4}px`,
-    left: `${rect.right - 120}px`,
-  }
-  acoesAbertas.value = id
-}
-
 async function alternarStatus(parceiro: ParceiroSummary) {
-  acoesAbertas.value = null
   erro.value = ''
   const novoStatus = parceiro.status === 'BLOQUEADO' ? 'ATIVO' : 'BLOQUEADO'
   try {
@@ -187,7 +291,6 @@ async function alternarStatus(parceiro: ParceiroSummary) {
 }
 
 async function excluir(parceiro: ParceiroSummary) {
-  acoesAbertas.value = null
   if (!confirm(`Excluir o cliente "${parceiro.nomeFantasia}"?`)) {
     return
   }
@@ -200,9 +303,23 @@ async function excluir(parceiro: ParceiroSummary) {
   }
 }
 
+function acoesPara(parceiro: ParceiroSummary): ActionsMenuItem[] {
+  return [
+    { label: 'Ver', action: () => abrirCliente(parceiro.id), testId: 'acao-ver' },
+    { label: 'Editar', action: () => editarCliente(parceiro.id), testId: 'acao-editar' },
+    {
+      label: parceiro.status === 'BLOQUEADO' ? 'Ativar' : 'Bloquear',
+      action: () => alternarStatus(parceiro),
+      testId: 'acao-status',
+    },
+    { label: 'Excluir', action: () => excluir(parceiro), danger: true, testId: 'acao-excluir' },
+  ]
+}
+
 onMounted(() => {
   carregar(0)
   carregarResumo()
+  carregarCidades()
 })
 </script>
 
@@ -211,28 +328,6 @@ onMounted(() => {
   color: var(--pm-error);
   font-size: 14px;
   margin: 0 0 12px;
-}
-
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-family: var(--pm-font);
-}
-
-.busca {
-  flex: 1;
-}
-
-.toolbar input,
-.toolbar select {
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: var(--pm-font);
-  color: var(--pm-text-dark);
-  background: var(--pm-white);
 }
 
 .btn-primary {
@@ -245,39 +340,10 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  font-family: var(--pm-font);
 }
 
-.resumo {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.resumo-item {
-  background: var(--pm-bg);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  color: var(--pm-text-dark);
-}
-
-.resumo-ativo {
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.resumo-risco {
-  background: var(--pm-warning-bg);
-  color: var(--pm-warning);
-}
-
-.resumo-bloqueado {
-  background: var(--pm-error-bg);
-  color: var(--pm-error);
-}
-
-.card {
+.table-card {
   background: var(--pm-white);
   border: 1px solid var(--pm-border-light);
   border-radius: 12px;
@@ -285,104 +351,113 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
-.tabela {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+.table-card-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--pm-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-family: var(--pm-font);
 }
 
-.tabela th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--pm-text-mid);
-  background: var(--pm-bg);
+.table-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+}
+
+.table-card-stats {
+  display: flex;
+  gap: 8px;
+}
+
+.table-grid {
+  font-family: var(--pm-font);
+  font-size: 12px;
+}
+
+.table-grid-header,
+.table-grid-row {
+  display: grid;
+  grid-template-columns: 1fr 150px 130px 150px 100px 90px;
+  gap: 8px;
+  align-items: center;
   padding: 8px 12px;
 }
 
-.tabela td {
-  padding: 8px 12px;
+.table-grid-header {
+  background: var(--pm-bg);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--pm-text-mid);
+  padding: 12px;
+}
+
+.table-grid-col-sortable {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.table-grid-sort-icon {
+  font-size: 9px;
+  color: var(--pm-text-muted);
+  margin-left: 2px;
+}
+
+.table-grid-sort-icon-active {
+  color: var(--pm-accent);
+}
+
+.table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
 }
 
-.badge {
-  display: inline-flex;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.badge-ATIVO {
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.badge-EM_RISCO {
-  background: var(--pm-warning-bg);
-  color: var(--pm-warning);
-}
-
-.badge-BLOQUEADO {
-  background: var(--pm-error-bg);
-  color: var(--pm-error);
-}
-
-.btn-acoes {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
+.table-grid-row-clickable {
   cursor: pointer;
+  transition: background-color 0.1s;
 }
 
-.dropdown-acoes {
-  position: fixed;
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 6px;
-  min-width: 120px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 8px 28px rgba(0, 0, 0, 0.12);
-  z-index: 10;
+.table-grid-row-clickable:hover {
+  background: var(--pm-bg);
 }
 
-.dropdown-acoes div {
-  padding: 8px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--pm-text-dark);
+.table-grid-cell-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.acao-excluir {
-  color: var(--pm-error);
+.documento-filtro {
+  padding: 12px;
+  font-family: var(--pm-font);
 }
 
-.paginacao {
+.documento-filtro-tipo {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.documento-filtro-radio {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 6px;
   font-size: 13px;
-  color: var(--pm-text-mid);
-}
-
-.paginacao button {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
+  color: var(--pm-text-dark);
   cursor: pointer;
 }
 
-.paginacao button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.documento-filtro-aplicar {
+  width: 100%;
+  background: var(--pm-accent);
+  color: var(--pm-white);
+  border: none;
+  border-radius: 6px;
+  height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 </style>

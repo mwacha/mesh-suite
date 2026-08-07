@@ -2,6 +2,10 @@
   <AppShell title="Ordens de Compra">
     <p v-if="erro" class="error-geral">{{ erro }}</p>
 
+    <PageHeader title="Ordens de Compra" :count="countLabel">
+      <button type="button" class="btn-primary" data-test="nova-ordem" @click="novaOrdem">+ Nova Ordem de Compra</button>
+    </PageHeader>
+
     <div class="toolbar">
       <input
         v-model="filtros.busca"
@@ -16,74 +20,72 @@
         <option value="RECEIVED">Recebida</option>
         <option value="CANCELLED">Cancelada</option>
       </select>
-      <button type="button" class="btn-primary" data-test="nova-ordem" @click="novaOrdem">+ Nova Ordem de Compra</button>
     </div>
 
-    <div v-if="resumo" class="resumo">
-      <span class="resumo-item">{{ resumo.total }} Total</span>
-      <span class="resumo-item resumo-open">{{ resumo.open }} Abertas</span>
-      <span class="resumo-item resumo-received">{{ resumo.received }} Recebidas</span>
-      <span class="resumo-item resumo-cancelled">{{ resumo.cancelled }} Canceladas</span>
-    </div>
+    <section class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-title">Lista de Ordens de Compra</span>
+        <div v-if="resumo" class="table-card-stats">
+          <StatPill :value="resumo.total" label="Total" color="dark" />
+          <StatPill :value="resumo.open" label="Abertas" color="dark" />
+          <StatPill :value="resumo.received" label="Recebidas" color="green" />
+          <StatPill :value="resumo.cancelled" label="Canceladas" color="red" />
+        </div>
+      </div>
 
-    <section class="card">
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th>Nº</th>
-            <th>Fornecedor</th>
-            <th>Comprador</th>
-            <th>Data</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="ordem in pagina.content" :key="ordem.id">
-            <td>{{ ordem.number }}</td>
-            <td>{{ ordem.supplierName }}</td>
-            <td>{{ ordem.buyerName }}</td>
-            <td>{{ formatarData(ordem.orderDate) }}</td>
-            <td>{{ formatarPreco(ordem.total) }}</td>
-            <td><span class="badge" :class="`badge-${ordem.status}`">{{ statusLabel(ordem.status) }}</span></td>
-            <td class="acoes">
-              <button
-                type="button"
-                class="btn-acoes"
-                data-test="btn-acoes"
-                @click="toggleAcoes(ordem.id, $event)"
-              >
-                Ações
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-grid">
+        <div class="table-grid-header">
+          <div class="table-grid-col">Nº</div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-fornecedor" @click="toggleSort('supplierName')">
+            Fornecedor
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'supplierName' }">{{ sortIcon('supplierName') }}</span>
+          </div>
+          <div class="table-grid-col">Comprador</div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-data" @click="toggleSort('orderDate')">
+            Data
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'orderDate' }">{{ sortIcon('orderDate') }}</span>
+          </div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-total" @click="toggleSort('total')">
+            Total
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'total' }">{{ sortIcon('total') }}</span>
+          </div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-status" @click="toggleSort('status')">
+            Status
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'status' }">{{ sortIcon('status') }}</span>
+          </div>
+          <div class="table-grid-col"></div>
+        </div>
+
+        <div
+          v-for="ordem in pagina.content"
+          :key="ordem.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${ordem.id}`"
+          @click="editarOrdem(ordem.id)"
+        >
+          <div class="table-grid-cell">{{ ordem.number }}</div>
+          <div class="table-grid-cell table-grid-cell-nome">{{ ordem.supplierName }}</div>
+          <div class="table-grid-cell">{{ ordem.buyerName }}</div>
+          <div class="table-grid-cell">{{ formatarData(ordem.orderDate) }}</div>
+          <div class="table-grid-cell">{{ formatarPreco(ordem.total) }}</div>
+          <div class="table-grid-cell">
+            <StatusBadge :label="statusLabel(ordem.status)" :color="statusColor(ordem.status)" />
+          </div>
+          <div class="table-grid-cell" @click.stop>
+            <ActionsMenu :items="acoesPara(ordem)" :test-id="`btn-acoes-${ordem.id}`" />
+          </div>
+        </div>
+      </div>
     </section>
 
-    <Teleport to="body">
-      <div
-        v-if="ordemAcoesAtual"
-        class="dropdown-acoes"
-        :style="{ top: posicaoDropdown.top, left: posicaoDropdown.left }"
-      >
-        <div data-test="acao-editar" @click="editarOrdem(ordemAcoesAtual.id)">Editar</div>
-        <div v-if="ordemAcoesAtual.status === 'OPEN'" data-test="acao-receber" @click="marcarComoRecebida(ordemAcoesAtual)">
-          Marcar como Recebida
-        </div>
-        <div v-if="ordemAcoesAtual.status === 'OPEN'" data-test="acao-cancelar" @click="cancelarOrdem(ordemAcoesAtual)">
-          Cancelar
-        </div>
-        <div class="acao-excluir" data-test="acao-excluir" @click="excluir(ordemAcoesAtual)">Excluir</div>
-      </div>
-    </Teleport>
-
-    <div class="paginacao">
-      <button type="button" :disabled="pagina.number === 0" @click="carregar(pagina.number - 1)">‹</button>
-      <span>Página {{ pagina.number + 1 }} de {{ Math.max(pagina.totalPages, 1) }}</span>
-      <button type="button" :disabled="pagina.number + 1 >= pagina.totalPages" @click="carregar(pagina.number + 1)">›</button>
-    </div>
+    <Pagination
+      :number="pagina.number"
+      :total-pages="pagina.totalPages"
+      :total-elements="pagina.totalElements"
+      :size="pagina.size"
+      @update:page="carregar"
+      @update:size="onSizeChange"
+    />
   </AppShell>
 </template>
 
@@ -91,6 +93,11 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusBadge, { type StatusBadgeColor } from '@/components/StatusBadge.vue'
+import StatPill from '@/components/StatPill.vue'
+import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
+import Pagination from '@/components/Pagination.vue'
 import {
   listPurchaseOrders,
   getPurchaseOrderCounts,
@@ -107,13 +114,11 @@ const router = useRouter()
 const filtros = reactive({ busca: '', status: '' })
 const pagina = ref<ApiPage<PurchaseOrderSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const resumo = ref<PurchaseOrderCounts | null>(null)
-const acoesAbertas = ref<string | null>(null)
-const posicaoDropdown = ref({ top: '0px', left: '0px' })
+const sortField = ref<'supplierName' | 'orderDate' | 'total' | 'status' | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
 const erro = ref('')
 
-const ordemAcoesAtual = computed(() =>
-  pagina.value.content.find((o) => o.id === acoesAbertas.value) ?? null,
-)
+const countLabel = computed(() => (resumo.value ? `${resumo.value.total} ordens de compra cadastradas` : undefined))
 
 const STATUS_LABEL: Record<PurchaseOrderStatus, string> = {
   OPEN: 'Aberta',
@@ -125,6 +130,10 @@ function statusLabel(status: PurchaseOrderStatus) {
   return STATUS_LABEL[status]
 }
 
+function statusColor(status: PurchaseOrderStatus): StatusBadgeColor {
+  return { OPEN: 'gray', RECEIVED: 'green', CANCELLED: 'red' }[status] as StatusBadgeColor
+}
+
 function formatarPreco(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
@@ -134,12 +143,30 @@ function formatarData(data: string) {
   return `${dia}/${mes}/${ano}`
 }
 
+function sortIcon(field: 'supplierName' | 'orderDate' | 'total' | 'status') {
+  if (sortField.value !== field) {
+    return '⇅'
+  }
+  return sortDir.value === 'asc' ? '▲' : '▼'
+}
+
+function toggleSort(field: 'supplierName' | 'orderDate' | 'total' | 'status') {
+  if (sortField.value === field) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDir.value = 'asc'
+  }
+  carregar(0)
+}
+
 async function carregar(page: number) {
   erro.value = ''
   try {
     pagina.value = await listPurchaseOrders({
       search: filtros.busca || undefined,
       status: (filtros.status || undefined) as PurchaseOrderStatus | undefined,
+      sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,
       size: pagina.value.size,
     })
@@ -157,30 +184,20 @@ async function carregarResumo() {
   }
 }
 
+function onSizeChange(novoSize: number) {
+  pagina.value.size = novoSize
+  carregar(0)
+}
+
 function novaOrdem() {
   router.push({ name: 'compras-novo' })
 }
 
 function editarOrdem(id: string) {
-  acoesAbertas.value = null
   router.push({ name: 'compras-editar', params: { id } })
 }
 
-function toggleAcoes(id: string, event: MouseEvent) {
-  if (acoesAbertas.value === id) {
-    acoesAbertas.value = null
-    return
-  }
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  posicaoDropdown.value = {
-    top: `${rect.bottom + 4}px`,
-    left: `${rect.right - 160}px`,
-  }
-  acoesAbertas.value = id
-}
-
 async function marcarComoRecebida(ordem: PurchaseOrderSummary) {
-  acoesAbertas.value = null
   erro.value = ''
   try {
     await updatePurchaseOrderStatus(ordem.id, 'RECEIVED')
@@ -191,7 +208,6 @@ async function marcarComoRecebida(ordem: PurchaseOrderSummary) {
 }
 
 async function cancelarOrdem(ordem: PurchaseOrderSummary) {
-  acoesAbertas.value = null
   erro.value = ''
   try {
     await updatePurchaseOrderStatus(ordem.id, 'CANCELLED')
@@ -202,7 +218,6 @@ async function cancelarOrdem(ordem: PurchaseOrderSummary) {
 }
 
 async function excluir(ordem: PurchaseOrderSummary) {
-  acoesAbertas.value = null
   if (!confirm(`Excluir a ordem de compra nº ${ordem.number}?`)) {
     return
   }
@@ -213,6 +228,18 @@ async function excluir(ordem: PurchaseOrderSummary) {
   } catch {
     erro.value = 'Não foi possível excluir a ordem de compra.'
   }
+}
+
+function acoesPara(ordem: PurchaseOrderSummary): ActionsMenuItem[] {
+  const itens: ActionsMenuItem[] = [
+    { label: 'Editar', action: () => editarOrdem(ordem.id), testId: 'acao-editar' },
+  ]
+  if (ordem.status === 'OPEN') {
+    itens.push({ label: 'Marcar como Recebida', action: () => marcarComoRecebida(ordem), testId: 'acao-receber' })
+    itens.push({ label: 'Cancelar', action: () => cancelarOrdem(ordem), testId: 'acao-cancelar' })
+  }
+  itens.push({ label: 'Excluir', action: () => excluir(ordem), danger: true, testId: 'acao-excluir' })
+  return itens
 }
 
 onMounted(() => {
@@ -226,6 +253,19 @@ onMounted(() => {
   color: var(--pm-error);
   font-size: 14px;
   margin: 0 0 12px;
+}
+
+.btn-primary {
+  background: var(--pm-accent);
+  color: var(--pm-white);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--pm-font);
 }
 
 .toolbar {
@@ -250,49 +290,7 @@ onMounted(() => {
   background: var(--pm-white);
 }
 
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.resumo {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.resumo-item {
-  background: var(--pm-bg);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  color: var(--pm-text-dark);
-}
-
-.resumo-open {
-  background: var(--pm-bg);
-  color: var(--pm-text-mid);
-}
-
-.resumo-received {
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.resumo-cancelled {
-  background: var(--pm-error-bg);
-  color: var(--pm-error);
-}
-
-.card {
+.table-card {
   background: var(--pm-white);
   border: 1px solid var(--pm-border-light);
   border-radius: 12px;
@@ -300,104 +298,81 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
-.tabela {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+.table-card-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--pm-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-family: var(--pm-font);
 }
 
-.tabela th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--pm-text-mid);
-  background: var(--pm-bg);
+.table-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+}
+
+.table-card-stats {
+  display: flex;
+  gap: 8px;
+}
+
+.table-grid {
+  font-family: var(--pm-font);
+  font-size: 12px;
+}
+
+.table-grid-header,
+.table-grid-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 150px 100px 110px 110px 90px;
+  gap: 8px;
+  align-items: center;
   padding: 8px 12px;
 }
 
-.tabela td {
-  padding: 8px 12px;
+.table-grid-header {
+  background: var(--pm-bg);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--pm-text-mid);
+  padding: 12px;
+}
+
+.table-grid-col-sortable {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.table-grid-sort-icon {
+  font-size: 9px;
+  color: var(--pm-text-muted);
+  margin-left: 2px;
+}
+
+.table-grid-sort-icon-active {
+  color: var(--pm-accent);
+}
+
+.table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
 }
 
-.badge {
-  display: inline-flex;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
 }
 
-.badge-OPEN {
+.table-grid-row-clickable:hover {
   background: var(--pm-bg);
-  color: var(--pm-text-mid);
 }
 
-.badge-RECEIVED {
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.badge-CANCELLED {
-  background: var(--pm-error-bg);
-  color: var(--pm-error);
-}
-
-.btn-acoes {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.dropdown-acoes {
-  position: fixed;
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 6px;
-  min-width: 160px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 8px 28px rgba(0, 0, 0, 0.12);
-  z-index: 10;
-}
-
-.dropdown-acoes div {
-  padding: 8px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--pm-text-dark);
-}
-
-.acao-excluir {
-  color: var(--pm-error);
-}
-
-.paginacao {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--pm-text-mid);
-}
-
-.paginacao button {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-}
-
-.paginacao button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.table-grid-cell-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

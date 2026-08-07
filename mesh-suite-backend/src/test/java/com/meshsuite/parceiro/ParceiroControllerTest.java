@@ -169,6 +169,59 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void listsWithDocumentoFilterIgnoringMaskAndMatchingPartially() throws Exception {
+        String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
+
+        mockMvc.perform(post("/api/parceiros").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(parceiroPayload("22333444000155")))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("documento", "223.334.440/0015-5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("documento", "33444"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("documento", "00000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void listsWithMultiValueStatusFilter() throws Exception {
+        String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
+
+        mockMvc.perform(post("/api/parceiros").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(parceiroPayload("22333444000155")))
+                .andExpect(status().isCreated());
+
+        String bloqueadoBody = mockMvc.perform(post("/api/parceiros").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(parceiroPayload("33444555000166")))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String bloqueadoId = com.jayway.jsonpath.JsonPath.read(bloqueadoBody, "$.id");
+        mockMvc.perform(patch("/api/parceiros/" + bloqueadoId + "/status").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"BLOQUEADO\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("status", "BLOQUEADO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("status", "ATIVO", "BLOQUEADO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
     void rejectsDuplicateDocumentoWithConflict() throws Exception {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);

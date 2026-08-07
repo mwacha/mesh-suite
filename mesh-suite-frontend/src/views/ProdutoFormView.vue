@@ -3,29 +3,27 @@
     <form class="form" @submit.prevent="salvar">
       <section class="card">
         <h2>Informações Gerais</h2>
+        <div class="field-full">
+          <label class="field-label">Nome do Produto *</label>
+          <input v-model="form.nome" data-test="nome" />
+          <p v-if="erros.nome" class="field-error">{{ erros.nome }}</p>
+        </div>
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">Nome do Produto *</label>
-            <input v-model="form.nome" data-test="nome" />
-            <p v-if="erros.nome" class="field-error">{{ erros.nome }}</p>
-          </div>
           <div>
             <label class="field-label">Código SKU *</label>
             <input v-model="form.sku" data-test="sku" />
             <p v-if="erros.sku" class="field-error">{{ erros.sku }}</p>
           </div>
-        </div>
-        <div class="grid grid-2">
           <div>
             <label class="field-label">Código de Barra (EAN/GTIN)</label>
             <input v-model="form.codigoBarras" placeholder="7891234567890" />
           </div>
+        </div>
+        <div class="grid grid-2">
           <div>
             <label class="field-label">Marca</label>
             <input v-model="form.marca" />
           </div>
-        </div>
-        <div class="grid grid-3">
           <div>
             <label class="field-label">Categoria</label>
             <select v-model="form.categoriaId" data-test="categoria">
@@ -35,6 +33,8 @@
               </option>
             </select>
           </div>
+        </div>
+        <div class="grid grid-2">
           <div>
             <label class="field-label">Preço de Venda *</label>
             <input v-model.number="form.precoVenda" type="number" step="0.01" min="0" data-test="preco-venda" />
@@ -45,14 +45,26 @@
             <input v-model.number="form.precoCusto" type="number" step="0.01" min="0" data-test="preco-custo" />
           </div>
         </div>
-        <div>
+        <div class="field-full">
           <label class="field-label">Status</label>
-          <select v-model="form.status">
-            <option value="ATIVO">Ativo</option>
-            <option value="INATIVO">Inativo</option>
-          </select>
+          <div class="status-pills">
+            <button
+              v-for="opt in STATUS_OPCOES"
+              :key="opt.value"
+              type="button"
+              class="status-pill"
+              :class="{
+                'status-pill--ativo': form.status === opt.value && opt.value === 'ATIVO',
+                'status-pill--inativo': form.status === opt.value && opt.value === 'INATIVO',
+              }"
+              @click="form.status = opt.value"
+            >
+              <span class="status-dot"></span>
+              {{ opt.label }}
+            </button>
+          </div>
         </div>
-        <div>
+        <div class="field-full">
           <label class="field-label">Descrição</label>
           <textarea v-model="form.descricao" rows="3" placeholder="Descreva o produto..."></textarea>
         </div>
@@ -125,11 +137,16 @@ import {
   criarProduto,
   atualizarProduto,
   type ProdutoRequest,
+  type StatusProduto,
   type UnidadeMedida,
 } from '@/api/produtos'
 import { listarCategorias, type CategoriaResponse } from '@/api/categorias'
 
 const UNIDADES: UnidadeMedida[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
+const STATUS_OPCOES: { value: StatusProduto; label: string }[] = [
+  { value: 'ATIVO', label: 'Ativo' },
+  { value: 'INATIVO', label: 'Inativo' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -307,14 +324,15 @@ function cancelar() {
   grid-template-columns: 1fr 1fr;
 }
 
-.grid-3 {
-  grid-template-columns: 1fr 1fr 1fr;
+.field-full {
+  margin-bottom: 10px;
 }
 
 .field-label {
   display: block;
   font-size: 12px;
-  color: var(--pm-text-mid);
+  font-weight: 600;
+  color: var(--pm-text-dark);
   margin-bottom: 4px;
 }
 
@@ -341,6 +359,53 @@ textarea {
 .error-geral {
   color: var(--pm-error);
   font-size: 14px;
+}
+
+/* Status */
+.status-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 18px;
+  border: 2px solid var(--pm-border-light);
+  border-radius: 20px;
+  background: var(--pm-white);
+  color: var(--pm-text-muted);
+  font-size: 13px;
+  font-family: var(--pm-font);
+  cursor: pointer;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pm-border-light);
+}
+
+.status-pill--ativo {
+  border-color: var(--pm-success);
+  background: var(--pm-success-bg);
+  color: var(--pm-success);
+}
+
+.status-pill--ativo .status-dot {
+  background: var(--pm-success);
+}
+
+.status-pill--inativo {
+  border-color: var(--pm-text-mid);
+  background: var(--pm-bg);
+  color: var(--pm-text-mid);
+}
+
+.status-pill--inativo .status-dot {
+  background: var(--pm-text-mid);
 }
 
 .actions {
