@@ -61,6 +61,7 @@ export interface ListarPedidosParams {
   status?: StatusPedido
   page?: number
   size?: number
+  sort?: string
 }
 
 export interface PedidoResumo {

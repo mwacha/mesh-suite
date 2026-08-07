@@ -19,6 +19,7 @@ function mountWithRouter() {
   const router = createRouter({
     history: createWebHistory(),
     routes: [
+      { path: '/clientes', name: 'clientes', component: { template: '<div />' } },
       { path: '/clientes/:id', name: 'clientes-detalhe', component: ClienteDetailView },
       { path: '/clientes/:id/editar', name: 'clientes-editar', component: { template: '<div />' } },
     ],
@@ -36,7 +37,7 @@ describe('ClienteDetailView', () => {
     vi.mocked(parceirosApi.buscarParceiro).mockResolvedValue(parceiroCompleto)
     vi.mocked(parceirosApi.listarParceiros).mockResolvedValue({
       content: [{
-        id: 'p1', nomeFantasia: 'Mercado Silva', razaoSocial: '', documento: '',
+        id: 'p1', nomeFantasia: 'Mercado Silva', razaoSocial: '', documento: '', tipoPessoa: 'JURIDICA',
         cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO',
       }],
       totalElements: 1, totalPages: 1, number: 0, size: 10,
@@ -65,11 +66,21 @@ describe('ClienteDetailView', () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('button.btn-secondary').trigger('click')
+    await wrapper.find('[data-test="editar"]').trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('clientes-editar')
     expect(router.currentRoute.value.params.id).toBe('p1')
+  })
+
+  it('navigates back to the client list when Cancelar is clicked', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="cancelar"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('clientes')
   })
 
   it('shows an error message when loading the client fails', async () => {

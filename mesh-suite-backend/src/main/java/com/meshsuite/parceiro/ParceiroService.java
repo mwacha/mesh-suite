@@ -26,12 +26,14 @@ public class ParceiroService {
 
     @Transactional(readOnly = true)
     @RequiresPermission(module = Module.CUSTOMER, action = Action.VIEW)
-    public Page<ParceiroSummaryResponse> listar(String busca, StatusParceiro status, TipoPessoa tipoDocumento,
-                                                 String uf, String cidade, PapelParceiro papel, Pageable pageable) {
+    public Page<ParceiroSummaryResponse> listar(String busca, List<StatusParceiro> status, List<TipoPessoa> tipoDocumento,
+                                                 String documento, List<String> uf, List<String> cidade,
+                                                 PapelParceiro papel, Pageable pageable) {
         Specification<Parceiro> spec = Specification.allOf(
                 ParceiroSpecifications.comBusca(busca),
                 ParceiroSpecifications.comStatus(status),
                 ParceiroSpecifications.comTipoPessoa(tipoDocumento),
+                ParceiroSpecifications.comDocumento(documento),
                 ParceiroSpecifications.comUf(uf),
                 ParceiroSpecifications.comCidade(cidade),
                 ParceiroSpecifications.comPapel(papel));
@@ -40,11 +42,17 @@ public class ParceiroService {
 
     @Transactional(readOnly = true)
     @RequiresPermission(module = Module.CUSTOMER, action = Action.VIEW)
-    public ParceiroResumoResponse resumo() {
-        long ativos = parceiroRepository.countByStatus(StatusParceiro.ATIVO);
-        long emRisco = parceiroRepository.countByStatus(StatusParceiro.EM_RISCO);
-        long bloqueados = parceiroRepository.countByStatus(StatusParceiro.BLOQUEADO);
+    public ParceiroResumoResponse resumo(PapelParceiro papel) {
+        long ativos = contarPorStatus(StatusParceiro.ATIVO, papel);
+        long emRisco = contarPorStatus(StatusParceiro.EM_RISCO, papel);
+        long bloqueados = contarPorStatus(StatusParceiro.BLOQUEADO, papel);
         return new ParceiroResumoResponse(ativos + emRisco + bloqueados, ativos, emRisco, bloqueados);
+    }
+
+    private long contarPorStatus(StatusParceiro status, PapelParceiro papel) {
+        return papel == null
+                ? parceiroRepository.countByStatus(status)
+                : parceiroRepository.countByStatusAndPapeisContaining(status, papel);
     }
 
     @Transactional(readOnly = true)
@@ -162,7 +170,7 @@ public class ParceiroService {
 
     private ParceiroSummaryResponse toSummary(Parceiro p) {
         return new ParceiroSummaryResponse(
-                p.getId(), p.getNomeFantasia(), p.getRazaoSocial(), p.getDocumento(),
+                p.getId(), p.getNomeFantasia(), p.getRazaoSocial(), p.getDocumento(), p.getTipoPessoa(),
                 p.getCidade(), p.getUf(), p.getWhatsapp(), p.getStatus());
     }
 

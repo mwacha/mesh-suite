@@ -50,6 +50,7 @@ export interface ListarProdutosParams {
   status?: StatusProduto
   page?: number
   size?: number
+  sort?: string
 }
 
 export interface ProdutoResumo {

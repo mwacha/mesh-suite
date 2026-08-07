@@ -5,6 +5,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ClienteFormView from '@/views/ClienteFormView.vue'
 import * as parceirosApi from '@/api/parceiros'
 import * as cepApi from '@/api/cep'
+import { useToast } from '@/composables/useToast'
 
 vi.mock('@/api/parceiros')
 vi.mock('@/api/cep')
@@ -28,6 +29,8 @@ function mountWithRouter(path = '/clientes/novo') {
 describe('ClienteFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.clearAllMocks()
+    useToast().toasts.splice(0, useToast().toasts.length)
   })
 
   it('shows a required-field error when nomeFantasia is blank on submit', async () => {
@@ -40,10 +43,22 @@ describe('ClienteFormView', () => {
     expect(parceirosApi.criarParceiro).not.toHaveBeenCalled()
   })
 
+  it('shows a required-field error when razaoSocial is blank on submit', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Campo obrigatório')
+    expect(parceirosApi.criarParceiro).not.toHaveBeenCalled()
+  })
+
   it('requires at least Cliente or Fornecedor to be selected', async () => {
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
+    await wrapper.find('[data-test="razaoSocial"]').setValue('Mercado Silva Comércio LTDA')
     // Cliente starts checked by default -- one toggle unchecks it, leaving papeis empty.
     await wrapper.find('input[type="checkbox"]').setValue(false)
     await wrapper.find('form').trigger('submit.prevent')
@@ -57,12 +72,100 @@ describe('ClienteFormView', () => {
     const { router, wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
+    await wrapper.find('[data-test="razaoSocial"]').setValue('Mercado Silva Comércio LTDA')
     await wrapper.find('[data-test="documento"]').setValue('11222333000144')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     expect(parceirosApi.criarParceiro).toHaveBeenCalled()
     expect(router.currentRoute.value.name).toBe('clientes')
+    expect(useToast().toasts.some((t) => t.message === 'Cliente salvo com sucesso!')).toBe(true)
+  })
+
+  it('masks the documento as CNPJ while typing (tipoPessoa defaults to JURIDICA)', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="documento"]').setValue('11222333000144')
+
+    expect((wrapper.find('[data-test="documento"]').element as HTMLInputElement).value).toBe('11.222.333/0001-44')
+  })
+
+  it('shows an inline error when documento has the wrong digit count for tipoPessoa, in red', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="documento"]').setValue('123')
+    await wrapper.find('[data-test="documento"]').trigger('blur')
+
+    expect(wrapper.text()).toContain('Informe um CNPJ válido')
+    expect(wrapper.find('[data-test="documento"]').classes()).toContain('input-error')
+  })
+
+  it('masks the WhatsApp field as a phone number while typing', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    const campos = wrapper.findAll('input')
+    const whatsapp = campos.find((c) => (c.element as HTMLInputElement).placeholder === '(11) 99999-9999')!
+    await whatsapp.setValue('11933334444')
+
+    expect((whatsapp.element as HTMLInputElement).value).toBe('(11) 93333-4444')
+  })
+
+  it('shows an inline validation error for an invalid e-mail in "E-mail(s)"', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    const campos = wrapper.findAll('input')
+    const email = campos.find((c) => (c.element as HTMLInputElement).placeholder === 'email@exemplo.com.br')!
+    await email.setValue('nao-e-um-email')
+    await email.trigger('blur')
+
+    expect(wrapper.text()).toContain('Informe um e-mail válido')
+    expect(email.classes()).toContain('input-error')
+  })
+
+  it('masks the CEP field while typing', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="cep"]').setValue('01310100')
+
+    expect((wrapper.find('[data-test="cep"]').element as HTMLInputElement).value).toBe('01310-100')
+  })
+
+  it('shows an inline validation error for an incomplete CEP', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="cep"]').setValue('013')
+    await wrapper.find('[data-test="cep"]').trigger('blur')
+
+    expect(wrapper.text()).toContain('CEP inválido')
+  })
+
+  it('validates a new contact\'s e-mail and phone fields, masking the phone as typed', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('.btn-add-contato').trigger('click')
+    const emailInputs = wrapper.findAll('input').filter((c) => (c.element as HTMLInputElement).placeholder === 'email@exemplo.com')
+    const contatoEmail = emailInputs[0]
+    const telInputs = wrapper.findAll('input').filter((c) => (c.element as HTMLInputElement).placeholder === '(11) 99999-9999')
+    const contatoCelular = telInputs[telInputs.length - 1]
+
+    await contatoEmail.setValue('invalido')
+    await contatoEmail.trigger('blur')
+    expect(wrapper.text()).toContain('E-mail inválido')
+
+    await contatoCelular.setValue('11987654321')
+    expect((contatoCelular.element as HTMLInputElement).value).toBe('(11) 98765-4321')
+  })
+
+  it('blocks submit while any field has a validation error', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
+    await wrapper.find('[data-test="documento"]').setValue('123')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(parceirosApi.criarParceiro).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Informe um CNPJ válido')
   })
 
   it('shows a conflict message on duplicate documento (409)', async () => {
@@ -70,6 +173,7 @@ describe('ClienteFormView', () => {
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
+    await wrapper.find('[data-test="razaoSocial"]').setValue('Mercado Silva Comércio LTDA')
     await wrapper.find('[data-test="documento"]').setValue('11222333000144')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
@@ -82,6 +186,7 @@ describe('ClienteFormView', () => {
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
+    await wrapper.find('[data-test="razaoSocial"]').setValue('Mercado Silva Comércio LTDA')
     await wrapper.find('[data-test="documento"]').setValue('11222333000144')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()

@@ -31,7 +31,8 @@ function mountWithRouter(path = '/pedidos/novo') {
 
 const clienteBase = {
   id: 'c1', nomeFantasia: 'Mercado Silva', razaoSocial: 'Mercado Silva Ltda',
-  documento: '11222333000144', cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO' as const,
+  documento: '11222333000144', tipoPessoa: 'JURIDICA' as const,
+  cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO' as const,
 }
 
 const salesRepBase = { id: 'v1', name: 'Carla Vendedora' }

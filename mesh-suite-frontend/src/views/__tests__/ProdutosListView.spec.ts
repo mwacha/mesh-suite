@@ -45,7 +45,7 @@ describe('ProdutosListView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Camiseta Polo')
-    expect(wrapper.text()).toContain('1 Total')
+    expect(wrapper.text()).toContain('1 produtos cadastrados')
   })
 
   it('re-fetches with the search term when the busca field changes', async () => {
@@ -72,8 +72,19 @@ describe('ProdutosListView', () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-p1"]').trigger('click')
     await wrapper.find('[data-test="acao-editar"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-editar')
+    expect(router.currentRoute.value.params.id).toBe('p1')
+  })
+
+  it('navigates to the edit form when the row itself is clicked', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-p1"]').trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('produtos-editar')
@@ -85,11 +96,21 @@ describe('ProdutosListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('.btn-acoes').trigger('click')
-    await wrapper.findAll('.dropdown-acoes div')[1].trigger('click')
+    await wrapper.find('[data-test="btn-acoes-p1"]').trigger('click')
+    await wrapper.find('[data-test="acao-status"]').trigger('click')
     await flushPromises()
 
     expect(produtosApi.atualizarStatusProduto).toHaveBeenCalledWith('p1', 'INATIVO')
+  })
+
+  it('re-fetches with the sort param when a sortable column header is clicked', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="col-nome"]').trigger('click')
+    await flushPromises()
+
+    expect(produtosApi.listarProdutos).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'nome,asc' }))
   })
 
   it('shows an error message when loading the product list fails', async () => {

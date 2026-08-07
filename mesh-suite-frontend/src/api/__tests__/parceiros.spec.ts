@@ -26,9 +26,9 @@ describe('api/parceiros', () => {
       data: { content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 },
     })
 
-    await listarParceiros({ busca: 'silva', status: 'ATIVO' })
+    await listarParceiros({ busca: 'silva', status: ['ATIVO'] })
 
-    expect(apiClient.get).toHaveBeenCalledWith('/parceiros', { params: { busca: 'silva', status: 'ATIVO' } })
+    expect(apiClient.get).toHaveBeenCalledWith('/parceiros', { params: { busca: 'silva', status: ['ATIVO'] } })
   })
 
   it('buscarParceiro calls GET /parceiros/:id', async () => {
@@ -66,6 +66,12 @@ describe('api/parceiros', () => {
   it('buscarResumoParceiros calls GET /parceiros/resumo', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { total: 0, ativos: 0, emRisco: 0, bloqueados: 0 } })
     await buscarResumoParceiros()
-    expect(apiClient.get).toHaveBeenCalledWith('/parceiros/resumo')
+    expect(apiClient.get).toHaveBeenCalledWith('/parceiros/resumo', { params: { papel: undefined } })
+  })
+
+  it('buscarResumoParceiros scopes by papel when given', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { total: 0, ativos: 0, emRisco: 0, bloqueados: 0 } })
+    await buscarResumoParceiros('CLIENTE')
+    expect(apiClient.get).toHaveBeenCalledWith('/parceiros/resumo', { params: { papel: 'CLIENTE' } })
   })
 })

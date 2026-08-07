@@ -42,6 +42,7 @@ describe('AppSidebar', () => {
     const { router, wrapper } = mountWithRouter()
     await router.push('/outra')
 
+    await wrapper.find('[data-test="group-vendas"]').trigger('click')
     await wrapper.find('[data-test="nav-Pedidos"]').trigger('click')
     await flushPromises()
 
@@ -80,6 +81,7 @@ describe('AppSidebar', () => {
     })
     const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
 
+    await wrapper.find('[data-test="group-cadastros"]').trigger('click')
     await wrapper.find('[data-test="nav-Clientes"]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/clientes')
@@ -100,13 +102,14 @@ describe('AppSidebar', () => {
     })
     const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
 
+    await wrapper.find('[data-test="group-compras"]').trigger('click')
     await wrapper.find('[data-test="nav-Compras"]').trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.path).toBe('/compras')
   })
 
-  it('groups nav items under category headers, all expanded by default', () => {
+  it('groups nav items under category headers, collapsed by default', () => {
     const { wrapper } = mountWithRouter()
 
     expect(wrapper.find('[data-test="group-vendas"]').text()).toContain('VENDAS')
@@ -114,49 +117,68 @@ describe('AppSidebar', () => {
     expect(wrapper.find('[data-test="group-cadastros"]').text()).toContain('CADASTROS')
     expect(wrapper.find('[data-test="group-configuracoes"]').text()).toContain('CONFIGURAÇÕES')
 
+    // no route matches the default '/' path inside any group, so every group starts collapsed
+    for (const label of ['Pedidos', 'Categorias', 'Fornecedores', 'Transportadoras', 'Cores / Estampas']) {
+      expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(false)
+    }
+  })
+
+  it('shows inert (not-yet-implemented) items once their group is expanded', async () => {
+    const { wrapper } = mountWithRouter()
+
     // items not yet backed by a screen still show, same route:null/inert
     // pattern used by Empresa/Marcas/Tab. Preços/Permissões.
-    for (const label of ['Categorias', 'Fornecedores', 'Transportadoras', 'Cores / Estampas']) {
+    await wrapper.find('[data-test="group-catalogo"]').trigger('click')
+    for (const label of ['Categorias', 'Cores / Estampas']) {
+      expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
+      expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).toContain('nav-item-inert')
+    }
+
+    await wrapper.find('[data-test="group-cadastros"]').trigger('click')
+    for (const label of ['Fornecedores', 'Transportadoras']) {
       expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
       expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).toContain('nav-item-inert')
     }
   })
 
-  it('collapses and expands a single group when its header is clicked', async () => {
+  it('expands a single group when its header is clicked, closing any other open group (accordion)', async () => {
     const { wrapper } = mountWithRouter()
-    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(false)
 
     await wrapper.find('[data-test="group-vendas"]').trigger('click')
-    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(false)
-    // other groups stay untouched
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="group-cadastros"]').trigger('click')
     expect(wrapper.find('[data-test="nav-Clientes"]').exists()).toBe(true)
-
-    await wrapper.find('[data-test="group-vendas"]').trigger('click')
-    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
-  })
-
-  it('toggles all groups at once via "Recolher tudo" / "Expandir tudo"', async () => {
-    const { wrapper } = mountWithRouter()
-    expect(wrapper.find('[data-test="toggle-all-groups"]').text()).toBe('Recolher tudo')
-
-    await wrapper.find('[data-test="toggle-all-groups"]').trigger('click')
+    // opening a different group closes the previously open one
     expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(false)
+
+    await wrapper.find('[data-test="group-cadastros"]').trigger('click')
     expect(wrapper.find('[data-test="nav-Clientes"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="toggle-all-groups"]').text()).toBe('Expandir tudo')
-
-    await wrapper.find('[data-test="toggle-all-groups"]').trigger('click')
-    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="nav-Clientes"]').exists()).toBe(true)
   })
 
   it('when the sidebar itself is collapsed to icon rail, group items stay visible regardless of group state', async () => {
     const { wrapper } = mountWithRouter()
 
-    await wrapper.find('[data-test="group-vendas"]').trigger('click')
+    // vendas is collapsed by default; the icon rail should still show every item
     expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(false)
 
     await wrapper.find('[data-test="collapse-toggle"]').trigger('click')
     expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="group-vendas"]').exists()).toBe(false)
+  })
+
+  it('expands the group containing the active route by default', async () => {
+    const router = createRouter({
+      history: createWebHistory(),
+      routes: [
+        { path: '/', name: 'dashboard', component: { template: '<div />' } },
+        { path: '/pedidos', name: 'pedidos', component: { template: '<div />' } },
+      ],
+    })
+    await router.push('/pedidos')
+    const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
+
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
   })
 })
