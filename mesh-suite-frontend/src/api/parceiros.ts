@@ -1,4 +1,5 @@
 import { apiClient } from './client'
+import type { Page } from './types'
 
 export type TipoPessoa = 'FISICA' | 'JURIDICA'
 export type PapelParceiro = 'CLIENTE' | 'FORNECEDOR' | 'TRANSPORTADORA'
@@ -46,29 +47,24 @@ export interface ParceiroSummary {
   nomeFantasia: string
   razaoSocial: string
   documento: string
+  tipoPessoa: TipoPessoa
   cidade: string
   uf: string
   whatsapp: string
   status: StatusParceiro
 }
 
-export interface Page<T> {
-  content: T[]
-  totalElements: number
-  totalPages: number
-  number: number
-  size: number
-}
-
 export interface ListarParceirosParams {
   busca?: string
-  status?: StatusParceiro
-  tipoDocumento?: TipoPessoa
-  uf?: string
-  cidade?: string
+  status?: StatusParceiro[]
+  tipoDocumento?: TipoPessoa[]
+  documento?: string
+  uf?: string[]
+  cidade?: string[]
   papel?: PapelParceiro
   page?: number
   size?: number
+  sort?: string
 }
 
 export interface ParceiroResumo {
@@ -106,7 +102,7 @@ export async function excluirParceiro(id: string): Promise<void> {
   await apiClient.delete(`/parceiros/${id}`)
 }
 
-export async function buscarResumoParceiros(): Promise<ParceiroResumo> {
-  const { data } = await apiClient.get<ParceiroResumo>('/parceiros/resumo')
+export async function buscarResumoParceiros(papel?: PapelParceiro): Promise<ParceiroResumo> {
+  const { data } = await apiClient.get<ParceiroResumo>('/parceiros/resumo', { params: { papel } })
   return data
 }

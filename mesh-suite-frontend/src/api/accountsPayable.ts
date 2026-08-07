@@ -30,6 +30,7 @@ export interface ListAccountsPayableParams {
   status?: AccountsPayableStatus
   page?: number
   size?: number
+  sort?: string
 }
 
 export async function listAccountsPayable(params: ListAccountsPayableParams): Promise<Page<AccountsPayable>> {

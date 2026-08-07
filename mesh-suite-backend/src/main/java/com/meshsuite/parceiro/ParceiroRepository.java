@@ -9,4 +9,5 @@ public interface ParceiroRepository extends JpaRepository<Parceiro, UUID>, JpaSp
     boolean existsByDocumento(String documento);
     boolean existsByDocumentoAndIdNot(String documento, UUID id);
     long countByStatus(StatusParceiro status);
+    long countByStatusAndPapeisContaining(StatusParceiro status, PapelParceiro papel);
 }

@@ -21,7 +21,8 @@
         <div class="painel-header">
           <h1>{{ parceiro.nomeFantasia }}</h1>
           <div class="painel-acoes">
-            <button type="button" class="btn-secondary" @click="editar">✏️ Editar</button>
+            <button type="button" class="btn-secondary" data-test="cancelar" @click="cancelar">Cancelar</button>
+            <button type="button" class="btn-secondary" data-test="editar" @click="editar">✏️ Editar</button>
             <button
               type="button"
               class="btn-primary btn-inert"
@@ -134,6 +135,10 @@ function selecionar(id: string) {
 
 function editar() {
   router.push({ name: 'clientes-editar', params: { id: parceiroId.value } })
+}
+
+function cancelar() {
+  router.push({ name: 'clientes' })
 }
 
 watch(
@@ -296,7 +301,8 @@ onMounted(() => {
 .field-label {
   display: block;
   font-size: 12px;
-  color: var(--pm-text-mid);
+  font-weight: 600;
+  color: var(--pm-text-dark);
   margin-bottom: 4px;
 }
 

@@ -53,7 +53,7 @@ describe('PurchaseOrdersListView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Tecidos Aurora')
-    expect(wrapper.text()).toContain('1 Total')
+    expect(wrapper.text()).toContain('1 ordens de compra cadastradas')
   })
 
   it('re-fetches with the search term when the busca field changes', async () => {
@@ -80,7 +80,7 @@ describe('PurchaseOrdersListView', () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-po1"]').trigger('click')
     await wrapper.find('[data-test="acao-editar"]').trigger('click')
     await flushPromises()
 
@@ -88,12 +88,35 @@ describe('PurchaseOrdersListView', () => {
     expect(router.currentRoute.value.params.id).toBe('po1')
   })
 
+  it('navigates to the edit form when the row itself is clicked', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-po1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('compras-editar')
+    expect(router.currentRoute.value.params.id).toBe('po1')
+  })
+
+  it('re-fetches with the sort param when a sortable column header is clicked', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="col-fornecedor"]').trigger('click')
+    await flushPromises()
+
+    expect(purchaseOrdersApi.listPurchaseOrders).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort: 'supplierName,asc' }),
+    )
+  })
+
   it('marks the order as received via the Ações menu', async () => {
     vi.mocked(purchaseOrdersApi.updatePurchaseOrderStatus).mockResolvedValue()
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-po1"]').trigger('click')
     await wrapper.find('[data-test="acao-receber"]').trigger('click')
     await flushPromises()
 
@@ -105,7 +128,7 @@ describe('PurchaseOrdersListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-po1"]').trigger('click')
     await wrapper.find('[data-test="acao-cancelar"]').trigger('click')
     await flushPromises()
 
@@ -119,7 +142,7 @@ describe('PurchaseOrdersListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-po2"]').trigger('click')
 
     expect(wrapper.find('[data-test="acao-receber"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="acao-cancelar"]').exists()).toBe(false)
@@ -131,7 +154,7 @@ describe('PurchaseOrdersListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-po1"]').trigger('click')
     await wrapper.find('[data-test="acao-excluir"]').trigger('click')
     await flushPromises()
 

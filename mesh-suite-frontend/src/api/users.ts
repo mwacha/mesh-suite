@@ -75,6 +75,7 @@ export interface ListUsersParams {
   active?: boolean
   page?: number
   size?: number
+  sort?: string
 }
 
 export interface UserCounts {

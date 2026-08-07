@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,18 +26,19 @@ public class ParceiroController {
     @GetMapping
     public Page<ParceiroSummaryResponse> listar(
             @RequestParam(required = false) String busca,
-            @RequestParam(required = false) StatusParceiro status,
-            @RequestParam(required = false) TipoPessoa tipoDocumento,
-            @RequestParam(required = false) String uf,
-            @RequestParam(required = false) String cidade,
+            @RequestParam(required = false) List<StatusParceiro> status,
+            @RequestParam(required = false) List<TipoPessoa> tipoDocumento,
+            @RequestParam(required = false) String documento,
+            @RequestParam(required = false) List<String> uf,
+            @RequestParam(required = false) List<String> cidade,
             @RequestParam(required = false) PapelParceiro papel,
             @PageableDefault(size = 10, sort = "nomeFantasia") Pageable pageable) {
-        return parceiroService.listar(busca, status, tipoDocumento, uf, cidade, papel, pageable);
+        return parceiroService.listar(busca, status, tipoDocumento, documento, uf, cidade, papel, pageable);
     }
 
     @GetMapping("/resumo")
-    public ParceiroResumoResponse resumo() {
-        return parceiroService.resumo();
+    public ParceiroResumoResponse resumo(@RequestParam(required = false) PapelParceiro papel) {
+        return parceiroService.resumo(papel);
     }
 
     @GetMapping("/{id}")

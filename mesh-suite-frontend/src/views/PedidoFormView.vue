@@ -353,7 +353,8 @@ function cancelar() {
 .field-label {
   display: block;
   font-size: 12px;
-  color: var(--pm-text-mid);
+  font-weight: 600;
+  color: var(--pm-text-dark);
   margin-bottom: 4px;
 }
 

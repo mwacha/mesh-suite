@@ -18,15 +18,6 @@
 
     <nav class="nav-list">
       <div
-        v-if="!collapsed"
-        class="nav-toggle-all"
-        data-test="toggle-all-groups"
-        @click="toggleAllGroups"
-      >
-        {{ allExpanded ? 'Recolher tudo' : 'Expandir tudo' }}
-      </div>
-
-      <div
         class="nav-item"
         :class="{ 'nav-item-active': isActive(topItem) }"
         :data-test="`nav-${topItem.label}`"
@@ -139,23 +130,6 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-const expandedGroups = ref<Set<string>>(new Set(navGroups.map((g) => g.key)))
-const allExpanded = computed(() => expandedGroups.value.size === navGroups.length)
-
-function toggleGroup(key: string) {
-  const next = new Set(expandedGroups.value)
-  if (next.has(key)) {
-    next.delete(key)
-  } else {
-    next.add(key)
-  }
-  expandedGroups.value = next
-}
-
-function toggleAllGroups() {
-  expandedGroups.value = allExpanded.value ? new Set() : new Set(navGroups.map((g) => g.key))
-}
-
 const collapsed = ref(false)
 const route = useRoute()
 const router = useRouter()
@@ -168,6 +142,18 @@ function isActive(item: NavItem) {
     return false
   }
   return item.route === '/' ? route.path === '/' : route.path.startsWith(item.route)
+}
+
+function activeGroupKey(): string | null {
+  return navGroups.find((group) => group.items.some((item) => isActive(item)))?.key ?? null
+}
+
+const initialGroup = activeGroupKey()
+const expandedGroups = ref<Set<string>>(new Set(initialGroup ? [initialGroup] : []))
+
+function toggleGroup(key: string) {
+  const wasOpen = expandedGroups.value.has(key)
+  expandedGroups.value = wasOpen ? new Set() : new Set([key])
 }
 
 function go(item: NavItem) {
@@ -257,14 +243,6 @@ function go(item: NavItem) {
   flex: 1;
   padding: 6px 0;
   overflow-y: auto;
-}
-
-.nav-toggle-all {
-  text-align: right;
-  padding: 2px 10px 6px;
-  font-size: 10px;
-  color: var(--pm-accent);
-  cursor: pointer;
 }
 
 .nav-group {

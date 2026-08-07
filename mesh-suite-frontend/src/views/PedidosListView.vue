@@ -2,6 +2,10 @@
   <AppShell title="Pedidos">
     <p v-if="erro" class="error-geral">{{ erro }}</p>
 
+    <PageHeader title="Pedidos" :count="countLabel">
+      <button type="button" class="btn-primary" data-test="novo-pedido" @click="novoPedido">+ Novo Pedido</button>
+    </PageHeader>
+
     <div class="toolbar">
       <input
         v-model="filtros.busca"
@@ -16,71 +20,72 @@
         <option value="EM_PREPARO">Em Preparo</option>
         <option value="FATURADO">Faturado</option>
       </select>
-      <button type="button" class="btn-primary" data-test="novo-pedido" @click="novoPedido">+ Novo Pedido</button>
     </div>
 
-    <div v-if="resumo" class="resumo">
-      <span class="resumo-item">{{ resumo.total }} Total</span>
-      <span class="resumo-item resumo-digitado">{{ resumo.digitados }} Digitados</span>
-      <span class="resumo-item resumo-em-preparo">{{ resumo.emPreparo }} Em Preparo</span>
-      <span class="resumo-item resumo-faturado">{{ resumo.faturados }} Faturados</span>
-    </div>
+    <section class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-title">Lista de Pedidos</span>
+        <div v-if="resumo" class="table-card-stats">
+          <StatPill :value="resumo.total" label="Total" color="dark" />
+          <StatPill :value="resumo.digitados" label="Digitados" color="dark" />
+          <StatPill :value="resumo.emPreparo" label="Em Preparo" color="amber" />
+          <StatPill :value="resumo.faturados" label="Faturados" color="green" />
+        </div>
+      </div>
 
-    <section class="card">
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th>Nº</th>
-            <th>Cliente</th>
-            <th>Vendedor</th>
-            <th>Data</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="pedido in pagina.content" :key="pedido.id">
-            <td>{{ pedido.numero }}</td>
-            <td>{{ pedido.clienteNome }}</td>
-            <td>{{ pedido.vendedorNome }}</td>
-            <td>{{ formatarData(pedido.dataPedido) }}</td>
-            <td>{{ formatarPreco(pedido.total) }}</td>
-            <td><span class="badge" :class="`badge-${pedido.status}`">{{ statusLabel(pedido.status) }}</span></td>
-            <td class="acoes">
-              <button
-                type="button"
-                class="btn-acoes"
-                data-test="btn-acoes"
-                @click="toggleAcoes(pedido.id, $event)"
-              >
-                Ações
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-grid">
+        <div class="table-grid-header">
+          <div class="table-grid-col">Nº</div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-cliente" @click="toggleSort('clienteNome')">
+            Cliente
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'clienteNome' }">{{ sortIcon('clienteNome') }}</span>
+          </div>
+          <div class="table-grid-col">Vendedor</div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-data" @click="toggleSort('dataPedido')">
+            Data
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'dataPedido' }">{{ sortIcon('dataPedido') }}</span>
+          </div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-total" @click="toggleSort('total')">
+            Total
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'total' }">{{ sortIcon('total') }}</span>
+          </div>
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-status" @click="toggleSort('status')">
+            Status
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'status' }">{{ sortIcon('status') }}</span>
+          </div>
+          <div class="table-grid-col"></div>
+        </div>
+
+        <div
+          v-for="pedido in pagina.content"
+          :key="pedido.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${pedido.id}`"
+          @click="editarPedido(pedido.id)"
+        >
+          <div class="table-grid-cell">{{ pedido.numero }}</div>
+          <div class="table-grid-cell table-grid-cell-nome">{{ pedido.clienteNome }}</div>
+          <div class="table-grid-cell">{{ pedido.vendedorNome }}</div>
+          <div class="table-grid-cell">{{ formatarData(pedido.dataPedido) }}</div>
+          <div class="table-grid-cell">{{ formatarPreco(pedido.total) }}</div>
+          <div class="table-grid-cell">
+            <StatusBadge :label="statusLabel(pedido.status)" :color="statusColor(pedido.status)" />
+          </div>
+          <div class="table-grid-cell" @click.stop>
+            <ActionsMenu :items="acoesPara(pedido)" :test-id="`btn-acoes-${pedido.id}`" />
+          </div>
+        </div>
+      </div>
     </section>
 
-    <Teleport to="body">
-      <div
-        v-if="pedidoAcoesAtual"
-        class="dropdown-acoes"
-        :style="{ top: posicaoDropdown.top, left: posicaoDropdown.left }"
-      >
-        <div data-test="acao-editar" @click="editarPedido(pedidoAcoesAtual.id)">Editar</div>
-        <div v-if="rotuloAvancar(pedidoAcoesAtual.status)" data-test="acao-avancar" @click="avancar(pedidoAcoesAtual)">
-          {{ rotuloAvancar(pedidoAcoesAtual.status) }}
-        </div>
-        <div class="acao-excluir" data-test="acao-excluir" @click="excluir(pedidoAcoesAtual)">Excluir</div>
-      </div>
-    </Teleport>
-
-    <div class="paginacao">
-      <button type="button" :disabled="pagina.number === 0" @click="carregar(pagina.number - 1)">‹</button>
-      <span>Página {{ pagina.number + 1 }} de {{ Math.max(pagina.totalPages, 1) }}</span>
-      <button type="button" :disabled="pagina.number + 1 >= pagina.totalPages" @click="carregar(pagina.number + 1)">›</button>
-    </div>
+    <Pagination
+      :number="pagina.number"
+      :total-pages="pagina.totalPages"
+      :total-elements="pagina.totalElements"
+      :size="pagina.size"
+      @update:page="carregar"
+      @update:size="onSizeChange"
+    />
   </AppShell>
 </template>
 
@@ -88,6 +93,11 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusBadge, { type StatusBadgeColor } from '@/components/StatusBadge.vue'
+import StatPill from '@/components/StatPill.vue'
+import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
+import Pagination from '@/components/Pagination.vue'
 import {
   listarPedidos,
   buscarResumoPedidos,
@@ -104,13 +114,11 @@ const router = useRouter()
 const filtros = reactive({ busca: '', status: '' })
 const pagina = ref<ApiPage<PedidoSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const resumo = ref<PedidoResumo | null>(null)
-const acoesAbertas = ref<string | null>(null)
-const posicaoDropdown = ref({ top: '0px', left: '0px' })
+const sortField = ref<'clienteNome' | 'dataPedido' | 'total' | 'status' | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
 const erro = ref('')
 
-const pedidoAcoesAtual = computed(() =>
-  pagina.value.content.find((p) => p.id === acoesAbertas.value) ?? null,
-)
+const countLabel = computed(() => (resumo.value ? `${resumo.value.total} pedidos cadastrados` : undefined))
 
 const PROXIMO_STATUS: Record<StatusPedido, StatusPedido | null> = {
   DIGITADO: 'EM_PREPARO',
@@ -128,6 +136,10 @@ function statusLabel(status: StatusPedido) {
   return STATUS_LABEL[status]
 }
 
+function statusColor(status: StatusPedido): StatusBadgeColor {
+  return { DIGITADO: 'gray', EM_PREPARO: 'amber', FATURADO: 'green' }[status] as StatusBadgeColor
+}
+
 function rotuloAvancar(status: StatusPedido) {
   const proximo = PROXIMO_STATUS[status]
   return proximo ? `Avançar para ${statusLabel(proximo)}` : null
@@ -142,12 +154,30 @@ function formatarData(data: string) {
   return `${dia}/${mes}/${ano}`
 }
 
+function sortIcon(field: 'clienteNome' | 'dataPedido' | 'total' | 'status') {
+  if (sortField.value !== field) {
+    return '⇅'
+  }
+  return sortDir.value === 'asc' ? '▲' : '▼'
+}
+
+function toggleSort(field: 'clienteNome' | 'dataPedido' | 'total' | 'status') {
+  if (sortField.value === field) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDir.value = 'asc'
+  }
+  carregar(0)
+}
+
 async function carregar(page: number) {
   erro.value = ''
   try {
     pagina.value = await listarPedidos({
       busca: filtros.busca || undefined,
       status: (filtros.status || undefined) as StatusPedido | undefined,
+      sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,
       size: pagina.value.size,
     })
@@ -165,30 +195,20 @@ async function carregarResumo() {
   }
 }
 
+function onSizeChange(novoSize: number) {
+  pagina.value.size = novoSize
+  carregar(0)
+}
+
 function novoPedido() {
   router.push({ name: 'pedidos-novo' })
 }
 
 function editarPedido(id: string) {
-  acoesAbertas.value = null
   router.push({ name: 'pedidos-editar', params: { id } })
 }
 
-function toggleAcoes(id: string, event: MouseEvent) {
-  if (acoesAbertas.value === id) {
-    acoesAbertas.value = null
-    return
-  }
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  posicaoDropdown.value = {
-    top: `${rect.bottom + 4}px`,
-    left: `${rect.right - 160}px`,
-  }
-  acoesAbertas.value = id
-}
-
 async function avancar(pedido: PedidoSummary) {
-  acoesAbertas.value = null
   const proximo = PROXIMO_STATUS[pedido.status]
   if (!proximo) {
     return
@@ -203,7 +223,6 @@ async function avancar(pedido: PedidoSummary) {
 }
 
 async function excluir(pedido: PedidoSummary) {
-  acoesAbertas.value = null
   if (!confirm(`Excluir o pedido nº ${pedido.numero}?`)) {
     return
   }
@@ -214,6 +233,18 @@ async function excluir(pedido: PedidoSummary) {
   } catch {
     erro.value = 'Não foi possível excluir o pedido.'
   }
+}
+
+function acoesPara(pedido: PedidoSummary): ActionsMenuItem[] {
+  const itens: ActionsMenuItem[] = [
+    { label: 'Editar', action: () => editarPedido(pedido.id), testId: 'acao-editar' },
+  ]
+  const rotulo = rotuloAvancar(pedido.status)
+  if (rotulo) {
+    itens.push({ label: rotulo, action: () => avancar(pedido), testId: 'acao-avancar' })
+  }
+  itens.push({ label: 'Excluir', action: () => excluir(pedido), danger: true, testId: 'acao-excluir' })
+  return itens
 }
 
 onMounted(() => {
@@ -227,6 +258,19 @@ onMounted(() => {
   color: var(--pm-error);
   font-size: 14px;
   margin: 0 0 12px;
+}
+
+.btn-primary {
+  background: var(--pm-accent);
+  color: var(--pm-white);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--pm-font);
 }
 
 .toolbar {
@@ -251,49 +295,7 @@ onMounted(() => {
   background: var(--pm-white);
 }
 
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.resumo {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.resumo-item {
-  background: var(--pm-bg);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  color: var(--pm-text-dark);
-}
-
-.resumo-digitado {
-  background: var(--pm-bg);
-  color: var(--pm-text-mid);
-}
-
-.resumo-em-preparo {
-  background: var(--pm-warning-bg, var(--pm-bg));
-  color: var(--pm-warning, var(--pm-text-mid));
-}
-
-.resumo-faturado {
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.card {
+.table-card {
   background: var(--pm-white);
   border: 1px solid var(--pm-border-light);
   border-radius: 12px;
@@ -301,104 +303,81 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
-.tabela {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+.table-card-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--pm-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-family: var(--pm-font);
 }
 
-.tabela th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--pm-text-mid);
-  background: var(--pm-bg);
+.table-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+}
+
+.table-card-stats {
+  display: flex;
+  gap: 8px;
+}
+
+.table-grid {
+  font-family: var(--pm-font);
+  font-size: 12px;
+}
+
+.table-grid-header,
+.table-grid-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 150px 100px 110px 110px 90px;
+  gap: 8px;
+  align-items: center;
   padding: 8px 12px;
 }
 
-.tabela td {
-  padding: 8px 12px;
+.table-grid-header {
+  background: var(--pm-bg);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--pm-text-mid);
+  padding: 12px;
+}
+
+.table-grid-col-sortable {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.table-grid-sort-icon {
+  font-size: 9px;
+  color: var(--pm-text-muted);
+  margin-left: 2px;
+}
+
+.table-grid-sort-icon-active {
+  color: var(--pm-accent);
+}
+
+.table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
 }
 
-.badge {
-  display: inline-flex;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
 }
 
-.badge-DIGITADO {
+.table-grid-row-clickable:hover {
   background: var(--pm-bg);
-  color: var(--pm-text-mid);
 }
 
-.badge-EM_PREPARO {
-  background: var(--pm-warning-bg, var(--pm-bg));
-  color: var(--pm-warning, var(--pm-text-mid));
-}
-
-.badge-FATURADO {
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.btn-acoes {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.dropdown-acoes {
-  position: fixed;
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 6px;
-  min-width: 160px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 8px 28px rgba(0, 0, 0, 0.12);
-  z-index: 10;
-}
-
-.dropdown-acoes div {
-  padding: 8px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--pm-text-dark);
-}
-
-.acao-excluir {
-  color: var(--pm-error);
-}
-
-.paginacao {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--pm-text-mid);
-}
-
-.paginacao button {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-}
-
-.paginacao button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.table-grid-cell-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

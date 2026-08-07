@@ -11,20 +11,34 @@
               <option value="FISICA">Física</option>
             </select>
           </div>
-          <div>
-            <label class="field-label">CNPJ / CPF *</label>
-            <input v-model="form.documento" data-test="documento" />
-          </div>
-          <div>
-            <label class="field-label">Nome Fantasia *</label>
-            <input v-model="form.nomeFantasia" data-test="nomeFantasia" />
-            <p v-if="erros.nomeFantasia" class="field-error">{{ erros.nomeFantasia }}</p>
-          </div>
+          <TextField
+            v-model="form.documento"
+            label="CNPJ / CPF"
+            required
+            :mask="(v) => maskDocumento(v, form.tipoPessoa)"
+            :maxlength="form.tipoPessoa === 'JURIDICA' ? 18 : 14"
+            :error="erros.documento"
+            test-id="documento"
+            @blur="validarDocumento"
+          />
+          <TextField
+            v-model="form.nomeFantasia"
+            label="Nome Fantasia"
+            required
+            placeholder="Ex: Mercado Silva"
+            :error="erros.nomeFantasia"
+            test-id="nomeFantasia"
+            @blur="validarNomeFantasia"
+          />
         </div>
-        <div>
-          <label class="field-label">Razão Social</label>
-          <input v-model="form.razaoSocial" />
-        </div>
+        <TextField
+          v-model="form.razaoSocial"
+          label="Razão Social"
+          required
+          :error="erros.razaoSocial"
+          test-id="razaoSocial"
+          @blur="validarRazaoSocial"
+        />
         <div>
           <label class="field-label">
             Tipo de Papel * <span class="hint">(pode selecionar mais de uma opção)</span>
@@ -50,23 +64,29 @@
         </div>
       </section>
 
-      <section class="card">
-        <h2>Contato para Cobrança e Faturamento</h2>
+      <CollapsibleSection title="Contato para Cobrança e Faturamento">
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">E-mail(s)</label>
-            <input v-model="form.emailsCobranca" placeholder="email@exemplo.com.br" />
-          </div>
-          <div>
-            <label class="field-label">Número do WhatsApp</label>
-            <input v-model="form.whatsapp" placeholder="(11) 99999-9999" />
-          </div>
+          <TextField
+            v-model="form.emailsCobranca"
+            label="E-mail(s)"
+            placeholder="email@exemplo.com.br"
+            :error="erros.emailsCobranca"
+            @blur="validarEmailsCobranca"
+          />
+          <TextField
+            v-model="form.whatsapp"
+            label="Número do WhatsApp"
+            placeholder="(11) 99999-9999"
+            :mask="maskTelefone"
+            :maxlength="15"
+            :error="erros.whatsapp"
+            @blur="validarWhatsapp"
+          />
         </div>
         <p class="hint">Para inserir mais de um e-mail, use a vírgula</p>
-      </section>
+      </CollapsibleSection>
 
-      <section class="card">
-        <h2>Informações Fiscais</h2>
+      <CollapsibleSection title="Informações Fiscais">
         <div class="grid grid-4">
           <div>
             <label class="field-label">Indicador de Inscrição Estadual</label>
@@ -90,15 +110,21 @@
             <input v-model="form.inscricaoSuframa" />
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section class="card">
-        <h2>Endereço</h2>
+      <CollapsibleSection title="Endereço">
         <div class="grid grid-3">
           <div>
             <label class="field-label">CEP</label>
             <div class="input-action">
-              <input v-model="form.cep" data-test="cep" />
+              <TextField
+                v-model="form.cep"
+                :mask="maskCep"
+                :maxlength="9"
+                :error="erros.cep"
+                test-id="cep"
+                @blur="validarCep"
+              />
               <button type="button" data-test="buscar-cep" @click="buscarCep">Buscar dados</button>
             </div>
             <p v-if="erroCep" class="field-error">{{ erroCep }}</p>
@@ -133,20 +159,38 @@
             <input v-model="form.complemento" />
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section class="card">
-        <h2>Outros Contatos</h2>
+      <CollapsibleSection title="Outros Contatos">
         <div v-for="(contato, index) in form.contatos" :key="index" class="grid grid-contato">
           <input v-model="contato.nome" placeholder="Nome" />
-          <input v-model="contato.email" placeholder="email@exemplo.com" />
-          <input v-model="contato.telefoneComercial" placeholder="(11) 3333-3333" />
-          <input v-model="contato.telefoneCelular" placeholder="(11) 99999-9999" />
+          <TextField
+            v-model="contato.email"
+            placeholder="email@exemplo.com"
+            :error="errosContatos[index]?.email"
+            @blur="validarContatoEmail(index)"
+          />
+          <TextField
+            v-model="contato.telefoneComercial"
+            placeholder="(11) 3333-3333"
+            :mask="maskTelefone"
+            :maxlength="15"
+            :error="errosContatos[index]?.telefoneComercial"
+            @blur="validarContatoTelefone(index, 'telefoneComercial')"
+          />
+          <TextField
+            v-model="contato.telefoneCelular"
+            placeholder="(11) 99999-9999"
+            :mask="maskTelefone"
+            :maxlength="15"
+            :error="errosContatos[index]?.telefoneCelular"
+            @blur="validarContatoTelefone(index, 'telefoneCelular')"
+          />
           <input v-model="contato.cargo" placeholder="Ex: Financeiro" />
           <button type="button" class="btn-remove" @click="removerContato(index)">🗑</button>
         </div>
         <button type="button" class="btn-add-contato" @click="adicionarContato">+ Adicionar Contato</button>
-      </section>
+      </CollapsibleSection>
 
       <section class="card">
         <h2>Observação</h2>
@@ -167,6 +211,8 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import TextField from '@/components/TextField.vue'
+import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import {
   buscarParceiro,
   criarParceiro,
@@ -175,6 +221,11 @@ import {
   type PapelParceiro,
 } from '@/api/parceiros'
 import { buscarEnderecoPorCep } from '@/api/cep'
+import { maskTelefone, maskCep, maskDocumento } from '@/utils/masks'
+import { emailValido, emailsValidos, telefoneValido, documentoValido, cepValido } from '@/utils/validacao'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const UFS = [
   'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB',
@@ -211,8 +262,23 @@ function novoFormulario(): ParceiroRequest {
   }
 }
 
+interface ErrosContato {
+  email?: string
+  telefoneComercial?: string
+  telefoneCelular?: string
+}
+
 const form = reactive<ParceiroRequest>(novoFormulario())
-const erros = reactive<{ nomeFantasia?: string; papeis?: string }>({})
+const erros = reactive<{
+  nomeFantasia?: string
+  razaoSocial?: string
+  papeis?: string
+  documento?: string
+  emailsCobranca?: string
+  whatsapp?: string
+  cep?: string
+}>({})
+const errosContatos = ref<ErrosContato[]>([])
 const erroGeral = ref('')
 const erroCep = ref('')
 const salvando = ref(false)
@@ -223,6 +289,7 @@ onMounted(async () => {
     try {
       const parceiro = await buscarParceiro(id)
       Object.assign(form, parceiro)
+      errosContatos.value = form.contatos.map(() => ({}))
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados do cliente. Tente novamente em instantes.'
     }
@@ -240,10 +307,12 @@ function togglePapel(papel: PapelParceiro) {
 
 function adicionarContato() {
   form.contatos.push({ nome: '', email: '', telefoneComercial: '', telefoneCelular: '', cargo: '' })
+  errosContatos.value.push({})
 }
 
 function removerContato(index: number) {
   form.contatos.splice(index, 1)
+  errosContatos.value.splice(index, 1)
 }
 
 async function buscarCep() {
@@ -259,12 +328,86 @@ async function buscarCep() {
   form.uf = endereco.uf
 }
 
-function validar(): boolean {
+function validarNomeFantasia() {
   erros.nomeFantasia = form.nomeFantasia.trim() ? undefined : 'Campo obrigatório'
+}
+
+function validarRazaoSocial() {
+  erros.razaoSocial = form.razaoSocial.trim() ? undefined : 'Campo obrigatório'
+}
+
+function validarDocumento() {
+  if (!form.documento.trim()) {
+    erros.documento = 'Campo obrigatório'
+  } else if (!documentoValido(form.documento, form.tipoPessoa)) {
+    erros.documento = `Informe um ${form.tipoPessoa === 'JURIDICA' ? 'CNPJ' : 'CPF'} válido`
+  } else {
+    erros.documento = undefined
+  }
+}
+
+function validarEmailsCobranca() {
+  erros.emailsCobranca = emailsValidos(form.emailsCobranca) ? undefined : 'Informe um e-mail válido'
+}
+
+function validarWhatsapp() {
+  erros.whatsapp = !form.whatsapp || telefoneValido(form.whatsapp) ? undefined : 'Informe um telefone válido'
+}
+
+function validarCep() {
+  erros.cep = !form.cep || cepValido(form.cep) ? undefined : 'CEP inválido'
+}
+
+function validarContatoEmail(index: number) {
+  const contato = form.contatos[index]
+  errosContatos.value[index] = {
+    ...errosContatos.value[index],
+    email: !contato.email || emailValido(contato.email) ? undefined : 'E-mail inválido',
+  }
+}
+
+function validarContatoTelefone(index: number, campo: 'telefoneComercial' | 'telefoneCelular') {
+  const contato = form.contatos[index]
+  const valor = contato[campo]
+  errosContatos.value[index] = {
+    ...errosContatos.value[index],
+    [campo]: !valor || telefoneValido(valor) ? undefined : 'Telefone inválido',
+  }
+}
+
+function validarPapeis() {
   erros.papeis = form.papeis.some((p) => p === 'CLIENTE' || p === 'FORNECEDOR')
     ? undefined
     : 'Selecione ao menos Cliente ou Fornecedor'
-  return !erros.nomeFantasia && !erros.papeis
+}
+
+function validar(): boolean {
+  validarNomeFantasia()
+  validarRazaoSocial()
+  validarDocumento()
+  validarEmailsCobranca()
+  validarWhatsapp()
+  validarCep()
+  validarPapeis()
+  form.contatos.forEach((_, index) => {
+    validarContatoEmail(index)
+    validarContatoTelefone(index, 'telefoneComercial')
+    validarContatoTelefone(index, 'telefoneCelular')
+  })
+
+  const semErroContatos = errosContatos.value.every(
+    (e) => !e?.email && !e?.telefoneComercial && !e?.telefoneCelular,
+  )
+  return (
+    !erros.nomeFantasia &&
+    !erros.razaoSocial &&
+    !erros.papeis &&
+    !erros.documento &&
+    !erros.emailsCobranca &&
+    !erros.whatsapp &&
+    !erros.cep &&
+    semErroContatos
+  )
 }
 
 async function salvar() {
@@ -280,6 +423,7 @@ async function salvar() {
     } else {
       await criarParceiro(form)
     }
+    showToast('Cliente salvo com sucesso!')
     router.push({ name: 'clientes' })
   } catch (err: any) {
     if (err?.response?.status === 409) {
@@ -343,13 +487,14 @@ function cancelar() {
 
 .grid-contato {
   grid-template-columns: 1fr 1fr 130px 130px 130px 36px;
-  align-items: end;
+  align-items: start;
 }
 
 .field-label {
   display: block;
   font-size: 12px;
-  color: var(--pm-text-mid);
+  font-weight: 600;
+  color: var(--pm-text-dark);
   margin-bottom: 4px;
 }
 
@@ -400,9 +545,16 @@ textarea {
 .input-action {
   display: flex;
   gap: 6px;
+  align-items: flex-start;
+}
+
+.input-action :deep(.text-field) {
+  flex: 1;
 }
 
 .input-action button {
+  height: 36px;
+  flex-shrink: 0;
   background: var(--pm-accent);
   color: var(--pm-white);
   border: none;

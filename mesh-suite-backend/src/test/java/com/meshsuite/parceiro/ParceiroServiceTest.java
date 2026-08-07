@@ -148,7 +148,7 @@ class ParceiroServiceTest extends AbstractIntegrationTest {
         parceiroService.criar(TenantContext.get(), request("55666777000155", Set.of(PapelParceiro.FORNECEDOR)));
         parceiroService.atualizarStatus(a.id(), StatusParceiro.BLOQUEADO);
 
-        var resumo = parceiroService.resumo();
+        var resumo = parceiroService.resumo(null);
 
         assertThat(resumo.total()).isEqualTo(2);
         assertThat(resumo.ativos()).isEqualTo(1);
@@ -156,14 +156,47 @@ class ParceiroServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void resumoContaSomenteOPapelInformado() {
+        setUpTenant("aurora");
+        parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+        var clienteBloqueado = parceiroService.criar(TenantContext.get(), request("55666777000155", Set.of(PapelParceiro.CLIENTE)));
+        parceiroService.criar(TenantContext.get(), request("00062452000106", Set.of(PapelParceiro.FORNECEDOR)));
+        parceiroService.atualizarStatus(clienteBloqueado.id(), StatusParceiro.BLOQUEADO);
+
+        var resumoClientes = parceiroService.resumo(PapelParceiro.CLIENTE);
+
+        assertThat(resumoClientes.total()).isEqualTo(2);
+        assertThat(resumoClientes.ativos()).isEqualTo(1);
+        assertThat(resumoClientes.bloqueados()).isEqualTo(1);
+    }
+
+    @Test
     void listaComFiltroDeBusca() {
         setUpTenant("aurora");
         parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
 
-        var pagina = parceiroService.listar("silva", null, null, null, null, null, PageRequest.of(0, 10));
+        var pagina = parceiroService.listar("silva", null, null, null, null, null, null, PageRequest.of(0, 10));
 
         assertThat(pagina.getTotalElements()).isEqualTo(1);
         assertThat(pagina.getContent().get(0).nomeFantasia()).isEqualTo("Mercado Silva");
+    }
+
+    @Test
+    void listaComFiltroDeDocumentoParcialIgnorandoMascara() {
+        setUpTenant("aurora");
+        var alvo = parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+        parceiroService.criar(TenantContext.get(), request("55666777000155", Set.of(PapelParceiro.CLIENTE)));
+
+        var comMascara = parceiroService.listar(null, null, null, "112.223.330/0014-4", null, null, null, PageRequest.of(0, 10));
+        assertThat(comMascara.getTotalElements()).isEqualTo(1);
+        assertThat(comMascara.getContent().get(0).id()).isEqualTo(alvo.id());
+
+        var parcial = parceiroService.listar(null, null, null, "22333", null, null, null, PageRequest.of(0, 10));
+        assertThat(parcial.getTotalElements()).isEqualTo(1);
+        assertThat(parcial.getContent().get(0).id()).isEqualTo(alvo.id());
+
+        var semCorrespondencia = parceiroService.listar(null, null, null, "99999", null, null, null, PageRequest.of(0, 10));
+        assertThat(semCorrespondencia.getTotalElements()).isEqualTo(0);
     }
 
     @Test
@@ -172,9 +205,46 @@ class ParceiroServiceTest extends AbstractIntegrationTest {
         parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
         parceiroService.criar(TenantContext.get(), request("55666777000155", Set.of(PapelParceiro.FORNECEDOR)));
 
-        var pagina = parceiroService.listar(null, null, null, null, null, PapelParceiro.CLIENTE, PageRequest.of(0, 10));
+        var pagina = parceiroService.listar(null, null, null, null, null, null, PapelParceiro.CLIENTE, PageRequest.of(0, 10));
 
         assertThat(pagina.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void listaComFiltroDeStatusMultiplo() {
+        setUpTenant("aurora");
+        var ativo1 = parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+        var ativo2 = parceiroService.criar(TenantContext.get(), request("55666777000155", Set.of(PapelParceiro.CLIENTE)));
+        var bloqueado = parceiroService.criar(TenantContext.get(), request("00062452000106", Set.of(PapelParceiro.CLIENTE)));
+        parceiroService.atualizarStatus(bloqueado.id(), StatusParceiro.BLOQUEADO);
+
+        var apenasBloqueado = parceiroService.listar(null, List.of(StatusParceiro.BLOQUEADO), null, null, null, null, null,
+                PageRequest.of(0, 10));
+        assertThat(apenasBloqueado.getTotalElements()).isEqualTo(1);
+        assertThat(apenasBloqueado.getContent().get(0).id()).isEqualTo(bloqueado.id());
+
+        var ativoEBloqueado = parceiroService.listar(null, List.of(StatusParceiro.ATIVO, StatusParceiro.BLOQUEADO), null, null, null,
+                null, null, PageRequest.of(0, 10));
+        assertThat(ativoEBloqueado.getTotalElements()).isEqualTo(3);
+        assertThat(ativoEBloqueado.getContent()).extracting("id")
+                .containsExactlyInAnyOrder(ativo1.id(), ativo2.id(), bloqueado.id());
+    }
+
+    @Test
+    void listaComFiltroDeUfMultiplo() {
+        setUpTenant("aurora");
+        var sp = parceiroService.criar(TenantContext.get(), request("11222333000144", Set.of(PapelParceiro.CLIENTE)));
+        var outraUf = new ParceiroRequest(
+                TipoPessoa.JURIDICA, "55666777000155", "Comércio Rio", "Comércio Rio Ltda", Set.of(PapelParceiro.CLIENTE),
+                "financeiro@comerciorio.com.br", "(21) 99999-9999", IndicadorIe.CONTRIBUINTE, "987654321", null, null,
+                "20000000", "Av. Rio Branco", "1", "Centro", null, "RJ", "Rio de Janeiro",
+                null, List.of());
+        var rj = parceiroService.criar(TenantContext.get(), outraUf);
+
+        var pagina = parceiroService.listar(null, null, null, null, List.of("SP", "RJ"), null, null, PageRequest.of(0, 10));
+
+        assertThat(pagina.getTotalElements()).isEqualTo(2);
+        assertThat(pagina.getContent()).extracting("id").containsExactlyInAnyOrder(sp.id(), rj.id());
     }
 
     @Test
@@ -250,6 +320,6 @@ class ParceiroServiceTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         assertThrows(com.meshsuite.auth.PermissionDeniedException.class,
-                () -> parceiroService.listar(null, null, null, null, null, null, org.springframework.data.domain.PageRequest.of(0, 10)));
+                () -> parceiroService.listar(null, null, null, null, null, null, null, org.springframework.data.domain.PageRequest.of(0, 10)));
     }
 }
