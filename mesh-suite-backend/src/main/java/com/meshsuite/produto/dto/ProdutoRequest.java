@@ -7,13 +7,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record ProdutoRequest(
         @NotBlank String nome,
         @NotBlank String sku,
         String codigoBarras,
         String marca,
-        String categoria,
+        UUID categoriaId,
         @NotNull @DecimalMin(value = "0.01") BigDecimal precoVenda,
         BigDecimal precoCusto,
         StatusProduto status,
