@@ -116,10 +116,14 @@ describe('AppSidebar', () => {
 
     // items not yet backed by a screen still show, same route:null/inert
     // pattern used by Empresa/Marcas/Tab. Preços/Permissões.
-    for (const label of ['Categorias', 'Fornecedores', 'Transportadoras', 'Cores / Estampas']) {
+    for (const label of ['Fornecedores', 'Transportadoras', 'Cores / Estampas']) {
       expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
       expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).toContain('nav-item-inert')
     }
+
+    // Categorias now routes to /categorias (Task 3), so it's no longer inert.
+    expect(wrapper.find('[data-test="nav-Categorias"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="nav-Categorias"]').classes()).not.toContain('nav-item-inert')
   })
 
   it('collapses and expands a single group when its header is clicked', async () => {

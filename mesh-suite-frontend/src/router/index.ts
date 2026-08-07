@@ -9,6 +9,8 @@ import ClientesListView from '@/views/ClientesListView.vue'
 import ClienteDetailView from '@/views/ClienteDetailView.vue'
 import ProdutoFormView from '@/views/ProdutoFormView.vue'
 import ProdutosListView from '@/views/ProdutosListView.vue'
+import CategoriasListView from '@/views/CategoriasListView.vue'
+import CategoriaFormView from '@/views/CategoriaFormView.vue'
 import PedidoFormView from '@/views/PedidoFormView.vue'
 import PedidosListView from '@/views/PedidosListView.vue'
 import UserFormView from '@/views/UserFormView.vue'
@@ -31,6 +33,9 @@ const router = createRouter({
     { path: '/produtos', name: 'produtos', component: ProdutosListView },
     { path: '/produtos/novo', name: 'produtos-novo', component: ProdutoFormView },
     { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoFormView },
+    { path: '/categorias', name: 'categorias', component: CategoriasListView },
+    { path: '/categorias/novo', name: 'categorias-novo', component: CategoriaFormView },
+    { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoriaFormView },
     { path: '/pedidos', name: 'pedidos', component: PedidosListView },
     { path: '/pedidos/novo', name: 'pedidos-novo', component: PedidoFormView },
     { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: PedidoFormView },
