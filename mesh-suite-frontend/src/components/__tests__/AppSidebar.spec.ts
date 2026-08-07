@@ -105,4 +105,58 @@ describe('AppSidebar', () => {
 
     expect(router.currentRoute.value.path).toBe('/compras')
   })
+
+  it('groups nav items under category headers, all expanded by default', () => {
+    const { wrapper } = mountWithRouter()
+
+    expect(wrapper.find('[data-test="group-vendas"]').text()).toContain('VENDAS')
+    expect(wrapper.find('[data-test="group-catalogo"]').text()).toContain('CATÁLOGO')
+    expect(wrapper.find('[data-test="group-cadastros"]').text()).toContain('CADASTROS')
+    expect(wrapper.find('[data-test="group-configuracoes"]').text()).toContain('CONFIGURAÇÕES')
+
+    // items not yet backed by a screen still show, same route:null/inert
+    // pattern used by Empresa/Marcas/Tab. Preços/Permissões.
+    for (const label of ['Categorias', 'Fornecedores', 'Transportadoras', 'Cores / Estampas']) {
+      expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
+      expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).toContain('nav-item-inert')
+    }
+  })
+
+  it('collapses and expands a single group when its header is clicked', async () => {
+    const { wrapper } = mountWithRouter()
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="group-vendas"]').trigger('click')
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(false)
+    // other groups stay untouched
+    expect(wrapper.find('[data-test="nav-Clientes"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="group-vendas"]').trigger('click')
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
+  })
+
+  it('toggles all groups at once via "Recolher tudo" / "Expandir tudo"', async () => {
+    const { wrapper } = mountWithRouter()
+    expect(wrapper.find('[data-test="toggle-all-groups"]').text()).toBe('Recolher tudo')
+
+    await wrapper.find('[data-test="toggle-all-groups"]').trigger('click')
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="nav-Clientes"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="toggle-all-groups"]').text()).toBe('Expandir tudo')
+
+    await wrapper.find('[data-test="toggle-all-groups"]').trigger('click')
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="nav-Clientes"]').exists()).toBe(true)
+  })
+
+  it('when the sidebar itself is collapsed to icon rail, group items stay visible regardless of group state', async () => {
+    const { wrapper } = mountWithRouter()
+
+    await wrapper.find('[data-test="group-vendas"]').trigger('click')
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(false)
+
+    await wrapper.find('[data-test="collapse-toggle"]').trigger('click')
+    expect(wrapper.find('[data-test="nav-Pedidos"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="group-vendas"]').exists()).toBe(false)
+  })
 })

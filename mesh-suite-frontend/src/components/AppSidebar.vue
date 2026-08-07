@@ -18,16 +18,50 @@
 
     <nav class="nav-list">
       <div
-        v-for="item in navItems"
-        :key="item.label"
-        class="nav-item"
-        :class="{ 'nav-item-active': isActive(item), 'nav-item-inert': !item.route }"
-        :data-test="`nav-${item.label}`"
-        :title="collapsed ? item.label : undefined"
-        @click="go(item)"
+        v-if="!collapsed"
+        class="nav-toggle-all"
+        data-test="toggle-all-groups"
+        @click="toggleAllGroups"
       >
-        <span class="nav-icon">{{ item.icon }}</span>
-        <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
+        {{ allExpanded ? 'Recolher tudo' : 'Expandir tudo' }}
+      </div>
+
+      <div
+        class="nav-item"
+        :class="{ 'nav-item-active': isActive(topItem) }"
+        :data-test="`nav-${topItem.label}`"
+        :title="collapsed ? topItem.label : undefined"
+        @click="go(topItem)"
+      >
+        <span class="nav-icon">{{ topItem.icon }}</span>
+        <span v-if="!collapsed" class="nav-label">{{ topItem.label }}</span>
+      </div>
+
+      <div v-for="group in navGroups" :key="group.key" class="nav-group">
+        <div
+          v-if="!collapsed"
+          class="nav-group-title"
+          :data-test="`group-${group.key}`"
+          @click="toggleGroup(group.key)"
+        >
+          <span>{{ group.title }}</span>
+          <span class="nav-group-caret">{{ expandedGroups.has(group.key) ? '▼' : '▶' }}</span>
+        </div>
+
+        <template v-if="collapsed || expandedGroups.has(group.key)">
+          <div
+            v-for="item in group.items"
+            :key="item.label"
+            class="nav-item"
+            :class="{ 'nav-item-active': isActive(item), 'nav-item-inert': !item.route }"
+            :data-test="`nav-${item.label}`"
+            :title="collapsed ? item.label : undefined"
+            @click="go(item)"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>
+            <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
+          </div>
+        </template>
       </div>
     </nav>
 
@@ -52,19 +86,75 @@ interface NavItem {
   route: string | null
 }
 
-const navItems: NavItem[] = [
-  { icon: '🏠', label: 'Home', route: '/' },
-  { icon: '👥', label: 'Clientes', route: '/clientes' },
-  { icon: '📥', label: 'Compras', route: '/compras' },
-  { icon: '🏢', label: 'Empresa', route: null },
-  { icon: '🏷', label: 'Marcas', route: null },
-  { icon: '💳', label: 'Pagamentos', route: '/contas-a-pagar' },
-  { icon: '📋', label: 'Pedidos', route: '/pedidos' },
-  { icon: '🔒', label: 'Permissões', route: null },
-  { icon: '📦', label: 'Produtos', route: '/produtos' },
-  { icon: '💰', label: 'Tab. Preços', route: null },
-  { icon: '👤', label: 'Usuários', route: '/usuarios' },
+interface NavGroup {
+  key: string
+  title: string
+  items: NavItem[]
+}
+
+const topItem: NavItem = { icon: '🏠', label: 'Home', route: '/' }
+
+const navGroups: NavGroup[] = [
+  {
+    key: 'vendas',
+    title: 'VENDAS',
+    items: [
+      { icon: '📋', label: 'Pedidos', route: '/pedidos' },
+      { icon: '💰', label: 'Tab. Preços', route: null },
+      { icon: '💳', label: 'Pagamentos', route: '/contas-a-pagar' },
+    ],
+  },
+  {
+    key: 'compras',
+    title: 'COMPRAS',
+    items: [{ icon: '📥', label: 'Compras', route: '/compras' }],
+  },
+  {
+    key: 'catalogo',
+    title: 'CATÁLOGO',
+    items: [
+      { icon: '📦', label: 'Produtos', route: '/produtos' },
+      { icon: '🗂', label: 'Categorias', route: null },
+      { icon: '🏷', label: 'Marcas', route: null },
+      { icon: '🎨', label: 'Cores / Estampas', route: null },
+    ],
+  },
+  {
+    key: 'cadastros',
+    title: 'CADASTROS',
+    items: [
+      { icon: '👥', label: 'Clientes', route: '/clientes' },
+      { icon: '🏭', label: 'Fornecedores', route: null },
+      { icon: '🚚', label: 'Transportadoras', route: null },
+    ],
+  },
+  {
+    key: 'configuracoes',
+    title: 'CONFIGURAÇÕES',
+    items: [
+      { icon: '🏢', label: 'Empresa', route: null },
+      { icon: '👤', label: 'Usuários', route: '/usuarios' },
+      { icon: '🔒', label: 'Permissões', route: null },
+    ],
+  },
 ]
+
+const expandedGroups = ref<Set<string>>(new Set(navGroups.map((g) => g.key)))
+const allExpanded = computed(() => expandedGroups.value.size === navGroups.length)
+
+function toggleGroup(key: string) {
+  const next = new Set(expandedGroups.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  expandedGroups.value = next
+}
+
+function toggleAllGroups() {
+  expandedGroups.value = allExpanded.value ? new Set() : new Set(navGroups.map((g) => g.key))
+}
 
 const collapsed = ref(false)
 const route = useRoute()
@@ -166,6 +256,36 @@ function go(item: NavItem) {
 .nav-list {
   flex: 1;
   padding: 6px 0;
+  overflow-y: auto;
+}
+
+.nav-toggle-all {
+  text-align: right;
+  padding: 2px 10px 6px;
+  font-size: 10px;
+  color: var(--pm-accent);
+  cursor: pointer;
+}
+
+.nav-group {
+  margin-top: 4px;
+}
+
+.nav-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pm-text-muted);
+  cursor: pointer;
+}
+
+.nav-group-caret {
+  font-size: 8px;
 }
 
 .nav-item {
