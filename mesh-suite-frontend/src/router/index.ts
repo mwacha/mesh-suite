@@ -13,6 +13,7 @@ import CategoriasListView from '@/views/CategoriasListView.vue'
 import CategoriaFormView from '@/views/CategoriaFormView.vue'
 import CoresEstampasListView from '@/views/CoresEstampasListView.vue'
 import CorEstampaFormView from '@/views/CorEstampaFormView.vue'
+import TabelasPrecoListView from '@/views/TabelasPrecoListView.vue'
 import PedidoFormView from '@/views/PedidoFormView.vue'
 import PedidosListView from '@/views/PedidosListView.vue'
 import UserFormView from '@/views/UserFormView.vue'
@@ -41,6 +42,7 @@ const router = createRouter({
     { path: '/cores-estampas', name: 'cores-estampas', component: CoresEstampasListView },
     { path: '/cores-estampas/novo', name: 'cores-estampas-novo', component: CorEstampaFormView },
     { path: '/cores-estampas/:id/editar', name: 'cores-estampas-editar', component: CorEstampaFormView },
+    { path: '/tabelas-preco', name: 'tabelas-preco', component: TabelasPrecoListView },
     { path: '/pedidos', name: 'pedidos', component: PedidosListView },
     { path: '/pedidos/novo', name: 'pedidos-novo', component: PedidoFormView },
     { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: PedidoFormView },

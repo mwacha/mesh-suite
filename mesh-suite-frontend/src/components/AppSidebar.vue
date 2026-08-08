@@ -91,7 +91,7 @@ const navGroups: NavGroup[] = [
     title: 'VENDAS',
     items: [
       { icon: '📋', label: 'Pedidos', route: '/pedidos' },
-      { icon: '💰', label: 'Tab. Preços', route: null },
+      { icon: '💰', label: 'Tab. Preços', route: '/tabelas-preco' },
       { icon: '💳', label: 'Pagamentos', route: '/contas-a-pagar' },
     ],
   },
