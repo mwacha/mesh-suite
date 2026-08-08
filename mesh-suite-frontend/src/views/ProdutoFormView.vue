@@ -36,6 +36,17 @@
         </div>
         <div class="grid grid-2">
           <div>
+            <label class="field-label">Cor / Estampa</label>
+            <select v-model="form.corEstampaId" data-test="cor-estampa">
+              <option :value="null">Sem cor/estampa</option>
+              <option v-for="corEstampa in coresEstampas" :key="corEstampa.id" :value="corEstampa.id">
+                {{ corEstampa.nome }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-2">
+          <div>
             <label class="field-label">Preço de Venda *</label>
             <input v-model.number="form.precoVenda" type="number" step="0.01" min="0" data-test="preco-venda" />
             <p v-if="erros.precoVenda" class="field-error">{{ erros.precoVenda }}</p>
@@ -141,6 +152,7 @@ import {
   type UnidadeMedida,
 } from '@/api/produtos'
 import { listarCategorias, type CategoriaResponse } from '@/api/categorias'
+import { listarCoresEstampas, type CorEstampaResponse } from '@/api/coresEstampas'
 
 const UNIDADES: UnidadeMedida[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
 const STATUS_OPCOES: { value: StatusProduto; label: string }[] = [
@@ -160,6 +172,7 @@ function novoFormulario(): ProdutoRequest {
     codigoBarras: '',
     marca: '',
     categoriaId: null,
+    corEstampaId: null,
     precoVenda: 0,
     precoCusto: null,
     status: 'ATIVO',
@@ -180,6 +193,7 @@ const erros = reactive<{ nome?: string; sku?: string; precoVenda?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
 const categorias = ref<CategoriaResponse[]>([])
+const coresEstampas = ref<CorEstampaResponse[]>([])
 
 onMounted(async () => {
   try {
@@ -189,6 +203,13 @@ onMounted(async () => {
     // Categoria list is a convenience dropdown, not a required field --
     // if it fails to load, the form still works with "Sem categoria" as
     // the only option, and the current value (if editing) still round-trips.
+  }
+
+  try {
+    const pagina = await listarCoresEstampas({ ativo: true, size: 100 })
+    coresEstampas.value = pagina.content
+  } catch {
+    // Same convenience-dropdown reasoning as categorias above.
   }
 
   const id = route.params.id
@@ -214,6 +235,20 @@ onMounted(async () => {
             id: produto.categoriaId,
             nome: produto.categoriaNome ?? '',
           } as CategoriaResponse,
+        ]
+      }
+
+      // Same reasoning as the categoria splice above, mirrored for corEstampa.
+      if (
+        produto.corEstampaId &&
+        !coresEstampas.value.some((corEstampa) => corEstampa.id === produto.corEstampaId)
+      ) {
+        coresEstampas.value = [
+          ...coresEstampas.value,
+          {
+            id: produto.corEstampaId,
+            nome: produto.corEstampaNome ?? '',
+          } as CorEstampaResponse,
         ]
       }
     } catch {

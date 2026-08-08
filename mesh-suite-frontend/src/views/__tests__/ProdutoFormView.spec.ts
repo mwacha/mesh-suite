@@ -7,6 +7,7 @@ import * as produtosApi from '@/api/produtos'
 
 vi.mock('@/api/produtos')
 vi.mock('@/api/categorias')
+vi.mock('@/api/coresEstampas')
 
 function mountWithRouter(path = '/produtos/novo') {
   const router = createRouter({
@@ -120,9 +121,9 @@ describe('ProdutoFormView', () => {
   it('loads existing produto data in edit mode', async () => {
     vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
       id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '', categoriaId: null,
-      categoriaNome: null, precoVenda: 59.9, precoCusto: null, status: 'ATIVO', descricao: '', quantidadeEstoque: 10,
-      unidadeMedida: 'UN', estoqueMinimo: null, estoqueMaximo: null, peso: null, comprimento: null,
-      largura: null, altura: null,
+      categoriaNome: null, corEstampaId: null, corEstampaNome: null, precoVenda: 59.9, precoCusto: null,
+      status: 'ATIVO', descricao: '', quantidadeEstoque: 10, unidadeMedida: 'UN', estoqueMinimo: null,
+      estoqueMaximo: null, peso: null, comprimento: null, largura: null, altura: null,
     } as any)
 
     const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')
@@ -176,7 +177,7 @@ describe('ProdutoFormView', () => {
     })
     vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
       id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '',
-      categoriaId: 'cat-inactive', categoriaNome: 'Descontinuados',
+      categoriaId: 'cat-inactive', categoriaNome: 'Descontinuados', corEstampaId: null, corEstampaNome: null,
       precoVenda: 59.9, precoCusto: null, status: 'ATIVO', descricao: '', quantidadeEstoque: 10,
       unidadeMedida: 'UN', estoqueMinimo: null, estoqueMaximo: null, peso: null, comprimento: null,
       largura: null, altura: null,
@@ -188,5 +189,55 @@ describe('ProdutoFormView', () => {
     const select = wrapper.find('[data-test="categoria"]').element as HTMLSelectElement
     expect(select.value).toBe('cat-inactive')
     expect(wrapper.text()).toContain('Descontinuados')
+  })
+
+  it('loads cores/estampas into the dropdown and lets the user pick one', async () => {
+    const coresEstampasApi = await import('@/api/coresEstampas')
+    vi.mocked(coresEstampasApi.listarCoresEstampas).mockResolvedValue({
+      content: [
+        { id: 'ce-1', nome: 'Azul Marinho', dataVigencia: '2026-01-01', descricao: null, ativo: true, produtosVinculados: 0, criadoEm: '2026-01-01T00:00:00Z' },
+      ],
+      totalElements: 1, totalPages: 1, number: 0, size: 100,
+    })
+    vi.mocked(produtosApi.criarProduto).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('P0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
+    await wrapper.find('[data-test="cor-estampa"]').setValue('ce-1')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const payload = vi.mocked(produtosApi.criarProduto).mock.calls[0][0]
+    expect(payload.corEstampaId).toBe('ce-1')
+  })
+
+  it('keeps an inactive-but-linked cor/estampa selected in the dropdown when editing', async () => {
+    const coresEstampasApi = await import('@/api/coresEstampas')
+    // The active-only list does NOT include this produto's cor/estampa
+    // (simulating it having been deactivated after the produto was linked to it).
+    vi.mocked(coresEstampasApi.listarCoresEstampas).mockResolvedValue({
+      content: [
+        { id: 'ce-active', nome: 'Preto', dataVigencia: '2026-01-01', descricao: null, ativo: true, produtosVinculados: 0, criadoEm: '2026-01-01T00:00:00Z' },
+      ],
+      totalElements: 1, totalPages: 1, number: 0, size: 100,
+    })
+    vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
+      id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '',
+      categoriaId: null, categoriaNome: null,
+      corEstampaId: 'ce-inactive', corEstampaNome: 'Floral Descontinuado',
+      precoVenda: 59.9, precoCusto: null, status: 'ATIVO', descricao: '', quantidadeEstoque: 10,
+      unidadeMedida: 'UN', estoqueMinimo: null, estoqueMaximo: null, peso: null, comprimento: null,
+      largura: null, altura: null,
+    } as any)
+
+    const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')
+    await flushPromises()
+
+    const select = wrapper.find('[data-test="cor-estampa"]').element as HTMLSelectElement
+    expect(select.value).toBe('ce-inactive')
+    expect(wrapper.text()).toContain('Floral Descontinuado')
   })
 })

@@ -9,6 +9,7 @@ export interface ProdutoRequest {
   codigoBarras: string
   marca: string
   categoriaId: string | null
+  corEstampaId: string | null
   precoVenda: number
   precoCusto: number | null
   status: StatusProduto
@@ -26,6 +27,7 @@ export interface ProdutoRequest {
 export interface ProdutoResponse extends ProdutoRequest {
   id: string
   categoriaNome: string | null
+  corEstampaNome: string | null
 }
 
 export interface ProdutoSummary {
