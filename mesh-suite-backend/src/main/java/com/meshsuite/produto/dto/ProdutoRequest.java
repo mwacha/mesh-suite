@@ -15,6 +15,7 @@ public record ProdutoRequest(
         String codigoBarras,
         String marca,
         UUID categoriaId,
+        UUID corEstampaId,
         @NotNull @DecimalMin(value = "0.01") BigDecimal precoVenda,
         BigDecimal precoCusto,
         StatusProduto status,

@@ -18,10 +18,13 @@ public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
     private final CategoriaRepository categoriaRepository;
+    private final CorEstampaRepository corEstampaRepository;
 
-    public ProdutoService(ProdutoRepository produtoRepository, CategoriaRepository categoriaRepository) {
+    public ProdutoService(ProdutoRepository produtoRepository, CategoriaRepository categoriaRepository,
+                           CorEstampaRepository corEstampaRepository) {
         this.produtoRepository = produtoRepository;
         this.categoriaRepository = categoriaRepository;
+        this.corEstampaRepository = corEstampaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -103,6 +106,9 @@ public class ProdutoService {
         produto.setCategoria(request.categoriaId() != null
                 ? categoriaRepository.findById(request.categoriaId()).orElseThrow(CategoriaNaoEncontradaException::new)
                 : null);
+        produto.setCorEstampa(request.corEstampaId() != null
+                ? corEstampaRepository.findById(request.corEstampaId()).orElseThrow(CorEstampaNaoEncontradaException::new)
+                : null);
         produto.setPrecoVenda(request.precoVenda());
         produto.setPrecoCusto(request.precoCusto());
         produto.setStatus(request.status() != null ? request.status() : StatusProduto.ATIVO);
@@ -127,6 +133,8 @@ public class ProdutoService {
                 p.getId(), p.getNome(), p.getSku(), p.getCodigoBarras(), p.getMarca(),
                 p.getCategoria() != null ? p.getCategoria().getId() : null,
                 p.getCategoria() != null ? p.getCategoria().getNome() : null,
+                p.getCorEstampa() != null ? p.getCorEstampa().getId() : null,
+                p.getCorEstampa() != null ? p.getCorEstampa().getNome() : null,
                 p.getPrecoVenda(), p.getPrecoCusto(), p.getStatus(), p.getDescricao(), p.getQuantidadeEstoque(),
                 p.getUnidadeMedida(), p.getEstoqueMinimo(), p.getEstoqueMaximo(), p.getPeso(), p.getComprimento(),
                 p.getLargura(), p.getAltura());

@@ -14,13 +14,23 @@ public interface ProdutoRepository extends JpaRepository<Produto, UUID>, JpaSpec
     boolean existsBySkuAndIdNot(String sku, UUID id);
     long countByStatus(StatusProduto status);
     long countByCategoriaId(UUID categoriaId);
+    long countByCorEstampaId(UUID corEstampaId);
 
     @Query("SELECT p.categoria.id AS categoriaId, COUNT(p) AS total FROM Produto p " +
             "WHERE p.categoria.id IN :categoriaIds GROUP BY p.categoria.id")
     List<CategoriaProdutoCount> countByCategoriaIdIn(@Param("categoriaIds") Collection<UUID> categoriaIds);
 
+    @Query("SELECT p.corEstampa.id AS corEstampaId, COUNT(p) AS total FROM Produto p " +
+            "WHERE p.corEstampa.id IN :corEstampaIds GROUP BY p.corEstampa.id")
+    List<CorEstampaProdutoCount> countByCorEstampaIdIn(@Param("corEstampaIds") Collection<UUID> corEstampaIds);
+
     interface CategoriaProdutoCount {
         UUID getCategoriaId();
+        Long getTotal();
+    }
+
+    interface CorEstampaProdutoCount {
+        UUID getCorEstampaId();
         Long getTotal();
     }
 }

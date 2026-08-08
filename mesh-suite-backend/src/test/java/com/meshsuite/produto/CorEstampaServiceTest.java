@@ -5,7 +5,7 @@ import com.meshsuite.auth.Action;
 import com.meshsuite.auth.AuthContextService;
 import com.meshsuite.auth.Module;
 import com.meshsuite.auth.TenantContext;
-import com.meshsuite.produto.dto.CategoriaRequest;
+import com.meshsuite.produto.dto.CorEstampaRequest;
 import com.meshsuite.tenant.Tenant;
 import com.meshsuite.tenant.TenantRepository;
 import com.meshsuite.user.Role;
@@ -21,15 +21,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class CategoriaServiceTest extends AbstractIntegrationTest {
+class CorEstampaServiceTest extends AbstractIntegrationTest {
 
-    @Autowired CategoriaService categoriaService;
+    @Autowired CorEstampaService corEstampaService;
     @Autowired ProdutoService produtoService;
     @Autowired TenantRepository tenantRepository;
     @Autowired UserRepository userRepository;
@@ -62,19 +63,20 @@ class CategoriaServiceTest extends AbstractIntegrationTest {
         return tenant.getId();
     }
 
-    private CategoriaRequest request(String nome) {
-        return new CategoriaRequest(nome, "Descrição de teste", null);
+    private CorEstampaRequest request(String nome) {
+        return new CorEstampaRequest(nome, LocalDate.of(2026, 1, 1), "Descrição de teste", null);
     }
 
     @Test
     @Transactional
-    void criaERecuperaCategoria() {
-        setUpTenant("aurora-cat");
+    void criaERecuperaCorEstampa() {
+        setUpTenant("aurora-corest");
 
-        var criada = categoriaService.criar(TenantContext.get(), request("Camisas"));
+        var criada = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
 
-        var buscada = categoriaService.buscarPorId(criada.id());
-        assertThat(buscada.nome()).isEqualTo("Camisas");
+        var buscada = corEstampaService.buscarPorId(criada.id());
+        assertThat(buscada.nome()).isEqualTo("Azul Marinho");
+        assertThat(buscada.dataVigencia()).isEqualTo(LocalDate.of(2026, 1, 1));
         assertThat(buscada.ativo()).isTrue();
         assertThat(buscada.produtosVinculados()).isEqualTo(0L);
     }
@@ -82,103 +84,104 @@ class CategoriaServiceTest extends AbstractIntegrationTest {
     @Test
     @Transactional
     void rejectsDuplicateNomeOnCreate() {
-        setUpTenant("aurora-cat");
-        categoriaService.criar(TenantContext.get(), request("Camisas"));
+        setUpTenant("aurora-corest");
+        corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
 
-        assertThatThrownBy(() -> categoriaService.criar(TenantContext.get(), request("Camisas")))
-                .isInstanceOf(CategoriaNomeDuplicadoException.class);
+        assertThatThrownBy(() -> corEstampaService.criar(TenantContext.get(), request("Azul Marinho")))
+                .isInstanceOf(CorEstampaNomeDuplicadoException.class);
     }
 
     @Test
     @Transactional
-    void rejectsDuplicateNomeOnUpdateAgainstAnotherCategoria() {
-        setUpTenant("aurora-cat");
-        categoriaService.criar(TenantContext.get(), request("Camisas"));
-        var outra = categoriaService.criar(TenantContext.get(), request("Calças"));
+    void rejectsDuplicateNomeOnUpdateAgainstAnotherCorEstampa() {
+        setUpTenant("aurora-corest");
+        corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
+        var outra = corEstampaService.criar(TenantContext.get(), request("Vermelho Ferrari"));
 
-        assertThatThrownBy(() -> categoriaService.atualizar(outra.id(), request("Camisas")))
-                .isInstanceOf(CategoriaNomeDuplicadoException.class);
+        assertThatThrownBy(() -> corEstampaService.atualizar(outra.id(), request("Azul Marinho")))
+                .isInstanceOf(CorEstampaNomeDuplicadoException.class);
     }
 
     @Test
     @Transactional
-    void allowsUpdatingACategoriaWithoutChangingItsOwnNome() {
-        setUpTenant("aurora-cat");
-        var criada = categoriaService.criar(TenantContext.get(), request("Camisas"));
+    void allowsUpdatingACorEstampaWithoutChangingItsOwnNome() {
+        setUpTenant("aurora-corest");
+        var criada = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
 
-        var atualizada = categoriaService.atualizar(criada.id(),
-                new CategoriaRequest("Camisas", "Descrição nova", false));
+        var atualizada = corEstampaService.atualizar(criada.id(),
+                new CorEstampaRequest("Azul Marinho", LocalDate.of(2026, 3, 1), "Descrição nova", false));
 
         assertThat(atualizada.descricao()).isEqualTo("Descrição nova");
+        assertThat(atualizada.dataVigencia()).isEqualTo(LocalDate.of(2026, 3, 1));
         assertThat(atualizada.ativo()).isFalse();
     }
 
     @Test
     @Transactional
-    void deletesUnusedCategoria() {
-        setUpTenant("aurora-cat");
-        var criada = categoriaService.criar(TenantContext.get(), request("Camisas"));
+    void deletesUnusedCorEstampa() {
+        setUpTenant("aurora-corest");
+        var criada = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
 
-        categoriaService.excluir(criada.id());
+        corEstampaService.excluir(criada.id());
 
-        assertThatThrownBy(() -> categoriaService.buscarPorId(criada.id()))
-                .isInstanceOf(CategoriaNaoEncontradaException.class);
+        assertThatThrownBy(() -> corEstampaService.buscarPorId(criada.id()))
+                .isInstanceOf(CorEstampaNaoEncontradaException.class);
     }
 
     @Test
     @Transactional
-    void rejectsDeletingACategoriaInUseByAProduto() {
-        setUpTenant("aurora-cat");
-        var categoria = categoriaService.criar(TenantContext.get(), request("Camisas"));
+    void rejectsDeletingACorEstampaInUseByAProduto() {
+        setUpTenant("aurora-corest");
+        var corEstampa = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
         produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
-                "Camiseta Polo", "P0001", null, null, categoria.id(), null,
+                "Camiseta Polo", "P0001", null, null, null, corEstampa.id(),
                 new BigDecimal("59.90"), null, StatusProduto.ATIVO, null,
                 new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
 
-        assertThatThrownBy(() -> categoriaService.excluir(categoria.id()))
-                .isInstanceOf(CategoriaEmUsoException.class);
+        assertThatThrownBy(() -> corEstampaService.excluir(corEstampa.id()))
+                .isInstanceOf(CorEstampaEmUsoException.class);
     }
 
     @Test
     @Transactional
     void listFiltersByAtivo() {
-        setUpTenant("aurora-cat");
-        categoriaService.criar(TenantContext.get(), new CategoriaRequest("Camisas", null, true));
-        categoriaService.criar(TenantContext.get(), new CategoriaRequest("Descontinuada", null, false));
+        setUpTenant("aurora-corest");
+        corEstampaService.criar(TenantContext.get(), new CorEstampaRequest("Azul Marinho", LocalDate.of(2026, 1, 1), null, true));
+        corEstampaService.criar(TenantContext.get(), new CorEstampaRequest("Descontinuada", LocalDate.of(2025, 1, 1), null, false));
 
-        var ativas = categoriaService.listar(null, true, PageRequest.of(0, 10));
+        var ativas = corEstampaService.listar(null, true, PageRequest.of(0, 10));
 
-        assertThat(ativas.getContent()).extracting("nome").containsExactly("Camisas");
+        assertThat(ativas.getContent()).extracting("nome").containsExactly("Azul Marinho");
     }
 
     @Test
     @Transactional
-    void listAggregatesProdutosVinculadosPerCategoriaInASingleBatch() {
-        setUpTenant("aurora-cat");
-        var camisas = categoriaService.criar(TenantContext.get(), request("Camisas"));
-        var calcas = categoriaService.criar(TenantContext.get(), request("Calças"));
-        var semProdutos = categoriaService.criar(TenantContext.get(), request("Acessórios"));
+    void listAggregatesProdutosVinculadosPerCorEstampaInASingleBatch() {
+        setUpTenant("aurora-corest");
+        var azul = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
+        var vermelho = corEstampaService.criar(TenantContext.get(), request("Vermelho Ferrari"));
+        var semProdutos = corEstampaService.criar(TenantContext.get(), request("Preto"));
 
         produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
-                "Camiseta Polo", "P0001", null, null, camisas.id(), null,
+                "Camiseta Polo", "P0001", null, null, null, azul.id(),
                 new BigDecimal("59.90"), null, StatusProduto.ATIVO, null,
                 new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
         produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
-                "Camiseta Regata", "P0002", null, null, camisas.id(), null,
+                "Camiseta Regata", "P0002", null, null, null, azul.id(),
                 new BigDecimal("39.90"), null, StatusProduto.ATIVO, null,
                 new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
         produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
-                "Calça Jeans", "P0003", null, null, calcas.id(), null,
+                "Calça Jeans", "P0003", null, null, null, vermelho.id(),
                 new BigDecimal("119.90"), null, StatusProduto.ATIVO, null,
                 new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
 
-        var pagina = categoriaService.listar(null, null, PageRequest.of(0, 10));
+        var pagina = corEstampaService.listar(null, null, PageRequest.of(0, 10));
 
         assertThat(pagina.getContent())
-                .filteredOn(c -> c.id().equals(camisas.id())).first()
+                .filteredOn(c -> c.id().equals(azul.id())).first()
                 .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(2L));
         assertThat(pagina.getContent())
-                .filteredOn(c -> c.id().equals(calcas.id())).first()
+                .filteredOn(c -> c.id().equals(vermelho.id())).first()
                 .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(1L));
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(semProdutos.id())).first()

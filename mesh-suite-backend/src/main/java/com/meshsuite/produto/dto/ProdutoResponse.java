@@ -14,6 +14,8 @@ public record ProdutoResponse(
         String marca,
         UUID categoriaId,
         String categoriaNome,
+        UUID corEstampaId,
+        String corEstampaNome,
         BigDecimal precoVenda,
         BigDecimal precoCusto,
         StatusProduto status,
