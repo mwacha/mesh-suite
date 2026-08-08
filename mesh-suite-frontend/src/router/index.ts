@@ -11,6 +11,8 @@ import ProdutoFormView from '@/views/ProdutoFormView.vue'
 import ProdutosListView from '@/views/ProdutosListView.vue'
 import CategoriasListView from '@/views/CategoriasListView.vue'
 import CategoriaFormView from '@/views/CategoriaFormView.vue'
+import CoresEstampasListView from '@/views/CoresEstampasListView.vue'
+import CorEstampaFormView from '@/views/CorEstampaFormView.vue'
 import PedidoFormView from '@/views/PedidoFormView.vue'
 import PedidosListView from '@/views/PedidosListView.vue'
 import UserFormView from '@/views/UserFormView.vue'
@@ -36,6 +38,9 @@ const router = createRouter({
     { path: '/categorias', name: 'categorias', component: CategoriasListView },
     { path: '/categorias/novo', name: 'categorias-novo', component: CategoriaFormView },
     { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoriaFormView },
+    { path: '/cores-estampas', name: 'cores-estampas', component: CoresEstampasListView },
+    { path: '/cores-estampas/novo', name: 'cores-estampas-novo', component: CorEstampaFormView },
+    { path: '/cores-estampas/:id/editar', name: 'cores-estampas-editar', component: CorEstampaFormView },
     { path: '/pedidos', name: 'pedidos', component: PedidosListView },
     { path: '/pedidos/novo', name: 'pedidos-novo', component: PedidoFormView },
     { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: PedidoFormView },
