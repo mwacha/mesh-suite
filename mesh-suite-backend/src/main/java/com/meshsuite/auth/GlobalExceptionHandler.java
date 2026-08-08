@@ -133,4 +133,22 @@ public class GlobalExceptionHandler {
             com.meshsuite.produto.CategoriaEmUsoException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.produto.CorEstampaNaoEncontradaException.class)
+    public ResponseEntity<Map<String, String>> handleCorEstampaNaoEncontrada(
+            com.meshsuite.produto.CorEstampaNaoEncontradaException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.produto.CorEstampaNomeDuplicadoException.class)
+    public ResponseEntity<Map<String, String>> handleCorEstampaNomeDuplicado(
+            com.meshsuite.produto.CorEstampaNomeDuplicadoException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.produto.CorEstampaEmUsoException.class)
+    public ResponseEntity<Map<String, String>> handleCorEstampaEmUso(
+            com.meshsuite.produto.CorEstampaEmUsoException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
