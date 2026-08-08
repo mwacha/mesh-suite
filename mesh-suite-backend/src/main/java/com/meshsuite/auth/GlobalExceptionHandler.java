@@ -151,4 +151,22 @@ public class GlobalExceptionHandler {
             com.meshsuite.produto.CorEstampaEmUsoException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.produto.TabelaPrecoNaoEncontradaException.class)
+    public ResponseEntity<Map<String, String>> handleTabelaPrecoNaoEncontrada(
+            com.meshsuite.produto.TabelaPrecoNaoEncontradaException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.produto.TabelaPrecoNomeDuplicadoException.class)
+    public ResponseEntity<Map<String, String>> handleTabelaPrecoNomeDuplicado(
+            com.meshsuite.produto.TabelaPrecoNomeDuplicadoException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.produto.TabelaPrecoValidationException.class)
+    public ResponseEntity<Map<String, String>> handleTabelaPrecoValidation(
+            com.meshsuite.produto.TabelaPrecoValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
