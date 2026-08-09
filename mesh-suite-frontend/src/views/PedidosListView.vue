@@ -108,6 +108,7 @@ import {
   type Page as ApiPage,
   type StatusPedido,
 } from '@/api/pedidos'
+import { faturarPedido } from '@/api/vendas'
 
 const router = useRouter()
 
@@ -222,6 +223,16 @@ async function avancar(pedido: PedidoSummary) {
   }
 }
 
+async function faturar(pedido: PedidoSummary) {
+  erro.value = ''
+  try {
+    await faturarPedido(pedido.id)
+    await Promise.all([carregar(pagina.value.number), carregarResumo()])
+  } catch {
+    erro.value = 'Não foi possível faturar o pedido.'
+  }
+}
+
 async function excluir(pedido: PedidoSummary) {
   if (!confirm(`Excluir o pedido nº ${pedido.numero}?`)) {
     return
@@ -239,9 +250,11 @@ function acoesPara(pedido: PedidoSummary): ActionsMenuItem[] {
   const itens: ActionsMenuItem[] = [
     { label: 'Editar', action: () => editarPedido(pedido.id), testId: 'acao-editar' },
   ]
-  const rotulo = rotuloAvancar(pedido.status)
-  if (rotulo) {
-    itens.push({ label: rotulo, action: () => avancar(pedido), testId: 'acao-avancar' })
+  const proximo = PROXIMO_STATUS[pedido.status]
+  if (proximo === 'FATURADO') {
+    itens.push({ label: 'Faturar', action: () => faturar(pedido), testId: 'acao-faturar' })
+  } else if (proximo) {
+    itens.push({ label: rotuloAvancar(pedido.status)!, action: () => avancar(pedido), testId: 'acao-avancar' })
   }
   itens.push({ label: 'Excluir', action: () => excluir(pedido), danger: true, testId: 'acao-excluir' })
   return itens
