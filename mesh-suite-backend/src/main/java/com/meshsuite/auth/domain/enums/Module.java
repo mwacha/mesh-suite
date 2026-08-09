@@ -7,5 +7,6 @@ public enum Module {
     USER,
     PURCHASE,
     STOCK,
-    PAYABLE
+    PAYABLE,
+    SALE
 }
