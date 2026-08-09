@@ -171,4 +171,16 @@ public class GlobalExceptionHandler {
             com.meshsuite.produto.exception.TabelaPrecoValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.venda.exception.VendaNaoEncontradaException.class)
+    public ResponseEntity<Map<String, String>> handleVendaNaoEncontrada(
+            com.meshsuite.venda.exception.VendaNaoEncontradaException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.venda.exception.VendaValidacaoException.class)
+    public ResponseEntity<Map<String, String>> handleVendaValidacao(
+            com.meshsuite.venda.exception.VendaValidacaoException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
