@@ -30,6 +30,7 @@ import com.meshsuite.user.domain.enums.Profile;
 import com.meshsuite.user.domain.enums.Role;
 import com.meshsuite.user.repository.UserRepository;
 import com.meshsuite.venda.dto.VendaResponse;
+import com.meshsuite.venda.dto.VendaSummaryResponse;
 import com.meshsuite.venda.exception.VendaValidacaoException;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,11 +94,15 @@ class VendaServiceTest extends AbstractIntegrationTest {
     }
 
     private UUID criarCliente(UUID tenantId, String documento) {
+        return criarCliente(tenantId, documento, "Mercado Silva");
+    }
+
+    private UUID criarCliente(UUID tenantId, String documento, String nomeFantasia) {
         Parceiro p = new Parceiro();
         p.setTenantId(tenantId);
         p.setTipoPessoa(TipoPessoa.JURIDICA);
         p.setDocumento(documento);
-        p.setNomeFantasia("Mercado Silva");
+        p.setNomeFantasia(nomeFantasia);
         p.getPapeis().add(PapelParceiro.CLIENTE);
         return parceiroRepository.saveAndFlush(p).getId();
     }
@@ -243,5 +249,27 @@ class VendaServiceTest extends AbstractIntegrationTest {
 
         assertThat(pagina.getTotalElements()).isEqualTo(1);
         assertThat(buscada.clienteNome()).isEqualTo("Mercado Silva");
+    }
+
+    @Test
+    void listaOrdenadaPorNomeDoClienteNaoLancaExcecao() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID clienteZeta = criarCliente(tenantId, "11222333000144", "Zeta Confeccoes");
+        UUID clienteAlfa = criarCliente(tenantId, "22333444000155", "Alfa Modas");
+        UUID vendedorId = criarVendedor(tenantId, "marina@aurora.com.br");
+        UUID produtoId = criarProdutoComCadastroFiscal(tenantId, "P0001", new BigDecimal("50.00"));
+        UUID pedidoZeta = criarPedidoEmPreparo(tenantId, clienteZeta, vendedorId, produtoId,
+                BigDecimal.ONE, new BigDecimal("50.00"));
+        UUID pedidoAlfa = criarPedidoEmPreparo(tenantId, clienteAlfa, vendedorId, produtoId,
+                BigDecimal.ONE, new BigDecimal("50.00"));
+        vendaService.faturar(pedidoZeta);
+        vendaService.faturar(pedidoAlfa);
+
+        var pagina = vendaService.listar(null,
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "clienteNome")));
+
+        assertThat(pagina.getTotalElements()).isEqualTo(2);
+        assertThat(pagina.getContent()).extracting(VendaSummaryResponse::clienteNome)
+                .containsExactly("Alfa Modas", "Zeta Confeccoes");
     }
 }

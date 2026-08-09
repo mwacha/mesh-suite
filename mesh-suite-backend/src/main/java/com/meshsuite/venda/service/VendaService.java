@@ -25,7 +25,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +52,23 @@ public class VendaService {
     @RequiresPermission(module = Module.SALE, action = Action.VIEW)
     public Page<VendaSummaryResponse> listar(String busca, Pageable pageable) {
         Specification<Venda> spec = Specification.where(VendaSpecifications.comBusca(busca));
-        return vendaRepository.findAll(spec, pageable).map(this::toSummary);
+        return vendaRepository.findAll(spec, remapClienteNomeSort(pageable)).map(this::toSummary);
+    }
+
+    // VendaSummaryResponse.clienteNome is a projection, not a direct Venda property --
+    // the actual JPA path is the cliente association's nomeFantasia. Remap here so
+    // sorting by "clienteNome" (as sent by the frontend) doesn't blow up with a
+    // PropertyReferenceException.
+    private Pageable remapClienteNomeSort(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        Sort remapped = Sort.by(pageable.getSort().stream()
+                .map(order -> "clienteNome".equals(order.getProperty())
+                        ? order.withProperty("cliente.nomeFantasia")
+                        : order)
+                .toList());
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), remapped);
     }
 
     @Transactional(readOnly = true)
