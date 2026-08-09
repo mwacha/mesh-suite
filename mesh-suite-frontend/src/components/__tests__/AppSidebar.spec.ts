@@ -12,6 +12,7 @@ function mountWithRouter() {
       { path: '/', name: 'dashboard', component: { template: '<div />' } },
       { path: '/outra', name: 'outra', component: { template: '<div />' } },
       { path: '/pedidos', name: 'pedidos', component: { template: '<div />' } },
+      { path: '/vendas', name: 'vendas', component: { template: '<div />' } },
     ],
   })
   const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
@@ -47,6 +48,17 @@ describe('AppSidebar', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.path).toBe('/pedidos')
+  })
+
+  it('navigates to /vendas when Vendas is clicked', async () => {
+    const { router, wrapper } = mountWithRouter()
+    await router.push('/outra')
+
+    await wrapper.find('[data-test="group-vendas"]').trigger('click')
+    await wrapper.find('[data-test="nav-Vendas"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/vendas')
   })
 
   it('toggles collapsed state, hiding the brand name and nav labels', async () => {
