@@ -132,7 +132,7 @@ const PROFILE_LABELS: Record<Profile, string> = {
   SALES: 'Vendedor',
   VIEWER: 'Visualizador',
 }
-const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER', 'PURCHASE', 'PAYABLE']
+const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER', 'PURCHASE', 'PAYABLE', 'SALE']
 const MODULE_LABELS: Record<ModuleName, string> = {
   CUSTOMER: 'Clientes',
   PRODUCT: 'Produtos',
@@ -140,6 +140,7 @@ const MODULE_LABELS: Record<ModuleName, string> = {
   USER: 'Usuários',
   PURCHASE: 'Compras',
   PAYABLE: 'Contas a Pagar',
+  SALE: 'Vendas',
 }
 const ACTIONS: ActionName[] = ['VIEW', 'CREATE', 'EDIT', 'DELETE']
 const ACTION_LABELS: Record<ActionName, string> = {
@@ -155,7 +156,8 @@ const ACTION_LABELS: Record<ActionName, string> = {
 const DEFAULT_MATRIX: Record<Profile, Permission[]> = {
   ADMIN: [
     ...MODULES.flatMap((m) => ACTIONS.filter((a) =>
-      !(m === 'USER' && a === 'DELETE') && !(m === 'PAYABLE' && (a === 'CREATE' || a === 'DELETE')),
+      !(m === 'USER' && a === 'DELETE') && !(m === 'PAYABLE' && (a === 'CREATE' || a === 'DELETE'))
+        && !(m === 'SALE' && (a === 'EDIT' || a === 'DELETE')),
     ).map((a) => ({ module: m, action: a }))),
   ],
   MANAGER: [
@@ -164,12 +166,14 @@ const DEFAULT_MATRIX: Record<Profile, Permission[]> = {
     { module: 'ORDER', action: 'VIEW' }, { module: 'ORDER', action: 'CREATE' }, { module: 'ORDER', action: 'EDIT' },
     { module: 'PURCHASE', action: 'VIEW' }, { module: 'PURCHASE', action: 'CREATE' }, { module: 'PURCHASE', action: 'EDIT' },
     { module: 'PAYABLE', action: 'VIEW' }, { module: 'PAYABLE', action: 'EDIT' },
+    { module: 'SALE', action: 'VIEW' }, { module: 'SALE', action: 'CREATE' },
     { module: 'USER', action: 'VIEW' },
   ],
   SALES: [
     { module: 'CUSTOMER', action: 'VIEW' }, { module: 'CUSTOMER', action: 'CREATE' }, { module: 'CUSTOMER', action: 'EDIT' },
     { module: 'PRODUCT', action: 'VIEW' },
     { module: 'ORDER', action: 'VIEW' }, { module: 'ORDER', action: 'CREATE' }, { module: 'ORDER', action: 'EDIT' },
+    { module: 'SALE', action: 'VIEW' }, { module: 'SALE', action: 'CREATE' },
   ],
   VIEWER: [
     { module: 'CUSTOMER', action: 'VIEW' },
@@ -177,6 +181,7 @@ const DEFAULT_MATRIX: Record<Profile, Permission[]> = {
     { module: 'ORDER', action: 'VIEW' },
     { module: 'PURCHASE', action: 'VIEW' },
     { module: 'PAYABLE', action: 'VIEW' },
+    { module: 'SALE', action: 'VIEW' },
   ],
 }
 
