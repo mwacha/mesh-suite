@@ -1,8 +1,8 @@
 package com.meshsuite.produto.dto;
 
-import com.meshsuite.produto.MetodoAjuste;
-import com.meshsuite.produto.OperacaoAjuste;
-import com.meshsuite.produto.TipoValorAjuste;
+import com.meshsuite.produto.domain.enums.MetodoAjuste;
+import com.meshsuite.produto.domain.enums.OperacaoAjuste;
+import com.meshsuite.produto.domain.enums.TipoValorAjuste;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

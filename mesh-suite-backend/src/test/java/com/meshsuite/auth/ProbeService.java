@@ -1,5 +1,10 @@
 package com.meshsuite.auth;
 
+import com.meshsuite.auth.annotation.RequiresPermission;
+import com.meshsuite.auth.aspect.PermissionAspect;
+import com.meshsuite.auth.aspect.TenantContextAspect;
+import com.meshsuite.auth.domain.enums.Action;
+import com.meshsuite.auth.domain.enums.Module;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

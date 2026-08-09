@@ -1,19 +1,21 @@
 package com.meshsuite.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.empresa.Empresa;
-import com.meshsuite.empresa.EmpresaRepository;
-import com.meshsuite.tenant.Tenant;
-import com.meshsuite.tenant.TenantRepository;
-import com.meshsuite.user.Role;
-import com.meshsuite.user.User;
-import com.meshsuite.user.UserRepository;
+import com.meshsuite.auth.aspect.TenantContextAspect;
+import com.meshsuite.auth.service.TenantQueryService;
+import com.meshsuite.empresa.domain.Empresa;
+import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.shared.context.TenantContext;
+import com.meshsuite.tenant.domain.Tenant;
+import com.meshsuite.tenant.repository.TenantRepository;
+import com.meshsuite.user.domain.User;
+import com.meshsuite.user.domain.enums.Role;
+import com.meshsuite.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 // @Transactional here (Spring test rollback) keeps this test's "aurora"/"boreal"
 // fixture rows from persisting after the test -- every other test class in this

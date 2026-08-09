@@ -1,6 +1,6 @@
 package com.meshsuite;
 
-import com.meshsuite.auth.AuthService;
+import com.meshsuite.auth.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -1,8 +1,8 @@
 package com.meshsuite.parceiro.dto;
 
-import com.meshsuite.parceiro.IndicadorIe;
-import com.meshsuite.parceiro.PapelParceiro;
-import com.meshsuite.parceiro.TipoPessoa;
+import com.meshsuite.parceiro.domain.enums.IndicadorIe;
+import com.meshsuite.parceiro.domain.enums.PapelParceiro;
+import com.meshsuite.parceiro.domain.enums.TipoPessoa;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;

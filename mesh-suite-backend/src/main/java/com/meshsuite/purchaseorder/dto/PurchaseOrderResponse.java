@@ -1,6 +1,6 @@
 package com.meshsuite.purchaseorder.dto;
 
-import com.meshsuite.purchaseorder.PurchaseOrderStatus;
+import com.meshsuite.purchaseorder.domain.enums.PurchaseOrderStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

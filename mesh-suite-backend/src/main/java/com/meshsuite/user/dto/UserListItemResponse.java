@@ -1,6 +1,6 @@
 package com.meshsuite.user.dto;
 
-import com.meshsuite.user.Profile;
+import com.meshsuite.user.domain.enums.Profile;
 
 import java.util.UUID;
 

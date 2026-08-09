@@ -1,7 +1,7 @@
 package com.meshsuite.parceiro.dto;
 
-import com.meshsuite.parceiro.StatusParceiro;
-import com.meshsuite.parceiro.TipoPessoa;
+import com.meshsuite.parceiro.domain.enums.StatusParceiro;
+import com.meshsuite.parceiro.domain.enums.TipoPessoa;
 
 import java.util.UUID;
 

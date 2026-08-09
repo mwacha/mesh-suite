@@ -1,6 +1,6 @@
 package com.meshsuite.pedido.dto;
 
-import com.meshsuite.pedido.StatusPedido;
+import com.meshsuite.pedido.domain.enums.StatusPedido;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

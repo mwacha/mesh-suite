@@ -1,7 +1,7 @@
 package com.meshsuite.produto.dto;
 
-import com.meshsuite.produto.StatusProduto;
-import com.meshsuite.produto.UnidadeMedida;
+import com.meshsuite.produto.domain.enums.StatusProduto;
+import com.meshsuite.produto.domain.enums.UnidadeMedida;
 
 import java.math.BigDecimal;
 import java.util.UUID;

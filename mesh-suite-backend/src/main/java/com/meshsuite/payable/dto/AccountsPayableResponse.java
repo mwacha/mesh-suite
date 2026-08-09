@@ -1,6 +1,6 @@
 package com.meshsuite.payable.dto;
 
-import com.meshsuite.payable.AccountsPayableStatus;
+import com.meshsuite.payable.domain.enums.AccountsPayableStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;

@@ -1,9 +1,9 @@
 package com.meshsuite.parceiro.dto;
 
-import com.meshsuite.parceiro.IndicadorIe;
-import com.meshsuite.parceiro.PapelParceiro;
-import com.meshsuite.parceiro.StatusParceiro;
-import com.meshsuite.parceiro.TipoPessoa;
+import com.meshsuite.parceiro.domain.enums.IndicadorIe;
+import com.meshsuite.parceiro.domain.enums.PapelParceiro;
+import com.meshsuite.parceiro.domain.enums.StatusParceiro;
+import com.meshsuite.parceiro.domain.enums.TipoPessoa;
 
 import java.util.List;
 import java.util.Set;

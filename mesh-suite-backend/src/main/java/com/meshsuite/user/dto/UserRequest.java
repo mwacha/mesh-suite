@@ -1,7 +1,7 @@
 package com.meshsuite.user.dto;
 
-import com.meshsuite.user.Profile;
-import com.meshsuite.user.Role;
+import com.meshsuite.user.domain.enums.Profile;
+import com.meshsuite.user.domain.enums.Role;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
