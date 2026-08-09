@@ -372,4 +372,18 @@ class PedidoServiceTest extends AbstractIntegrationTest {
         assertThrows(com.meshsuite.auth.exception.PermissionDeniedException.class,
                 () -> pedidoService.listar(null, null, org.springframework.data.domain.PageRequest.of(0, 10)));
     }
+
+    @Test
+    void rejeitaFaturarViaAvancarStatus() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID clienteId = criarCliente(tenantId, "11222333000144");
+        UUID vendedorId = criarVendedor(tenantId, "marina@aurora.com.br");
+        UUID produtoId = criarProduto(tenantId, "P0001", new BigDecimal("59.90"));
+        var itens = List.of(new ItemPedidoDto(produtoId, BigDecimal.ONE, new BigDecimal("59.90")));
+        var criado = pedidoService.criar(tenantId, request(clienteId, vendedorId, itens, BigDecimal.ZERO));
+        pedidoService.avancarStatus(criado.id(), StatusPedido.EM_PREPARO);
+
+        assertThrows(PedidoValidacaoException.class,
+                () -> pedidoService.avancarStatus(criado.id(), StatusPedido.FATURADO));
+    }
 }

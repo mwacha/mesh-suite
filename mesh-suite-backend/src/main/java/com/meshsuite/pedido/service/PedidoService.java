@@ -100,6 +100,10 @@ public class PedidoService {
     @Transactional
     @RequiresPermission(module = Module.ORDER, action = Action.EDIT)
     public PedidoResponse avancarStatus(UUID id, StatusPedido novoStatus) {
+        if (novoStatus == StatusPedido.FATURADO) {
+            throw new PedidoValidacaoException(
+                    "Faturamento deve ser feito através do fluxo de Venda (POST /api/vendas/faturar/{pedidoId})");
+        }
         Pedido pedido = buscarEntidadePorId(id);
         int atual = pedido.getStatus().ordinal();
         int alvo = novoStatus.ordinal();

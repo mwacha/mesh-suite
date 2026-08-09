@@ -286,4 +286,27 @@ class PedidoControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/pedidos").cookie(cookie))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void advancingToFaturadoViaStatusEndpointIsRejected() throws Exception {
+        Contexto ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
+
+        String created = mockMvc.perform(post("/api/pedidos").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(pedidoPayload(ctx)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
+
+        mockMvc.perform(patch("/api/pedidos/" + id + "/status").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"EM_PREPARO\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/pedidos/" + id + "/status").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"FATURADO\"}"))
+                .andExpect(status().isBadRequest());
+    }
 }
