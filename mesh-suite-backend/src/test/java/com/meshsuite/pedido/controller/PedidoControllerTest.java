@@ -4,8 +4,8 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
 import com.meshsuite.auth.domain.enums.Module;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.parceiro.domain.enums.PapelParceiro;
 import com.meshsuite.parceiro.domain.Parceiro;
 import com.meshsuite.parceiro.repository.ParceiroRepository;
@@ -38,7 +38,7 @@ class PedidoControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
-    @Autowired EmpresaRepository empresaRepository;
+    @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired ParceiroRepository parceiroRepository;
     @Autowired ProdutoRepository produtoRepository;
@@ -48,7 +48,7 @@ class PedidoControllerTest extends AbstractIntegrationTest {
     private record Contexto(String cookie, String clienteId, String vendedorId, String produtoId) {
     }
 
-    private Contexto loginAndSetUp(String codigo, String email, String cnpjEmpresa) throws Exception {
+    private Contexto loginAndSetUp(String codigo, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo(codigo);
         tenant.setNome(codigo);
@@ -56,11 +56,11 @@ class PedidoControllerTest extends AbstractIntegrationTest {
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial(codigo + " Ltda");
-        empresa.setCnpj(cnpjEmpresa);
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName(codigo + " Ltda");
+        company.setCnpj(companyCnpj);
+        companyRepository.saveAndFlush(company);
 
         User userLogin = new User();
         userLogin.setTenantId(tenant.getId());
@@ -87,7 +87,7 @@ class PedidoControllerTest extends AbstractIntegrationTest {
         Parceiro cliente = new Parceiro();
         cliente.setTenantId(tenant.getId());
         cliente.setTipoPessoa(TipoPessoa.JURIDICA);
-        cliente.setDocumento(cnpjEmpresa.equals("11222333000144") ? "55666777000155" : "11222333000144");
+        cliente.setDocumento(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
         cliente.setNomeFantasia("Mercado Silva");
         cliente.getPapeis().add(PapelParceiro.CLIENTE);
         parceiroRepository.saveAndFlush(cliente);
@@ -244,7 +244,7 @@ class PedidoControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    private String loginWithoutOrderPermission(String codigo, String email, String cnpjEmpresa) throws Exception {
+    private String loginWithoutOrderPermission(String codigo, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo(codigo);
         tenant.setNome(codigo);
@@ -252,11 +252,11 @@ class PedidoControllerTest extends AbstractIntegrationTest {
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial(codigo + " Ltda");
-        empresa.setCnpj(cnpjEmpresa);
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName(codigo + " Ltda");
+        company.setCnpj(companyCnpj);
+        companyRepository.saveAndFlush(company);
 
         User user = new User();
         user.setTenantId(tenant.getId());
