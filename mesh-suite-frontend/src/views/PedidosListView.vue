@@ -108,7 +108,7 @@ import {
   type Page as ApiPage,
   type StatusPedido,
 } from '@/api/pedidos'
-import { faturarPedido } from '@/api/vendas'
+import { issueSale } from '@/api/sales'
 
 const router = useRouter()
 
@@ -226,7 +226,7 @@ async function avancar(pedido: PedidoSummary) {
 async function faturar(pedido: PedidoSummary) {
   erro.value = ''
   try {
-    await faturarPedido(pedido.id)
+    await issueSale(pedido.id)
     await Promise.all([carregar(pagina.value.number), carregarResumo()])
   } catch {
     erro.value = 'Não foi possível faturar o pedido.'

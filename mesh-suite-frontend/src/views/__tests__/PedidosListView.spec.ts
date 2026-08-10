@@ -129,12 +129,12 @@ describe('PedidosListView', () => {
     expect(wrapper.find('[data-test="acao-avancar"]').exists()).toBe(false)
   })
 
-  it('faturns the pedido via the "Faturar" Ações item when status is Em Preparo', async () => {
+  it('issues the sale via the "Faturar" Ações item when status is Em Preparo', async () => {
     vi.mocked(pedidosApi.listarPedidos).mockResolvedValue({
       content: [pedidoEmPreparo], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
-    const vendasApi = await import('@/api/vendas')
-    vi.spyOn(vendasApi, 'faturarPedido').mockResolvedValue({} as never)
+    const salesApi = await import('@/api/sales')
+    vi.spyOn(salesApi, 'issueSale').mockResolvedValue({} as never)
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -143,7 +143,7 @@ describe('PedidosListView', () => {
     await wrapper.find('[data-test="acao-faturar"]').trigger('click')
     await flushPromises()
 
-    expect(vendasApi.faturarPedido).toHaveBeenCalledWith('ped3')
+    expect(salesApi.issueSale).toHaveBeenCalledWith('ped3')
     expect(pedidosApi.avancarStatusPedido).not.toHaveBeenCalled()
   })
 
