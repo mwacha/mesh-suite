@@ -1,3 +1,4 @@
+<!-- mesh-suite-frontend/src/views/SalesListView.vue -->
 <template>
   <AppShell title="Vendas">
     <p v-if="erro" class="error-geral">{{ erro }}</p>
@@ -20,13 +21,13 @@
       <div class="table-grid">
         <div class="table-grid-header">
           <div class="table-grid-col">Nº</div>
-          <div class="table-grid-col table-grid-col-sortable" data-test="col-cliente" @click="toggleSort('clienteNome')">
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-cliente" @click="toggleSort('customerName')">
             Cliente
-            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'clienteNome' }">{{ sortIcon('clienteNome') }}</span>
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'customerName' }">{{ sortIcon('customerName') }}</span>
           </div>
-          <div class="table-grid-col table-grid-col-sortable" data-test="col-data" @click="toggleSort('dataEmissao')">
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-data" @click="toggleSort('issueDate')">
             Data de Emissão
-            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'dataEmissao' }">{{ sortIcon('dataEmissao') }}</span>
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'issueDate' }">{{ sortIcon('issueDate') }}</span>
           </div>
           <div class="table-grid-col table-grid-col-sortable" data-test="col-total" @click="toggleSort('total')">
             Total
@@ -34,11 +35,11 @@
           </div>
         </div>
 
-        <div v-for="venda in pagina.content" :key="venda.id" class="table-grid-row" :data-test="`row-${venda.id}`">
-          <div class="table-grid-cell">{{ venda.numero }}</div>
-          <div class="table-grid-cell table-grid-cell-nome">{{ venda.clienteNome }}</div>
-          <div class="table-grid-cell">{{ formatarData(venda.dataEmissao) }}</div>
-          <div class="table-grid-cell">{{ formatarPreco(venda.total) }}</div>
+        <div v-for="sale in pagina.content" :key="sale.id" class="table-grid-row" :data-test="`row-${sale.id}`">
+          <div class="table-grid-cell">{{ sale.number }}</div>
+          <div class="table-grid-cell table-grid-cell-nome">{{ sale.customerName }}</div>
+          <div class="table-grid-cell">{{ formatarData(sale.issueDate) }}</div>
+          <div class="table-grid-cell">{{ formatarPreco(sale.total) }}</div>
         </div>
       </div>
       <p v-if="!pagina.content.length" class="empty-state">Nenhuma venda para exibir.</p>
@@ -59,11 +60,11 @@
 import { reactive, ref, onMounted } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import Pagination from '@/components/Pagination.vue'
-import { listarVendas, type VendaSummary, type Page as ApiPage } from '@/api/vendas'
+import { listSales, type SaleSummary, type Page as ApiPage } from '@/api/sales'
 
 const filtros = reactive({ busca: '' })
-const pagina = ref<ApiPage<VendaSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
-const sortField = ref<'clienteNome' | 'dataEmissao' | 'total' | null>(null)
+const pagina = ref<ApiPage<SaleSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+const sortField = ref<'customerName' | 'issueDate' | 'total' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 const erro = ref('')
 
@@ -76,14 +77,14 @@ function formatarData(data: string) {
   return `${dia}/${mes}/${ano}`
 }
 
-function sortIcon(field: 'clienteNome' | 'dataEmissao' | 'total') {
+function sortIcon(field: 'customerName' | 'issueDate' | 'total') {
   if (sortField.value !== field) {
     return '⇅'
   }
   return sortDir.value === 'asc' ? '▲' : '▼'
 }
 
-function toggleSort(field: 'clienteNome' | 'dataEmissao' | 'total') {
+function toggleSort(field: 'customerName' | 'issueDate' | 'total') {
   if (sortField.value === field) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   } else {
@@ -96,7 +97,7 @@ function toggleSort(field: 'clienteNome' | 'dataEmissao' | 'total') {
 async function carregar(page: number) {
   erro.value = ''
   try {
-    pagina.value = await listarVendas({
+    pagina.value = await listSales({
       busca: filtros.busca || undefined,
       sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,
