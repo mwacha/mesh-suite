@@ -7,8 +7,8 @@ import com.meshsuite.auth.aspect.TenantContextAspect;
 import com.meshsuite.auth.controller.AuthController;
 import com.meshsuite.auth.service.AuthService;
 import com.meshsuite.auth.service.RateLimiter;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import com.meshsuite.user.domain.User;
@@ -44,7 +44,7 @@ class AuthControllerNoAmbientTransactionTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
-    @Autowired EmpresaRepository empresaRepository;
+    @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
@@ -71,11 +71,11 @@ class AuthControllerNoAmbientTransactionTest extends AbstractIntegrationTest {
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-            Empresa empresa = new Empresa();
-            empresa.setTenantId(tenant.getId());
-            empresa.setRazaoSocial("No-Tx Empresa " + suffix);
-            empresa.setCnpj(cnpj);
-            empresaRepository.saveAndFlush(empresa);
+            Company company = new Company();
+            company.setTenantId(tenant.getId());
+            company.setLegalName("No-Tx Company " + suffix);
+            company.setCnpj(cnpj);
+            companyRepository.saveAndFlush(company);
 
             User user = new User();
             user.setTenantId(tenant.getId());

@@ -52,10 +52,10 @@ public class AuthService {
         this.self = self;
     }
 
-    public record LoginResult(User user, Tenant tenant, Company empresa) {
+    public record LoginResult(User user, Tenant tenant, Company company) {
     }
 
-    private record TenantAndEmpresa(Tenant tenant, Company empresa) {
+    private record TenantAndCompany(Tenant tenant, Company company) {
     }
 
     // Runs before the caller's tenant is known -- needs the app_user_login_lookup
@@ -97,29 +97,29 @@ public class AuthService {
 
         TenantContext.set(user.getTenantId());
         try {
-            TenantAndEmpresa loaded = self.loadTenantAndEmpresa(user.getTenantId());
-            if (loaded == null || !loaded.tenant().isAtivo() || loaded.empresa() == null) {
+            TenantAndCompany loaded = self.loadTenantAndCompany(user.getTenantId());
+            if (loaded == null || !loaded.tenant().isAtivo() || loaded.company() == null) {
                 throw new AuthException();
             }
 
             self.registerAcesso(user.getId());
-            return new LoginResult(user, loaded.tenant(), loaded.empresa());
+            return new LoginResult(user, loaded.tenant(), loaded.company());
         } finally {
             TenantContext.clear();
         }
     }
 
-    // Consolidates the tenant+empresa lookups into one plain, hand-written
+    // Consolidates the tenant+company lookups into one plain, hand-written
     // @Transactional method, proven to work with TenantContextAspect.
     @Transactional(readOnly = true)
-    public TenantAndEmpresa loadTenantAndEmpresa(UUID tenantId) {
+    public TenantAndCompany loadTenantAndCompany(UUID tenantId) {
         Tenant tenant = tenantRepository.findById(tenantId).orElse(null);
         if (tenant == null) {
             return null;
         }
-        List<Company> empresas = companyRepository.findByTenantId(tenantId);
-        Company empresa = empresas.isEmpty() ? null : empresas.get(0);
-        return new TenantAndEmpresa(tenant, empresa);
+        List<Company> companies = companyRepository.findByTenantId(tenantId);
+        Company company = companies.isEmpty() ? null : companies.get(0);
+        return new TenantAndCompany(tenant, company);
     }
 
     @Transactional

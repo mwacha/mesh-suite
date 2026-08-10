@@ -53,7 +53,7 @@ public class AuthController {
             rateLimiter.recordSuccess(ip, request.email());
 
             String token = jwtService.generateToken(
-                    result.user().getId(), result.tenant().getId(), result.empresa().getId(),
+                    result.user().getId(), result.tenant().getId(), result.company().getId(),
                     result.user().getRole().name(), request.manterConectado());
 
             long maxAgeSeconds = request.manterConectado() ? 30L * 24 * 3600 : 8L * 3600;

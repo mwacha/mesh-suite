@@ -23,12 +23,12 @@ public class TenantQueryService {
     }
 
     @Transactional
-    public void saveEmpresa(UUID tenantId, String razaoSocial, String cnpj) {
-        Company empresa = new Company();
-        empresa.setTenantId(tenantId);
-        empresa.setLegalName(razaoSocial);
-        empresa.setCnpj(cnpj);
-        companyRepository.saveAndFlush(empresa);
+    public void saveCompany(UUID tenantId, String legalName, String cnpj) {
+        Company company = new Company();
+        company.setTenantId(tenantId);
+        company.setLegalName(legalName);
+        company.setCnpj(cnpj);
+        companyRepository.saveAndFlush(company);
     }
 
     @Transactional
@@ -43,7 +43,7 @@ public class TenantQueryService {
     }
 
     @Transactional(readOnly = true)
-    public List<Company> listEmpresas() {
+    public List<Company> listCompanies() {
         return companyRepository.findAll();
     }
 

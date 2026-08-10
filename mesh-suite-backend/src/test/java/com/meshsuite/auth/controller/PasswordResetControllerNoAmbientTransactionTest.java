@@ -11,8 +11,8 @@ import com.meshsuite.auth.repository.PasswordResetTokenRepository;
 import com.meshsuite.auth.service.AuthService;
 import com.meshsuite.auth.service.PasswordResetService;
 import com.meshsuite.auth.service.RateLimiter;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import com.meshsuite.user.domain.User;
@@ -57,7 +57,7 @@ class PasswordResetControllerNoAmbientTransactionTest extends AbstractIntegratio
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
-    @Autowired EmpresaRepository empresaRepository;
+    @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired PasswordResetTokenRepository tokenRepository;
     @Autowired PasswordEncoder passwordEncoder;
@@ -90,11 +90,11 @@ class PasswordResetControllerNoAmbientTransactionTest extends AbstractIntegratio
 
             entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-            Empresa empresa = new Empresa();
-            empresa.setTenantId(tenant.getId());
-            empresa.setRazaoSocial("Reset No-Tx Empresa " + suffix);
-            empresa.setCnpj(cnpj);
-            empresaRepository.saveAndFlush(empresa);
+            Company company = new Company();
+            company.setTenantId(tenant.getId());
+            company.setLegalName("Reset No-Tx Company " + suffix);
+            company.setCnpj(cnpj);
+            companyRepository.saveAndFlush(company);
 
             User user = new User();
             user.setTenantId(tenant.getId());
