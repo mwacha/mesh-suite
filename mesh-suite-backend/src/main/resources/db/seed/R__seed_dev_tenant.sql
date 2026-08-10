@@ -10,7 +10,7 @@ ON CONFLICT (id) DO NOTHING;
 -- stays in effect until superseded by the next one, statement by statement.
 SET LOCAL app.tenant_id = '11111111-1111-1111-1111-111111111111';
 
-INSERT INTO empresa (id, tenant_id, razao_social, cnpj, ativo) VALUES
+INSERT INTO company (id, tenant_id, legal_name, cnpj, active) VALUES
     ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Confecção Aurora Ltda', '11222333000144', true)
 ON CONFLICT (id) DO NOTHING;
 
@@ -35,7 +35,7 @@ ON CONFLICT DO NOTHING;
 
 SET LOCAL app.tenant_id = '22222222-2222-2222-2222-222222222222';
 
-INSERT INTO empresa (id, tenant_id, razao_social, cnpj, ativo) VALUES
+INSERT INTO company (id, tenant_id, legal_name, cnpj, active) VALUES
     ('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222', 'Confecção Boreal Ltda', '55666777000188', true)
 ON CONFLICT (id) DO NOTHING;
 

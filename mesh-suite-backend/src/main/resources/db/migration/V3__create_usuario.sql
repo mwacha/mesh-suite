@@ -16,8 +16,8 @@ CREATE INDEX idx_usuario_email ON usuario(email);
 ALTER TABLE usuario ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuario FORCE ROW LEVEL SECURITY;
 
--- NULLIF guard: see the matching comment on empresa_tenant_isolation in
--- V2__create_empresa.sql -- a RESET custom GUC comes back as '', not NULL.
+-- NULLIF guard: see the matching comment on company_tenant_isolation in
+-- V2__create_company.sql -- a RESET custom GUC comes back as '', not NULL.
 CREATE POLICY usuario_tenant_isolation ON usuario
     USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
 
