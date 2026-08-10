@@ -172,15 +172,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.venda.exception.VendaNaoEncontradaException.class)
-    public ResponseEntity<Map<String, String>> handleVendaNaoEncontrada(
-            com.meshsuite.venda.exception.VendaNaoEncontradaException e) {
+    @ExceptionHandler(com.meshsuite.sale.exception.SaleNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleSaleNotFound(
+            com.meshsuite.sale.exception.SaleNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.venda.exception.VendaValidacaoException.class)
-    public ResponseEntity<Map<String, String>> handleVendaValidacao(
-            com.meshsuite.venda.exception.VendaValidacaoException e) {
+    @ExceptionHandler(com.meshsuite.sale.exception.SaleValidationException.class)
+    public ResponseEntity<Map<String, String>> handleSaleValidation(
+            com.meshsuite.sale.exception.SaleValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 }
