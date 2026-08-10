@@ -1,4 +1,4 @@
-package com.meshsuite.venda.domain;
+package com.meshsuite.sale.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,15 +9,15 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "venda_contador")
+@Table(name = "sale_counter")
 @Getter
 @Setter
-public class VendaContador {
+public class SaleCounter {
 
     @Id
     @Column(name = "tenant_id")
     private UUID tenantId;
 
-    @Column(name = "proximo_numero", nullable = false)
-    private Integer proximoNumero = 1;
+    @Column(name = "next_number", nullable = false)
+    private Integer nextNumber = 1;
 }

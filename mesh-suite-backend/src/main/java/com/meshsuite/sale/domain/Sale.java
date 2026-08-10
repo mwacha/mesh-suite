@@ -1,4 +1,4 @@
-package com.meshsuite.venda.domain;
+package com.meshsuite.sale.domain;
 
 import com.meshsuite.parceiro.domain.Parceiro;
 import com.meshsuite.pedido.domain.Pedido;
@@ -25,10 +25,10 @@ import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
-@Table(name = "venda")
+@Table(name = "sale")
 @Getter
 @Setter
-public class Venda {
+public class Sale {
 
     @Id
     @GeneratedValue
@@ -39,25 +39,25 @@ public class Venda {
     private UUID tenantId;
 
     @Column(nullable = false)
-    private Integer numero;
+    private Integer number;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pedido_id", nullable = false, unique = true)
-    private Pedido pedido;
+    @JoinColumn(name = "order_id", nullable = false, unique = true)
+    private Pedido order;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cliente_id", nullable = false)
-    private Parceiro cliente;
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Parceiro customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vendedor_id", nullable = false)
-    private User vendedor;
+    @JoinColumn(name = "salesperson_id", nullable = false)
+    private User salesperson;
 
-    @Column(name = "data_emissao", nullable = false)
-    private LocalDate dataEmissao = LocalDate.now();
+    @Column(name = "issue_date", nullable = false)
+    private LocalDate issueDate = LocalDate.now();
 
     @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal desconto = BigDecimal.ZERO;
+    private BigDecimal discount = BigDecimal.ZERO;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;
@@ -65,21 +65,21 @@ public class Venda {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total = BigDecimal.ZERO;
 
-    @Column(name = "valor_icms", nullable = false, precision = 12, scale = 2)
-    private BigDecimal valorIcms = BigDecimal.ZERO;
+    @Column(name = "icms_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal icmsAmount = BigDecimal.ZERO;
 
-    @Column(name = "valor_ipi", nullable = false, precision = 12, scale = 2)
-    private BigDecimal valorIpi = BigDecimal.ZERO;
+    @Column(name = "ipi_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal ipiAmount = BigDecimal.ZERO;
 
-    @Column(name = "valor_pis", nullable = false, precision = 12, scale = 2)
-    private BigDecimal valorPis = BigDecimal.ZERO;
+    @Column(name = "pis_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal pisAmount = BigDecimal.ZERO;
 
-    @Column(name = "valor_cofins", nullable = false, precision = 12, scale = 2)
-    private BigDecimal valorCofins = BigDecimal.ZERO;
+    @Column(name = "cofins_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal cofinsAmount = BigDecimal.ZERO;
 
-    @Column(name = "criado_em", nullable = false, updatable = false)
-    private Instant criadoEm = Instant.now();
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
 
-    @OneToMany(mappedBy = "venda", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ItemVenda> itens = new ArrayList<>();
+    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<SaleItem> items = new ArrayList<>();
 }
