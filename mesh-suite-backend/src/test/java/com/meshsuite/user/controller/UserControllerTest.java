@@ -7,8 +7,8 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import com.meshsuite.user.controller.UserController;
@@ -31,12 +31,12 @@ class UserControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
-    @Autowired EmpresaRepository empresaRepository;
+    @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
 
-    private String loginAndGetCookie(String codigo, String email, String cnpjEmpresa, boolean grantUserPermissions) throws Exception {
+    private String loginAndGetCookie(String codigo, String email, String companyCnpj, boolean grantUserPermissions) throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo(codigo);
         tenant.setNome(codigo);
@@ -44,11 +44,11 @@ class UserControllerTest extends AbstractIntegrationTest {
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial(codigo + " Ltda");
-        empresa.setCnpj(cnpjEmpresa);
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName(codigo + " Ltda");
+        company.setCnpj(companyCnpj);
+        companyRepository.saveAndFlush(company);
 
         User user = new User();
         user.setTenantId(tenant.getId());

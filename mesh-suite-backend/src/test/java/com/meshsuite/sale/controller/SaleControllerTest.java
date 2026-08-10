@@ -4,8 +4,8 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.fiscal.domain.FiscalRegistration;
 import com.meshsuite.fiscal.repository.FiscalRegistrationRepository;
 import com.meshsuite.parceiro.domain.Parceiro;
@@ -39,7 +39,7 @@ class SaleControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
-    @Autowired EmpresaRepository empresaRepository;
+    @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired ParceiroRepository parceiroRepository;
     @Autowired ProdutoRepository produtoRepository;
@@ -58,11 +58,11 @@ class SaleControllerTest extends AbstractIntegrationTest {
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial(code + " Ltda");
-        empresa.setCnpj(companyCnpj);
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName(code + " Ltda");
+        company.setCnpj(companyCnpj);
+        companyRepository.saveAndFlush(company);
 
         User userLogin = new User();
         userLogin.setTenantId(tenant.getId());
@@ -208,11 +208,11 @@ class SaleControllerTest extends AbstractIntegrationTest {
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial("sem-permissao-venda Ltda");
-        empresa.setCnpj("99888777000166");
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName("sem-permissao-venda Ltda");
+        company.setCnpj("99888777000166");
+        companyRepository.saveAndFlush(company);
 
         User user = new User();
         user.setTenantId(tenant.getId());

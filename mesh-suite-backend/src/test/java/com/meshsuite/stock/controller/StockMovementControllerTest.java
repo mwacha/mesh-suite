@@ -6,8 +6,8 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.produto.repository.ProdutoRepository;
 import com.meshsuite.stock.domain.enums.StockMovementOrigin;
@@ -36,7 +36,7 @@ class StockMovementControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
-    @Autowired EmpresaRepository empresaRepository;
+    @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired StockService stockService;
@@ -46,7 +46,7 @@ class StockMovementControllerTest extends AbstractIntegrationTest {
     private record Contexto(String cookie, UUID tenantId, UUID productId, UUID userId) {
     }
 
-    private Contexto loginAndSetUp(String codigo, String email, String cnpjEmpresa) throws Exception {
+    private Contexto loginAndSetUp(String codigo, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo(codigo);
         tenant.setNome(codigo);
@@ -54,11 +54,11 @@ class StockMovementControllerTest extends AbstractIntegrationTest {
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial(codigo + " Ltda");
-        empresa.setCnpj(cnpjEmpresa);
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName(codigo + " Ltda");
+        company.setCnpj(companyCnpj);
+        companyRepository.saveAndFlush(company);
 
         User userLogin = new User();
         userLogin.setTenantId(tenant.getId());
@@ -119,11 +119,11 @@ class StockMovementControllerTest extends AbstractIntegrationTest {
         tenantRepository.saveAndFlush(tenant);
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial("sem-permissao Ltda");
-        empresa.setCnpj("11222333000144");
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName("sem-permissao Ltda");
+        company.setCnpj("11222333000144");
+        companyRepository.saveAndFlush(company);
 
         User user = new User();
         user.setTenantId(tenant.getId());

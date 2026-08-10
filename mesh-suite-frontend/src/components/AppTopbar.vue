@@ -3,7 +3,7 @@
     <div class="breadcrumb">{{ title }}</div>
 
     <div class="topbar-right">
-      <div class="empresa-badge">Empresa Principal</div>
+      <div class="company-badge">Empresa Principal</div>
 
       <button type="button" class="icon-button" title="Notificações (em breve)">🔔</button>
 
@@ -71,7 +71,7 @@ function onLogout() {
   gap: 14px;
 }
 
-.empresa-badge {
+.company-badge {
   font-size: 13px;
   color: var(--pm-text-mid);
   border: 1px solid var(--pm-border-light);

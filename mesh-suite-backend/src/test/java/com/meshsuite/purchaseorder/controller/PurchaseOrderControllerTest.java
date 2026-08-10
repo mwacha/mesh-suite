@@ -4,8 +4,8 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
 import com.meshsuite.auth.domain.enums.Module;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.parceiro.domain.enums.PapelParceiro;
 import com.meshsuite.parceiro.domain.Parceiro;
 import com.meshsuite.parceiro.repository.ParceiroRepository;
@@ -38,7 +38,7 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
-    @Autowired EmpresaRepository empresaRepository;
+    @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired ParceiroRepository parceiroRepository;
     @Autowired ProdutoRepository produtoRepository;
@@ -48,7 +48,7 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
     private record Contexto(String cookie, String supplierId, String buyerId, String productId) {
     }
 
-    private Contexto loginAndSetUp(String codigo, String email, String cnpjEmpresa) throws Exception {
+    private Contexto loginAndSetUp(String codigo, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo(codigo);
         tenant.setNome(codigo);
@@ -56,11 +56,11 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial(codigo + " Ltda");
-        empresa.setCnpj(cnpjEmpresa);
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName(codigo + " Ltda");
+        company.setCnpj(companyCnpj);
+        companyRepository.saveAndFlush(company);
 
         User userLogin = new User();
         userLogin.setTenantId(tenant.getId());
@@ -78,7 +78,7 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
         Parceiro supplier = new Parceiro();
         supplier.setTenantId(tenant.getId());
         supplier.setTipoPessoa(TipoPessoa.JURIDICA);
-        supplier.setDocumento(cnpjEmpresa.equals("11222333000144") ? "55666777000155" : "11222333000144");
+        supplier.setDocumento(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
         supplier.setNomeFantasia("Tecidos Aurora");
         supplier.getPapeis().add(PapelParceiro.FORNECEDOR);
         parceiroRepository.saveAndFlush(supplier);
@@ -255,7 +255,7 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    private String loginWithoutPurchasePermission(String codigo, String email, String cnpjEmpresa) throws Exception {
+    private String loginWithoutPurchasePermission(String codigo, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo(codigo);
         tenant.setNome(codigo);
@@ -263,11 +263,11 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial(codigo + " Ltda");
-        empresa.setCnpj(cnpjEmpresa);
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName(codigo + " Ltda");
+        company.setCnpj(companyCnpj);
+        companyRepository.saveAndFlush(company);
 
         User user = new User();
         user.setTenantId(tenant.getId());
