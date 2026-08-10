@@ -1,17 +1,18 @@
-CREATE TABLE empresa (
+-- mesh-suite-backend/src/main/resources/db/migration/V2__create_company.sql
+CREATE TABLE company (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenant(id),
-    razao_social VARCHAR(255) NOT NULL,
+    legal_name VARCHAR(255) NOT NULL,
     cnpj VARCHAR(14) NOT NULL UNIQUE,
-    ativo BOOLEAN NOT NULL DEFAULT true
+    active BOOLEAN NOT NULL DEFAULT true
 );
 
-CREATE INDEX idx_empresa_tenant_id ON empresa(tenant_id);
+CREATE INDEX idx_company_tenant_id ON company(tenant_id);
 
-ALTER TABLE empresa ENABLE ROW LEVEL SECURITY;
+ALTER TABLE company ENABLE ROW LEVEL SECURITY;
 -- FORCE so the policy also applies to the table owner (the role the app
 -- connects as); without FORCE, RLS is bypassed for the owning role.
-ALTER TABLE empresa FORCE ROW LEVEL SECURITY;
+ALTER TABLE company FORCE ROW LEVEL SECURITY;
 
 -- current_setting(..., true) returns NULL instead of raising when the
 -- session var isn't set, so an unset app.tenant_id safely denies all rows
@@ -20,5 +21,5 @@ ALTER TABLE empresa FORCE ROW LEVEL SECURITY;
 -- session and then RESET come back as an empty string, not NULL -- without
 -- the NULLIF guard, ::uuid would raise "invalid input syntax for type uuid"
 -- instead of denying the row.
-CREATE POLICY empresa_tenant_isolation ON empresa
+CREATE POLICY company_tenant_isolation ON company
     USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
