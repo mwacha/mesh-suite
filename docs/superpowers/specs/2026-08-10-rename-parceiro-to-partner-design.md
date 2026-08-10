@@ -29,7 +29,7 @@
 ### Fora de escopo
 - Qualquer texto visível ao usuário final: mensagens de erro (`"Já existe um parceiro cadastrado..."`, `"Parceiro não encontrado"` etc. continuam em português, inalteradas), label "Clientes" no menu lateral, rotas do Vue Router (`/clientes`, `/clientes/novo` etc.).
 - A chave `"mensagem"` do envelope de erro JSON (convenção do projeto inteiro).
-- Rename das views `ClienteListView.vue`, `ClienteFormView.vue`, `ClienteDetailView.vue` e seus arquivos de spec — só recebem ajuste mínimo de import/tipo/literais.
+- Rename das views `ClientesListView.vue`, `ClienteFormView.vue`, `ClienteDetailView.vue`, `DashboardView.vue` e seus arquivos de spec — só recebem ajuste mínimo de import/tipo/literais.
 - Os demais módulos ainda em português (Pedido, Produto, Categoria, CorEstampa, TabelaPreco, Município) — ficam para os próximos sub-projetos.
 
 ## 3. Mapa de nomes completo
@@ -72,6 +72,10 @@
 ### Backend — campos de `PartnerContact`
 
 `id`, `email` — sem mudança. `parceiro→partner` · `nome→name` · `telefoneComercial→businessPhone` · `telefoneCelular→mobilePhone` · `cargo→jobTitle`.
+
+### Backend — campos de `PartnerSummaryResponse` (contadores agregados)
+
+`total` — sem mudança. `ativos→active` · `emRisco→atRisk` · `bloqueados→blocked`. Mesmo mapa se aplica à interface `PartnerSummary` no frontend (`api/partners.ts`), consumida por `DashboardView.vue` (`parceiroResumo.value.ativos` → `.active`).
 
 ### Backend — métodos (`PartnerService`/`PartnerController`)
 
@@ -120,11 +124,13 @@ Funções: `listarParceiros→listPartners` · `buscarParceiro→getPartner` · 
 
 ### Frontend — bridge (import/tipo/literais apenas, arquivo e labels visíveis ficam)
 
-`views/ClienteListView.vue`, `ClienteFormView.vue`, `ClienteDetailView.vue`, `PedidoFormView.vue`, `PurchaseOrderFormView.vue` (+ seus arquivos `__tests__/*.spec.ts`): atualizar imports para `partners.ts`, atualizar valores literais usados como parâmetro de API ou comparação de tipo (`'CLIENTE'→'CUSTOMER'`, `'FORNECEDOR'→'SUPPLIER'`, `'ATIVO'→'ACTIVE'`, `'EM_RISCO'→'AT_RISK'`, `'BLOQUEADO'→'BLOCKED'`). Labels visíveis ao usuário (`'Ativo'`, `'Em Risco'`, `'Bloqueado'`, `'Ativar'`, `'Bloquear'`, título "Clientes" etc.) ficam inalterados — só as chaves internas de comparação/API mudam.
+`views/ClientesListView.vue`, `ClienteFormView.vue`, `ClienteDetailView.vue`, `DashboardView.vue`, `PedidoFormView.vue`, `PurchaseOrderFormView.vue` (+ seus arquivos `__tests__/*.spec.ts`): atualizar imports para `partners.ts`, atualizar valores literais usados como parâmetro de API ou comparação de tipo (`'CLIENTE'→'CUSTOMER'`, `'FORNECEDOR'→'SUPPLIER'`, `'ATIVO'→'ACTIVE'`, `'EM_RISCO'→'AT_RISK'`, `'BLOQUEADO'→'BLOCKED'`). Labels visíveis ao usuário (`'Ativo'`, `'Em Risco'`, `'Bloqueado'`, `'Ativar'`, `'Bloquear'`, título "Clientes" etc.) ficam inalterados — só as chaves internas de comparação/API mudam. `DashboardView.vue` também usa o campo `ParceiroResumo.ativos` (vira `PartnerSummary.active`, ver mapa de campos abaixo).
 
 ## 4. Testes
 
-Mesma cobertura de hoje, renomeada: `PartnerControllerTest`, `PartnerRepositoryTest`, `PartnerServiceTest` (mirror dos atuais `Parceiro*Test`, mesmos casos). Os arquivos de teste de outros módulos que criam um `Parceiro` como fixture (`AccountsPayableControllerTest`, `PedidoControllerTest`, `PurchaseOrderControllerTest`, `SaleControllerTest`, e seus respectivos repository/service tests) mantêm os mesmos casos, só com os identificadores renomeados. Os specs do frontend (`parceiros.spec.ts→partners.spec.ts`, `ClienteFormView.spec.ts`, `ClientesListView.spec.ts`, `ClienteDetailView.spec.ts`, `PedidoFormView.spec.ts`, `PurchaseOrderFormView.spec.ts`) mantêm os mesmos casos, só com os literais/imports atualizados.
+Mesma cobertura de hoje, renomeada: `PartnerControllerTest`, `PartnerRepositoryTest`, `PartnerServiceTest` (mirror dos atuais `Parceiro*Test`, mesmos casos). Os arquivos de teste de outros módulos que criam um `Parceiro` como fixture (`AccountsPayableControllerTest`, `PedidoControllerTest`, `PurchaseOrderControllerTest`, `SaleControllerTest`, e seus respectivos repository/service tests) mantêm os mesmos casos, só com os identificadores renomeados. Os specs do frontend (`parceiros.spec.ts→partners.spec.ts`, `ClienteFormView.spec.ts`, `ClientesListView.spec.ts`, `ClienteDetailView.spec.ts`, `DashboardView.spec.ts`, `PedidoFormView.spec.ts`, `PurchaseOrderFormView.spec.ts`) mantêm os mesmos casos, só com os literais/imports atualizados.
+
+**Nomes de método de teste:** `ParceiroRepositoryTest`/`ParceiroControllerTest` já usam nomes majoritariamente em inglês (só o substantivo `Parceiro`/`Documento`/`EmRisco` precisa virar `Partner`/`Document`/`AtRisk`). `ParceiroServiceTest` é a exceção — todos os 16 nomes de método estão em português (`criaERecuperaParceiro`, `aceitaCnpjComMascaraEArmazenaSomenteDigitos`, `rejeitaParceiroSemPapelClienteOuFornecedor`, `rejeitaDocumentoDuplicadoNoMesmoTenant`, `rejeitaAtualizacaoDeStatusParaEmRisco`, `atualizaStatusParaBloqueado`, `resumoContaPorStatus`, `resumoContaSomenteOPapelInformado`, `listaComFiltroDeBusca`, `listaComFiltroDeDocumentoParcialIgnorandoMascara`, `listaComFiltroDePapel`, `listaComFiltroDeStatusMultiplo`, `listaComFiltroDeUfMultiplo`, `excluiParceiro`, `atualizaParceiroComSucesso`, `atualizaParceiroMantendoOProprioDocumento`). Estes traduzem para inglês também — mesmo padrão observado em `CompanyRepositoryTest` no sub-projeto Empresa, onde os nomes de teste ficaram em inglês (`savesCompanyForTenant` etc.), e nomes de método de teste não são texto visível ao cliente final.
 
 ## 5. Riscos e notas abertas
 
