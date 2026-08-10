@@ -1,4 +1,4 @@
-package com.meshsuite.empresa.domain;
+package com.meshsuite.company.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,10 +8,10 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "empresa")
+@Table(name = "company")
 @Getter
 @Setter
-public class Empresa {
+public class Company {
 
     @Id
     @GeneratedValue
@@ -21,12 +21,12 @@ public class Empresa {
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
 
-    @Column(name = "razao_social", nullable = false)
-    private String razaoSocial;
+    @Column(name = "legal_name", nullable = false)
+    private String legalName;
 
     @Column(nullable = false, unique = true, length = 14)
     private String cnpj;
 
     @Column(nullable = false)
-    private boolean ativo = true;
+    private boolean active = true;
 }

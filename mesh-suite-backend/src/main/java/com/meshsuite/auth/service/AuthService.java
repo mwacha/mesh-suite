@@ -3,8 +3,8 @@ package com.meshsuite.auth.service;
 import com.meshsuite.auth.aspect.TenantContextAspect;
 import com.meshsuite.auth.controller.AuthController;
 import com.meshsuite.auth.exception.AuthException;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
@@ -24,7 +24,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
-    private final EmpresaRepository empresaRepository;
+    private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
     private final AuthService self;
@@ -42,20 +42,20 @@ public class AuthService {
     // actually applies. @Lazy avoids a circular-construction failure (Spring can't
     // otherwise build a bean that depends on itself).
     public AuthService(UserRepository userRepository, TenantRepository tenantRepository,
-                        EmpresaRepository empresaRepository, PasswordEncoder passwordEncoder,
+                        CompanyRepository companyRepository, PasswordEncoder passwordEncoder,
                         EntityManager entityManager, @Lazy AuthService self) {
         this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
-        this.empresaRepository = empresaRepository;
+        this.companyRepository = companyRepository;
         this.passwordEncoder = passwordEncoder;
         this.entityManager = entityManager;
         this.self = self;
     }
 
-    public record LoginResult(User user, Tenant tenant, Empresa empresa) {
+    public record LoginResult(User user, Tenant tenant, Company empresa) {
     }
 
-    private record TenantAndEmpresa(Tenant tenant, Empresa empresa) {
+    private record TenantAndEmpresa(Tenant tenant, Company empresa) {
     }
 
     // Runs before the caller's tenant is known -- needs the app_user_login_lookup
@@ -117,8 +117,8 @@ public class AuthService {
         if (tenant == null) {
             return null;
         }
-        List<Empresa> empresas = empresaRepository.findByTenantId(tenantId);
-        Empresa empresa = empresas.isEmpty() ? null : empresas.get(0);
+        List<Company> empresas = companyRepository.findByTenantId(tenantId);
+        Company empresa = empresas.isEmpty() ? null : empresas.get(0);
         return new TenantAndEmpresa(tenant, empresa);
     }
 

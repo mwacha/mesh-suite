@@ -1,9 +1,9 @@
-package com.meshsuite.empresa.repository;
+package com.meshsuite.company.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import jakarta.persistence.EntityManager;
@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-class EmpresaRepositoryTest extends AbstractIntegrationTest {
+class CompanyRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     TenantRepository tenantRepository;
     @Autowired
-    EmpresaRepository empresaRepository;
+    CompanyRepository companyRepository;
     @Autowired
     EntityManager entityManager;
 
@@ -30,7 +30,7 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
         return tenantRepository.saveAndFlush(t);
     }
 
-    // The empresa_tenant_isolation policy has no explicit WITH CHECK, so Postgres
+    // The company_tenant_isolation policy has no explicit WITH CHECK, so Postgres
     // reuses its USING expression for INSERT too: writing a row now requires
     // app.tenant_id to already equal that row's tenant_id, not just reading one.
     private void setTenantContext(UUID tenantId) {
@@ -39,19 +39,19 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
 
     @Test
     @Transactional
-    void savesEmpresaForTenant() {
+    void savesCompanyForTenant() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial("Confecção Aurora Ltda");
-        empresa.setCnpj("11222333000144");
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName("Confecção Aurora Ltda");
+        company.setCnpj("11222333000144");
 
-        Empresa saved = empresaRepository.save(empresa);
+        Company saved = companyRepository.save(company);
 
         assertThat(saved.getId()).isNotNull();
-        assertThat(saved.isAtivo()).isTrue();
+        assertThat(saved.isActive()).isTrue();
     }
 
     @Test
@@ -61,21 +61,21 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
         Tenant tenantB = createTenant("boreal");
 
         setTenantContext(tenantA.getId());
-        Empresa a = new Empresa();
+        Company a = new Company();
         a.setTenantId(tenantA.getId());
-        a.setRazaoSocial("Confecção Aurora Ltda");
+        a.setLegalName("Confecção Aurora Ltda");
         a.setCnpj("11222333000144");
-        empresaRepository.saveAndFlush(a);
+        companyRepository.saveAndFlush(a);
 
         setTenantContext(tenantB.getId());
-        Empresa b = new Empresa();
+        Company b = new Company();
         b.setTenantId(tenantB.getId());
-        b.setRazaoSocial("Confecção Boreal Ltda");
+        b.setLegalName("Confecção Boreal Ltda");
         b.setCnpj("11222333000144");
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 org.springframework.dao.DataIntegrityViolationException.class,
-                () -> empresaRepository.saveAndFlush(b));
+                () -> companyRepository.saveAndFlush(b));
     }
 
     @Test
@@ -84,11 +84,11 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
 
-        Empresa empresa = new Empresa();
-        empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial("Confecção Aurora Ltda");
-        empresa.setCnpj("11222333000144");
-        empresaRepository.saveAndFlush(empresa);
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName("Confecção Aurora Ltda");
+        company.setCnpj("11222333000144");
+        companyRepository.saveAndFlush(company);
         entityManager.clear();
 
         // RESET reverts the SET LOCAL above (back to no value, since it was never set
@@ -97,7 +97,7 @@ class EmpresaRepositoryTest extends AbstractIntegrationTest {
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
         Long count = ((Number) entityManager
-                .createNativeQuery("SELECT count(*) FROM empresa")
+                .createNativeQuery("SELECT count(*) FROM company")
                 .getSingleResult()).longValue();
 
         assertThat(count).isZero();

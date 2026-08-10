@@ -1,7 +1,7 @@
 package com.meshsuite.auth.service;
 
-import com.meshsuite.empresa.domain.Empresa;
-import com.meshsuite.empresa.repository.EmpresaRepository;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.user.domain.enums.Role;
 import com.meshsuite.user.domain.User;
 import com.meshsuite.user.repository.UserRepository;
@@ -14,21 +14,21 @@ import java.util.UUID;
 @Service
 public class TenantQueryService {
 
-    private final EmpresaRepository empresaRepository;
+    private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
 
-    public TenantQueryService(EmpresaRepository empresaRepository, UserRepository userRepository) {
-        this.empresaRepository = empresaRepository;
+    public TenantQueryService(CompanyRepository companyRepository, UserRepository userRepository) {
+        this.companyRepository = companyRepository;
         this.userRepository = userRepository;
     }
 
     @Transactional
     public void saveEmpresa(UUID tenantId, String razaoSocial, String cnpj) {
-        Empresa empresa = new Empresa();
+        Company empresa = new Company();
         empresa.setTenantId(tenantId);
-        empresa.setRazaoSocial(razaoSocial);
+        empresa.setLegalName(razaoSocial);
         empresa.setCnpj(cnpj);
-        empresaRepository.saveAndFlush(empresa);
+        companyRepository.saveAndFlush(empresa);
     }
 
     @Transactional
@@ -43,8 +43,8 @@ public class TenantQueryService {
     }
 
     @Transactional(readOnly = true)
-    public List<Empresa> listEmpresas() {
-        return empresaRepository.findAll();
+    public List<Company> listEmpresas() {
+        return companyRepository.findAll();
     }
 
     @Transactional(readOnly = true)
