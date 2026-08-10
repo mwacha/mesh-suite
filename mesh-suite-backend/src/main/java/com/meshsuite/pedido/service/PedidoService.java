@@ -102,7 +102,7 @@ public class PedidoService {
     public PedidoResponse avancarStatus(UUID id, StatusPedido novoStatus) {
         if (novoStatus == StatusPedido.FATURADO) {
             throw new PedidoValidacaoException(
-                    "Faturamento deve ser feito através do fluxo de Venda (POST /api/vendas/faturar/{pedidoId})");
+                    "Faturamento deve ser feito através do fluxo de Venda (POST /api/sales/issue/{pedidoId})");
         }
         Pedido pedido = buscarEntidadePorId(id);
         int atual = pedido.getStatus().ordinal();

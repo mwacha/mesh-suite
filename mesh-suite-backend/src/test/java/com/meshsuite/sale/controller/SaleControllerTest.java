@@ -1,4 +1,4 @@
-package com.meshsuite.venda.controller;
+package com.meshsuite.sale.controller;
 
 import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Transactional
-class VendaControllerTest extends AbstractIntegrationTest {
+class SaleControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
@@ -47,21 +47,21 @@ class VendaControllerTest extends AbstractIntegrationTest {
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
 
-    private record Contexto(String cookie, String clienteId, String vendedorId, String produtoId) {
+    private record Context(String cookie, String customerId, String salespersonId, String productId) {
     }
 
-    private Contexto loginAndSetUp(String codigo, String email, String cnpjEmpresa) throws Exception {
+    private Context loginAndSetUp(String code, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
-        tenant.setCodigo(codigo);
-        tenant.setNome(codigo);
+        tenant.setCodigo(code);
+        tenant.setNome(code);
         tenantRepository.saveAndFlush(tenant);
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
         Empresa empresa = new Empresa();
         empresa.setTenantId(tenant.getId());
-        empresa.setRazaoSocial(codigo + " Ltda");
-        empresa.setCnpj(cnpjEmpresa);
+        empresa.setRazaoSocial(code + " Ltda");
+        empresa.setCnpj(companyCnpj);
         empresaRepository.saveAndFlush(empresa);
 
         User userLogin = new User();
@@ -78,22 +78,22 @@ class VendaControllerTest extends AbstractIntegrationTest {
         userLogin.getPermissions().add(new UserPermissionGrant(Module.SALE, Action.CREATE));
         userRepository.saveAndFlush(userLogin);
 
-        User vendedor = new User();
-        vendedor.setTenantId(tenant.getId());
-        vendedor.setName("Carla Vendedora");
-        vendedor.setEmail("carla-" + codigo + "@" + codigo + ".com.br");
-        vendedor.setPasswordHash("hash");
-        vendedor.setRole(Role.SALES_REP);
-        vendedor.setProfile(Profile.SALES);
-        userRepository.saveAndFlush(vendedor);
+        User salesperson = new User();
+        salesperson.setTenantId(tenant.getId());
+        salesperson.setName("Carla Vendedora");
+        salesperson.setEmail("carla-" + code + "@" + code + ".com.br");
+        salesperson.setPasswordHash("hash");
+        salesperson.setRole(Role.SALES_REP);
+        salesperson.setProfile(Profile.SALES);
+        userRepository.saveAndFlush(salesperson);
 
-        Parceiro cliente = new Parceiro();
-        cliente.setTenantId(tenant.getId());
-        cliente.setTipoPessoa(TipoPessoa.JURIDICA);
-        cliente.setDocumento(cnpjEmpresa.equals("11222333000144") ? "55666777000155" : "11222333000144");
-        cliente.setNomeFantasia("Mercado Silva");
-        cliente.getPapeis().add(PapelParceiro.CLIENTE);
-        parceiroRepository.saveAndFlush(cliente);
+        Parceiro customer = new Parceiro();
+        customer.setTenantId(tenant.getId());
+        customer.setTipoPessoa(TipoPessoa.JURIDICA);
+        customer.setDocumento(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
+        customer.setNomeFantasia("Mercado Silva");
+        customer.getPapeis().add(PapelParceiro.CLIENTE);
+        parceiroRepository.saveAndFlush(customer);
 
         FiscalRegistration registration = new FiscalRegistration();
         registration.setTenantId(tenant.getId());
@@ -106,13 +106,13 @@ class VendaControllerTest extends AbstractIntegrationTest {
         registration.setCofinsRate(new BigDecimal("7.60"));
         fiscalRegistrationRepository.saveAndFlush(registration);
 
-        Produto produto = new Produto();
-        produto.setTenantId(tenant.getId());
-        produto.setNome("Camiseta Polo");
-        produto.setSku("P0001-" + codigo);
-        produto.setPrecoVenda(new BigDecimal("59.90"));
-        produto.setFiscalRegistration(registration);
-        produtoRepository.saveAndFlush(produto);
+        Produto product = new Produto();
+        product.setTenantId(tenant.getId());
+        product.setNome("Camiseta Polo");
+        product.setSku("P0001-" + code);
+        product.setPrecoVenda(new BigDecimal("59.90"));
+        product.setFiscalRegistration(registration);
+        produtoRepository.saveAndFlush(product);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
@@ -123,10 +123,10 @@ class VendaControllerTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getHeader("Set-Cookie");
 
         String token = cookieHeader.split("mesh_token=")[1].split(";")[0];
-        return new Contexto(token, cliente.getId().toString(), vendedor.getId().toString(), produto.getId().toString());
+        return new Context(token, customer.getId().toString(), salesperson.getId().toString(), product.getId().toString());
     }
 
-    private String criarPedidoEmPreparo(Contexto ctx, Cookie cookie) throws Exception {
+    private String createOrderInPreparation(Context ctx, Cookie cookie) throws Exception {
         String created = mockMvc.perform(post("/api/pedidos").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -136,49 +136,49 @@ class VendaControllerTest extends AbstractIntegrationTest {
                                   "desconto": 0,
                                   "itens": [ { "produtoId": "%s", "quantidade": 2, "valorUnitario": 59.90 } ]
                                 }
-                                """.formatted(ctx.clienteId(), ctx.vendedorId(), ctx.produtoId())))
+                                """.formatted(ctx.customerId(), ctx.salespersonId(), ctx.productId())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String pedidoId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
+        String orderId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(patch("/api/pedidos/" + pedidoId + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/pedidos/" + orderId + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"EM_PREPARO\"}"))
                 .andExpect(status().isOk());
 
-        return pedidoId;
+        return orderId;
     }
 
     @Test
-    void faturaListsAndFindsVenda() throws Exception {
-        Contexto ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+    void issuesListsAndFindsSale() throws Exception {
+        Context ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
-        String pedidoId = criarPedidoEmPreparo(ctx, cookie);
+        String orderId = createOrderInPreparation(ctx, cookie);
 
-        String created = mockMvc.perform(post("/api/vendas/faturar/" + pedidoId).cookie(cookie))
+        String created = mockMvc.perform(post("/api/sales/issue/" + orderId).cookie(cookie))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.numero").value(1))
-                .andExpect(jsonPath("$.pedidoId").value(pedidoId))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.orderId").value(orderId))
                 .andExpect(jsonPath("$.total").value(119.80))
                 .andReturn().getResponse().getContentAsString();
-        String vendaId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
+        String saleId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(get("/api/vendas").cookie(cookie))
+        mockMvc.perform(get("/api/sales").cookie(cookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].numero").value(1));
+                .andExpect(jsonPath("$.content[0].number").value(1));
 
-        mockMvc.perform(get("/api/vendas/" + vendaId).cookie(cookie))
+        mockMvc.perform(get("/api/sales/" + saleId).cookie(cookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.clienteNome").value("Mercado Silva"));
+                .andExpect(jsonPath("$.customerName").value("Mercado Silva"));
 
-        mockMvc.perform(get("/api/pedidos/" + pedidoId).cookie(cookie))
+        mockMvc.perform(get("/api/pedidos/" + orderId).cookie(cookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("FATURADO"));
     }
 
     @Test
-    void faturingAPedidoStillInDigitadoIsBadRequest() throws Exception {
-        Contexto ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+    void issuingAnOrderStillInDigitadoIsBadRequest() throws Exception {
+        Context ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
         String created = mockMvc.perform(post("/api/pedidos").cookie(cookie)
@@ -190,17 +190,17 @@ class VendaControllerTest extends AbstractIntegrationTest {
                                   "desconto": 0,
                                   "itens": [ { "produtoId": "%s", "quantidade": 2, "valorUnitario": 59.90 } ]
                                 }
-                                """.formatted(ctx.clienteId(), ctx.vendedorId(), ctx.produtoId())))
+                                """.formatted(ctx.customerId(), ctx.salespersonId(), ctx.productId())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String pedidoId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
+        String orderId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(post("/api/vendas/faturar/" + pedidoId).cookie(cookie))
+        mockMvc.perform(post("/api/sales/issue/" + orderId).cookie(cookie))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void faturingWithoutSalePermissionIsForbidden() throws Exception {
+    void issuingWithoutSalePermissionIsForbidden() throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo("sem-permissao-venda");
         tenant.setNome("sem-permissao-venda");
@@ -233,7 +233,7 @@ class VendaControllerTest extends AbstractIntegrationTest {
         String token = cookieHeader.split("mesh_token=")[1].split(";")[0];
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(get("/api/vendas").cookie(cookie))
+        mockMvc.perform(get("/api/sales").cookie(cookie))
                 .andExpect(status().isForbidden());
     }
 }
