@@ -6,10 +6,10 @@ import com.meshsuite.auth.filter.JwtAuthenticationFilter;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.company.domain.Company;
 import com.meshsuite.company.repository.CompanyRepository;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
-import com.meshsuite.parceiro.domain.enums.TipoPessoa;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.repository.PartnerRepository;
+import com.meshsuite.partner.domain.enums.PersonType;
 import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.produto.repository.ProdutoRepository;
 import com.meshsuite.tenant.domain.Tenant;
@@ -40,7 +40,7 @@ class PedidoControllerTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ParceiroRepository parceiroRepository;
+    @Autowired PartnerRepository partnerRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
@@ -84,13 +84,13 @@ class PedidoControllerTest extends AbstractIntegrationTest {
         vendedor.setProfile(Profile.SALES);
         userRepository.saveAndFlush(vendedor);
 
-        Parceiro cliente = new Parceiro();
+        Partner cliente = new Partner();
         cliente.setTenantId(tenant.getId());
-        cliente.setTipoPessoa(TipoPessoa.JURIDICA);
-        cliente.setDocumento(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
-        cliente.setNomeFantasia("Mercado Silva");
-        cliente.getPapeis().add(PapelParceiro.CLIENTE);
-        parceiroRepository.saveAndFlush(cliente);
+        cliente.setPersonType(PersonType.LEGAL_ENTITY);
+        cliente.setDocument(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
+        cliente.setTradeName("Mercado Silva");
+        cliente.getRoles().add(PartnerRole.CUSTOMER);
+        partnerRepository.saveAndFlush(cliente);
 
         Produto produto = new Produto();
         produto.setTenantId(tenant.getId());

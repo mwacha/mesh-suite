@@ -6,10 +6,10 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.service.AuthContextService;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.domain.enums.TipoPessoa;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.domain.enums.PersonType;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.pedido.domain.enums.StatusPedido;
 import com.meshsuite.pedido.dto.ItemPedidoDto;
 import com.meshsuite.pedido.dto.PedidoRequest;
@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 class PedidoServiceTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired ParceiroRepository parceiroRepository;
+    @Autowired PartnerRepository partnerRepository;
     @Autowired UserRepository userRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired PedidoService pedidoService;
@@ -83,23 +83,23 @@ class PedidoServiceTest extends AbstractIntegrationTest {
     }
 
     private UUID criarCliente(UUID tenantId, String documento) {
-        Parceiro p = new Parceiro();
+        Partner p = new Partner();
         p.setTenantId(tenantId);
-        p.setTipoPessoa(TipoPessoa.JURIDICA);
-        p.setDocumento(documento);
-        p.setNomeFantasia("Mercado Silva");
-        p.getPapeis().add(PapelParceiro.CLIENTE);
-        return parceiroRepository.saveAndFlush(p).getId();
+        p.setPersonType(PersonType.LEGAL_ENTITY);
+        p.setDocument(documento);
+        p.setTradeName("Mercado Silva");
+        p.getRoles().add(PartnerRole.CUSTOMER);
+        return partnerRepository.saveAndFlush(p).getId();
     }
 
     private UUID criarFornecedor(UUID tenantId, String documento) {
-        Parceiro p = new Parceiro();
+        Partner p = new Partner();
         p.setTenantId(tenantId);
-        p.setTipoPessoa(TipoPessoa.JURIDICA);
-        p.setDocumento(documento);
-        p.setNomeFantasia("Tecidos Aurora");
-        p.getPapeis().add(PapelParceiro.FORNECEDOR);
-        return parceiroRepository.saveAndFlush(p).getId();
+        p.setPersonType(PersonType.LEGAL_ENTITY);
+        p.setDocument(documento);
+        p.setTradeName("Tecidos Aurora");
+        p.getRoles().add(PartnerRole.SUPPLIER);
+        return partnerRepository.saveAndFlush(p).getId();
     }
 
     private UUID criarVendedor(UUID tenantId, String email) {

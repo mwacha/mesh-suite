@@ -2,10 +2,10 @@ package com.meshsuite.payable.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.domain.enums.TipoPessoa;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.domain.enums.PersonType;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.payable.domain.AccountsPayable;
 import com.meshsuite.payable.repository.AccountsPayableRepository;
 import com.meshsuite.tenant.domain.Tenant;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 class AccountsPayableRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired ParceiroRepository parceiroRepository;
+    @Autowired PartnerRepository partnerRepository;
     @Autowired AccountsPayableRepository accountsPayableRepository;
     @Autowired EntityManager entityManager;
 
@@ -42,13 +42,13 @@ class AccountsPayableRepositoryTest extends AbstractIntegrationTest {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
 
-        Parceiro fornecedor = new Parceiro();
+        Partner fornecedor = new Partner();
         fornecedor.setTenantId(tenant.getId());
-        fornecedor.setTipoPessoa(TipoPessoa.JURIDICA);
-        fornecedor.setDocumento("11222333000144");
-        fornecedor.setNomeFantasia("Tecidos Aurora");
-        fornecedor.getPapeis().add(PapelParceiro.FORNECEDOR);
-        fornecedor = parceiroRepository.saveAndFlush(fornecedor);
+        fornecedor.setPersonType(PersonType.LEGAL_ENTITY);
+        fornecedor.setDocument("11222333000144");
+        fornecedor.setTradeName("Tecidos Aurora");
+        fornecedor.getRoles().add(PartnerRole.SUPPLIER);
+        fornecedor = partnerRepository.saveAndFlush(fornecedor);
 
         AccountsPayable entry = new AccountsPayable();
         entry.setTenantId(tenant.getId());

@@ -8,10 +8,10 @@ import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
 import com.meshsuite.company.domain.Company;
 import com.meshsuite.company.repository.CompanyRepository;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.domain.enums.TipoPessoa;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.domain.enums.PersonType;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.payable.dto.AccountsPayableInstallmentInput;
 import com.meshsuite.payable.service.AccountsPayableService;
 import com.meshsuite.tenant.domain.Tenant;
@@ -41,7 +41,7 @@ class AccountsPayableControllerTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ParceiroRepository parceiroRepository;
+    @Autowired PartnerRepository partnerRepository;
     @Autowired AccountsPayableService accountsPayableService;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
@@ -74,13 +74,13 @@ class AccountsPayableControllerTest extends AbstractIntegrationTest {
         userLogin.getPermissions().add(new UserPermissionGrant(Module.PAYABLE, Action.EDIT));
         userRepository.saveAndFlush(userLogin);
 
-        Parceiro fornecedor = new Parceiro();
+        Partner fornecedor = new Partner();
         fornecedor.setTenantId(tenant.getId());
-        fornecedor.setTipoPessoa(TipoPessoa.JURIDICA);
-        fornecedor.setDocumento(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
-        fornecedor.setNomeFantasia("Tecidos Aurora");
-        fornecedor.getPapeis().add(PapelParceiro.FORNECEDOR);
-        parceiroRepository.saveAndFlush(fornecedor);
+        fornecedor.setPersonType(PersonType.LEGAL_ENTITY);
+        fornecedor.setDocument(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
+        fornecedor.setTradeName("Tecidos Aurora");
+        fornecedor.getRoles().add(PartnerRole.SUPPLIER);
+        partnerRepository.saveAndFlush(fornecedor);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
