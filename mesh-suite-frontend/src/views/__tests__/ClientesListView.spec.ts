@@ -163,11 +163,11 @@ describe('ClientesListView', () => {
 
     await wrapper.find('[data-test="col-cidade"]').trigger('click')
     await flushPromises()
-    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'cidade,asc' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'city,asc' }))
 
     await wrapper.find('[data-test="col-cidade"]').trigger('click')
     await flushPromises()
-    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'cidade,desc' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'city,desc' }))
   })
 
   it('sorts by Nome and Status columns as well', async () => {
@@ -176,7 +176,7 @@ describe('ClientesListView', () => {
 
     await wrapper.find('[data-test="col-nome"]').trigger('click')
     await flushPromises()
-    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'nomeFantasia,asc' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'tradeName,asc' }))
 
     await wrapper.find('[data-test="col-status"]').trigger('click')
     await flushPromises()

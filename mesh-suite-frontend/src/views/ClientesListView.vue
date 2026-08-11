@@ -58,14 +58,14 @@
 
       <div class="table-grid">
         <div class="table-grid-header">
-          <div class="table-grid-col table-grid-col-sortable" data-test="col-nome" @click="toggleSort('nomeFantasia')">
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-nome" @click="toggleSort('tradeName')">
             Nome / Razão Social
-            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'nomeFantasia' }">{{ sortIcon('nomeFantasia') }}</span>
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'tradeName' }">{{ sortIcon('tradeName') }}</span>
           </div>
           <div class="table-grid-col">Documento</div>
-          <div class="table-grid-col table-grid-col-sortable" data-test="col-cidade" @click="toggleSort('cidade')">
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-cidade" @click="toggleSort('city')">
             Cidade
-            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'cidade' }">{{ sortIcon('cidade') }}</span>
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'city' }">{{ sortIcon('city') }}</span>
           </div>
           <div class="table-grid-col" data-test="col-telefone">Telefone</div>
           <div class="table-grid-col table-grid-col-sortable" data-test="col-status" @click="toggleSort('status')">
@@ -152,7 +152,7 @@ const numeroDocFiltro = ref('')
 
 const filtros = reactive({ busca: '' })
 const filtrosAvancados = ref<Record<string, string[]>>({})
-const sortField = ref<'nomeFantasia' | 'cidade' | 'status' | null>(null)
+const sortField = ref<'tradeName' | 'city' | 'status' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 
 const pagina = ref<Page<PartnerListItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
@@ -169,14 +169,14 @@ function statusColor(status: PartnerStatus): StatusBadgeColor {
   return { ACTIVE: 'green', AT_RISK: 'amber', BLOCKED: 'red' }[status] as StatusBadgeColor
 }
 
-function sortIcon(field: 'nomeFantasia' | 'cidade' | 'status') {
+function sortIcon(field: 'tradeName' | 'city' | 'status') {
   if (sortField.value !== field) {
     return '⇅'
   }
   return sortDir.value === 'asc' ? '▲' : '▼'
 }
 
-function toggleSort(field: 'nomeFantasia' | 'cidade' | 'status') {
+function toggleSort(field: 'tradeName' | 'city' | 'status') {
   if (sortField.value === field) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   } else {
