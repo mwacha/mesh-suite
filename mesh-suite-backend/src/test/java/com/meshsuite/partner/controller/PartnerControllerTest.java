@@ -1,4 +1,4 @@
-package com.meshsuite.parceiro.controller;
+package com.meshsuite.partner.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -8,8 +8,8 @@ import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
 import com.meshsuite.company.domain.Company;
 import com.meshsuite.company.repository.CompanyRepository;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.service.ParceiroService;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.service.PartnerService;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import com.meshsuite.user.domain.User;
@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-class ParceiroControllerTest extends AbstractIntegrationTest {
+class PartnerControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
@@ -111,83 +111,83 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
     private String parceiroPayload(String documento) {
         return """
                 {
-                  "tipoPessoa": "JURIDICA",
-                  "documento": "%s",
-                  "nomeFantasia": "Mercado Silva",
-                  "razaoSocial": "Mercado Silva Ltda",
-                  "papeis": ["CLIENTE"],
-                  "cidade": "São Paulo",
-                  "uf": "SP",
-                  "contatos": []
+                  "personType": "LEGAL_ENTITY",
+                  "document": "%s",
+                  "tradeName": "Mercado Silva",
+                  "legalName": "Mercado Silva Ltda",
+                  "roles": ["CUSTOMER"],
+                  "city": "São Paulo",
+                  "state": "SP",
+                  "contacts": []
                 }
                 """.formatted(documento);
     }
 
     @Test
-    void createsListsUpdatesAndDeletesParceiro() throws Exception {
+    void createsListsUpdatesAndDeletesPartner() throws Exception {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        String created = mockMvc.perform(post("/api/parceiros").cookie(cookie)
+        String created = mockMvc.perform(post("/api/partners").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(parceiroPayload("22333444000155")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.nomeFantasia").value("Mercado Silva"))
+                .andExpect(jsonPath("$.tradeName").value("Mercado Silva"))
                 .andReturn().getResponse().getContentAsString();
 
         String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(get("/api/parceiros").cookie(cookie))
+        mockMvc.perform(get("/api/partners").cookie(cookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].nomeFantasia").value("Mercado Silva"));
+                .andExpect(jsonPath("$.content[0].tradeName").value("Mercado Silva"));
 
-        mockMvc.perform(put("/api/parceiros/" + id).cookie(cookie)
+        mockMvc.perform(put("/api/partners/" + id).cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "tipoPessoa": "JURIDICA",
-                                  "documento": "22333444000155",
-                                  "nomeFantasia": "Mercado Silva Atualizado",
-                                  "papeis": ["CLIENTE","FORNECEDOR"],
-                                  "contatos": []
+                                  "personType": "LEGAL_ENTITY",
+                                  "document": "22333444000155",
+                                  "tradeName": "Mercado Silva Atualizado",
+                                  "roles": ["CUSTOMER","SUPPLIER"],
+                                  "contacts": []
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nomeFantasia").value("Mercado Silva Atualizado"))
-                .andExpect(jsonPath("$.papeis.length()").value(2));
+                .andExpect(jsonPath("$.tradeName").value("Mercado Silva Atualizado"))
+                .andExpect(jsonPath("$.roles.length()").value(2));
 
-        mockMvc.perform(patch("/api/parceiros/" + id + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/partners/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"BLOQUEADO\"}"))
+                        .content("{\"status\":\"BLOCKED\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("BLOQUEADO"));
+                .andExpect(jsonPath("$.status").value("BLOCKED"));
 
-        mockMvc.perform(delete("/api/parceiros/" + id).cookie(cookie))
+        mockMvc.perform(delete("/api/partners/" + id).cookie(cookie))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/parceiros/" + id).cookie(cookie))
+        mockMvc.perform(get("/api/partners/" + id).cookie(cookie))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void listsWithDocumentoFilterIgnoringMaskAndMatchingPartially() throws Exception {
+    void listsWithDocumentFilterIgnoringMaskAndMatchingPartially() throws Exception {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(post("/api/parceiros").cookie(cookie)
+        mockMvc.perform(post("/api/partners").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(parceiroPayload("22333444000155")))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("documento", "223.334.440/0015-5"))
+        mockMvc.perform(get("/api/partners").cookie(cookie).param("documento", "223.334.440/0015-5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("documento", "33444"))
+        mockMvc.perform(get("/api/partners").cookie(cookie).param("documento", "33444"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("documento", "00000"))
+        mockMvc.perform(get("/api/partners").cookie(cookie).param("documento", "00000"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0));
     }
@@ -197,71 +197,71 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(post("/api/parceiros").cookie(cookie)
+        mockMvc.perform(post("/api/partners").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(parceiroPayload("22333444000155")))
                 .andExpect(status().isCreated());
 
-        String bloqueadoBody = mockMvc.perform(post("/api/parceiros").cookie(cookie)
+        String bloqueadoBody = mockMvc.perform(post("/api/partners").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(parceiroPayload("33444555000166")))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String bloqueadoId = com.jayway.jsonpath.JsonPath.read(bloqueadoBody, "$.id");
-        mockMvc.perform(patch("/api/parceiros/" + bloqueadoId + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/partners/" + bloqueadoId + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"BLOQUEADO\"}"))
+                        .content("{\"status\":\"BLOCKED\"}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("status", "BLOQUEADO"))
+        mockMvc.perform(get("/api/partners").cookie(cookie).param("status", "BLOCKED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        mockMvc.perform(get("/api/parceiros").cookie(cookie).param("status", "ATIVO", "BLOQUEADO"))
+        mockMvc.perform(get("/api/partners").cookie(cookie).param("status", "ACTIVE", "BLOCKED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(2));
     }
 
     @Test
-    void rejectsDuplicateDocumentoWithConflict() throws Exception {
+    void rejectsDuplicateDocumentWithConflict() throws Exception {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(post("/api/parceiros").cookie(cookie)
+        mockMvc.perform(post("/api/partners").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(parceiroPayload("22333444000155")))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/parceiros").cookie(cookie)
+        mockMvc.perform(post("/api/partners").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(parceiroPayload("22333444000155")))
                 .andExpect(status().isConflict());
     }
 
     @Test
-    void rejectsStatusUpdateToEmRisco() throws Exception {
+    void rejectsStatusUpdateToAtRisk() throws Exception {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        String body = mockMvc.perform(post("/api/parceiros").cookie(cookie)
+        String body = mockMvc.perform(post("/api/partners").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(parceiroPayload("22333444000155")))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String id = com.jayway.jsonpath.JsonPath.read(body, "$.id");
 
-        mockMvc.perform(patch("/api/parceiros/" + id + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/partners/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"EM_RISCO\"}"))
+                        .content("{\"status\":\"AT_RISK\"}"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void tenantACannotAccessTenantBsParceiro() throws Exception {
+    void tenantACannotAccessTenantBsPartner() throws Exception {
         String tokenA = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookieA = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, tokenA);
 
-        String body = mockMvc.perform(post("/api/parceiros").cookie(cookieA)
+        String body = mockMvc.perform(post("/api/partners").cookie(cookieA)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(parceiroPayload("22333444000155")))
                 .andExpect(status().isCreated())
@@ -269,26 +269,26 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
         String id = com.jayway.jsonpath.JsonPath.read(body, "$.id");
 
         // This whole test method runs inside one Spring-test-managed transaction, so
-        // the ParceiroService.criar() call above and buscarPorId() below (via the GET
+        // the PartnerService.create() call above and findById() below (via the GET
         // as tenant B) share a single Hibernate persistence context. Without this
-        // clear(), findById() would return the already-managed Parceiro instance from
+        // clear(), findById() would return the already-managed Partner instance from
         // the first-level cache without issuing SQL at all, bypassing RLS entirely and
         // leaking tenant A's row to tenant B -- a test-harness artifact of sharing one
         // EntityManager across "requests" here, not a real production behavior (each
         // production HTTP request gets its own EntityManager). Same pattern used in
-        // ParceiroRepositoryTest/CompanyRepositoryTest/UsuarioRepositoryTest.
+        // PartnerRepositoryTest/CompanyRepositoryTest/UserRepositoryTest.
         entityManager.clear();
 
         String tokenB = loginAndGetCookie("boreal", "carlos@boreal.com.br", "55666777000155");
         Cookie cookieB = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, tokenB);
 
-        mockMvc.perform(get("/api/parceiros/" + id).cookie(cookieB))
+        mockMvc.perform(get("/api/partners/" + id).cookie(cookieB))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void unauthenticatedRequestIsRejected() throws Exception {
-        mockMvc.perform(get("/api/parceiros"))
+        mockMvc.perform(get("/api/partners"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -297,7 +297,7 @@ class ParceiroControllerTest extends AbstractIntegrationTest {
         String token = loginWithoutCustomerPermission("sem-permissao", "sem-permissao@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(get("/api/parceiros").cookie(cookie))
+        mockMvc.perform(get("/api/partners").cookie(cookie))
                 .andExpect(status().isForbidden());
     }
 }
