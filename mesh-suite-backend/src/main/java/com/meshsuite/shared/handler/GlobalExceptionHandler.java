@@ -46,21 +46,21 @@ public class GlobalExceptionHandler {
                 .body(Map.of("mensagem", "Muitas tentativas, tente novamente em instantes"));
     }
 
-    @ExceptionHandler(com.meshsuite.parceiro.exception.ParceiroNaoEncontradoException.class)
-    public ResponseEntity<Map<String, String>> handleParceiroNaoEncontrado(
-            com.meshsuite.parceiro.exception.ParceiroNaoEncontradoException e) {
+    @ExceptionHandler(com.meshsuite.partner.exception.PartnerNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePartnerNotFound(
+            com.meshsuite.partner.exception.PartnerNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.parceiro.exception.DocumentoDuplicadoException.class)
-    public ResponseEntity<Map<String, String>> handleDocumentoDuplicado(
-            com.meshsuite.parceiro.exception.DocumentoDuplicadoException e) {
+    @ExceptionHandler(com.meshsuite.partner.exception.DuplicateDocumentException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateDocument(
+            com.meshsuite.partner.exception.DuplicateDocumentException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.parceiro.exception.ParceiroValidacaoException.class)
-    public ResponseEntity<Map<String, String>> handleParceiroValidacao(
-            com.meshsuite.parceiro.exception.ParceiroValidacaoException e) {
+    @ExceptionHandler(com.meshsuite.partner.exception.PartnerValidationException.class)
+    public ResponseEntity<Map<String, String>> handlePartnerValidation(
+            com.meshsuite.partner.exception.PartnerValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
