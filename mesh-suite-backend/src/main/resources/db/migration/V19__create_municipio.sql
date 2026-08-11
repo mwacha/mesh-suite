@@ -1,6 +1,6 @@
 -- Reference table of Brazilian municipalities (IBGE), used by the
 -- "Cidade" advanced-filter category on list screens (independent of which
--- cities already have a Parceiro registered) and available for future
+-- cities already have a Partner registered) and available for future
 -- address-field autocomplete. Global reference data -- no tenant_id/RLS,
 -- same for every tenant. Sourced from the IBGE public API
 -- (servicodados.ibge.gov.br/api/v1/localidades/municipios) on 2026-08-07.
