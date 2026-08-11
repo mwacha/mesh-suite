@@ -11,13 +11,14 @@
 **Decisões já tomadas com o usuário:**
 - `Categoria` → `Category`.
 - `CorEstampa` → `Colorway` (termo real da indústria de vestuário/moda: a combinação específica de cor/estampa em que uma peça é oferecida).
+- **Pacotes de topo próprios**: `Category`/`Colorway` saem de dentro de `com.meshsuite.produto.*` e ganham seus próprios pacotes `com.meshsuite.category.*`/`com.meshsuite.colorway.*` — consistente com o padrão já usado em Sale/Company/Partner (cada módulo renomeado tem seu próprio pacote de topo), em vez de deixar um pacote de nome português ("produto") hospedando classes de nome inglês.
 - Migrations `V21__create_categoria.sql` e `V23__create_cor_estampa.sql` editadas diretamente (renomeadas), mesmo padrão greenfield dos sub-projetos anteriores — exige resetar o banco local.
 - Frontend: arquivos de view próprios (`CategoriaFormView.vue`, `CategoriasListView.vue`, `CorEstampaFormView.vue`, `CoresEstampasListView.vue`) são renomeados junto — não são uma view emprestada de outro conceito como foi o caso do Cliente no sub-projeto Parceiro.
 
 ## 2. Escopo
 
 ### Incluído
-- Pacote Java `com.meshsuite.produto` (classes de Categoria e CorEstampa apenas — o resto do pacote `produto` continua intacto até o 4b/4c): controller, service, repository, specifications, exceções, DTOs, domínio, enums não se aplicam aqui (nenhum enum próprio).
+- Novos pacotes `com.meshsuite.category.*` e `com.meshsuite.colorway.*` (movidos de dentro de `com.meshsuite.produto.*`, que continua intacto no resto até o 4b/4c): controller, service, repository, specifications, exceções, DTOs, domínio. Nenhum enum próprio em nenhuma das duas entidades.
 - Migrations `V21`/`V23` editadas para criar as tabelas `category`/`colorway`.
 - **Migrations posteriores com FK literal**: `V22__replace_produto_categoria_with_fk.sql` (`REFERENCES categoria(id)`) e `V24__add_cor_estampa_to_produto.sql` (`REFERENCES cor_estampa(id)`) — só o alvo da FK muda; a coluna em si (`categoria_id`, `cor_estampa_id`) fica com o nome atual, pois pertence ao `produto`, fora de escopo até o 4b.
 - Rotas da API: `/api/categorias→/api/categories`, `/api/cores-estampas→/api/colorways`.
@@ -84,8 +85,8 @@
 
 ### Backend — bridge em `Produto` (tipo/acessor apenas, resto do módulo Produto fora de escopo)
 
-- `produto/domain/Produto.java`: `private Categoria categoria;→private Category categoria;`; `private CorEstampa corEstampa;→private Colorway corEstampa;` (nomes de campo inalterados).
-- `produto/service/ProdutoService.java`: imports `CategoriaRepository→CategoryRepository`, `CorEstampaRepository→ColorwayRepository`, `CategoriaNaoEncontradaException→CategoryNotFoundException`, `CorEstampaNaoEncontradaException→ColorwayNotFoundException` (nomes de campo `categoriaRepository`/`corEstampaRepository` inalterados); os dois acessores `p.getCategoria().getNome()→p.getCategoria().getName()` e `p.getCorEstampa().getNome()→p.getCorEstampa().getName()` (mudança obrigatória — mesmo padrão do fix `AuthController.result.empresa().getId()→.company().getId()` do sub-projeto Empresa).
+- `produto/domain/Produto.java`: como `Category`/`Colorway` saem do pacote `produto` (ver decisão de pacotes de topo acima), este arquivo precisa de imports NOVOS que não existiam antes (hoje `Categoria`/`CorEstampa` estão no mesmo pacote, sem import explícito): adicionar `import com.meshsuite.category.domain.Category;` e `import com.meshsuite.colorway.domain.Colorway;`; `private Categoria categoria;→private Category categoria;`; `private CorEstampa corEstampa;→private Colorway corEstampa;` (nomes de campo inalterados).
+- `produto/service/ProdutoService.java`: imports `com.meshsuite.produto.repository.CategoriaRepository→com.meshsuite.category.repository.CategoryRepository`, `com.meshsuite.produto.repository.CorEstampaRepository→com.meshsuite.colorway.repository.ColorwayRepository`, `com.meshsuite.produto.exception.CategoriaNaoEncontradaException→com.meshsuite.category.exception.CategoryNotFoundException`, `com.meshsuite.produto.exception.CorEstampaNaoEncontradaException→com.meshsuite.colorway.exception.ColorwayNotFoundException` (nomes de campo `categoriaRepository`/`corEstampaRepository` inalterados); os dois acessores `p.getCategoria().getNome()→p.getCategoria().getName()` e `p.getCorEstampa().getNome()→p.getCorEstampa().getName()` (mudança obrigatória — mesmo padrão do fix `AuthController.result.empresa().getId()→.company().getId()` do sub-projeto Empresa).
 - `produto/repository/ProdutoRepository.java`: **sem mudanças** (ver seção 2, Fora de escopo).
 
 ### Banco de dados
