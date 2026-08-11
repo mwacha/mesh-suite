@@ -1226,7 +1226,7 @@ Enum values: `PapelParceiro.CLIENTE→PartnerRole.CUSTOMER`, `PapelParceiro.FORN
 
 Fields/methods used in fixtures and assertions: `.papeis()→.roles()`, `.documento()→.document()`, `.status()` (unchanged), `parceiroService→partnerService`, `parceiroService.listar(...)→partnerService.list(...)`, `.resumo(...)→.summary(...)`, `.criar(...)→.create(...)`, `.atualizar(...)→.update(...)`, `.atualizarStatus(...)→.updateStatus(...)`, `.excluir(...)→.delete(...)`.
 
-Test method names (translate all 16, matching the design spec's list — these are the ONLY method-name changes; the test bodies/assertions/fixture values otherwise stay byte-identical to the original modulo the type substitutions above):
+Test method names (translate all 18 — the design spec's list of 16 undercounted by 2, missed by a truncated `grep | head` during plan-writing; the two additions are appended below. These are the ONLY method-name changes; the test bodies/assertions/fixture values otherwise stay byte-identical to the original modulo the type substitutions above):
 - `criaERecuperaParceiro` → `createsAndRetrievesPartner`
 - `aceitaCnpjComMascaraEArmazenaSomenteDigitos` → `acceptsCnpjWithMaskAndStoresOnlyDigits`
 - `rejeitaParceiroSemPapelClienteOuFornecedor` → `rejectsPartnerWithoutCustomerOrSupplierRole`
@@ -1243,6 +1243,8 @@ Test method names (translate all 16, matching the design spec's list — these a
 - `excluiParceiro` → `deletesPartner`
 - `atualizaParceiroComSucesso` → `updatesPartnerSuccessfully`
 - `atualizaParceiroMantendoOProprioDocumento` → `updatesPartnerKeepingItsOwnDocument`
+- `rejeitaAtualizacaoParaDocumentoDeOutroParceiro` → `rejectsUpdateToAnotherPartnersDocument`
+- `deniesListingWhenCallerLacksCustomerViewPermission` — already English, no rename, only the body's mechanical substitutions apply
 
 Field-name-shaped literals used only as free-text business content (e.g. `"Mercado Silva"`, `"Cliente antigo"`, `"Comércio Rio"`, email/phone strings, CNPJ/CPF digit strings) stay exactly as they are — only identifiers and enum-backed values change, never business data.
 
@@ -1254,7 +1256,7 @@ Run:
 ```bash
 cd mesh-suite-backend && mvn -q test -Dtest=PartnerServiceTest
 ```
-Expected: `BUILD SUCCESS`, same test count as the original `ParceiroServiceTest` (16 tests), all passing.
+Expected: `BUILD SUCCESS`, same test count as the original `ParceiroServiceTest` (18 tests), all passing.
 
 Restore the 12 relocated files; verify `git status --short` shows only this task's intended changes.
 
