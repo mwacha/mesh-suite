@@ -2,10 +2,10 @@ package com.meshsuite.sale.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.domain.enums.TipoPessoa;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.domain.enums.PersonType;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.pedido.domain.Pedido;
 import com.meshsuite.pedido.repository.PedidoRepository;
 import com.meshsuite.produto.domain.Produto;
@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 class SaleRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired ParceiroRepository parceiroRepository;
+    @Autowired PartnerRepository partnerRepository;
     @Autowired UserRepository userRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired PedidoRepository pedidoRepository;
@@ -47,14 +47,14 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenantId + "'").executeUpdate();
     }
 
-    private Parceiro createCustomer(UUID tenantId, String document) {
-        Parceiro p = new Parceiro();
+    private Partner createCustomer(UUID tenantId, String document) {
+        Partner p = new Partner();
         p.setTenantId(tenantId);
-        p.setTipoPessoa(TipoPessoa.JURIDICA);
-        p.setDocumento(document);
-        p.setNomeFantasia("Mercado Silva");
-        p.getPapeis().add(PapelParceiro.CLIENTE);
-        return parceiroRepository.saveAndFlush(p);
+        p.setPersonType(PersonType.LEGAL_ENTITY);
+        p.setDocument(document);
+        p.setTradeName("Mercado Silva");
+        p.getRoles().add(PartnerRole.CUSTOMER);
+        return partnerRepository.saveAndFlush(p);
     }
 
     private User createSalesperson(UUID tenantId, String email) {
@@ -76,7 +76,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
         return produtoRepository.saveAndFlush(p);
     }
 
-    private Pedido createOrder(UUID tenantId, Parceiro customer, User salesperson, int number) {
+    private Pedido createOrder(UUID tenantId, Partner customer, User salesperson, int number) {
         Pedido pedido = new Pedido();
         pedido.setTenantId(tenantId);
         pedido.setNumero(number);
@@ -85,7 +85,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
         return pedidoRepository.saveAndFlush(pedido);
     }
 
-    private Sale newSale(UUID tenantId, Pedido order, Parceiro customer, User salesperson, int number) {
+    private Sale newSale(UUID tenantId, Pedido order, Partner customer, User salesperson, int number) {
         Sale sale = new Sale();
         sale.setTenantId(tenantId);
         sale.setNumber(number);
@@ -100,7 +100,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
     void savesSaleWithItemsViaCascade() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro customer = createCustomer(tenant.getId(), "11222333000144");
+        Partner customer = createCustomer(tenant.getId(), "11222333000144");
         User salesperson = createSalesperson(tenant.getId(), "marina@aurora.com.br");
         Produto product = createProduct(tenant.getId(), "P0001");
         Pedido order = createOrder(tenant.getId(), customer, salesperson, 1);
@@ -132,7 +132,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
     void orderIdMustBeUniqueAcrossSales() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro customer = createCustomer(tenant.getId(), "11222333000144");
+        Partner customer = createCustomer(tenant.getId(), "11222333000144");
         User salesperson = createSalesperson(tenant.getId(), "marina@aurora.com.br");
         Pedido order = createOrder(tenant.getId(), customer, salesperson, 1);
 
@@ -148,7 +148,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
     void rlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro customer = createCustomer(tenant.getId(), "11222333000144");
+        Partner customer = createCustomer(tenant.getId(), "11222333000144");
         User salesperson = createSalesperson(tenant.getId(), "marina@aurora.com.br");
         Pedido order = createOrder(tenant.getId(), customer, salesperson, 1);
         saleRepository.saveAndFlush(newSale(tenant.getId(), order, customer, salesperson, 1));
@@ -167,7 +167,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
     void saleItemRlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro customer = createCustomer(tenant.getId(), "11222333000144");
+        Partner customer = createCustomer(tenant.getId(), "11222333000144");
         User salesperson = createSalesperson(tenant.getId(), "marina@aurora.com.br");
         Produto product = createProduct(tenant.getId(), "P0001");
         Pedido order = createOrder(tenant.getId(), customer, salesperson, 1);

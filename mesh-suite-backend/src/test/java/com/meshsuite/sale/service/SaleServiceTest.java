@@ -8,10 +8,10 @@ import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.service.AuthContextService;
 import com.meshsuite.fiscal.domain.FiscalRegistration;
 import com.meshsuite.fiscal.repository.FiscalRegistrationRepository;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.domain.enums.TipoPessoa;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.domain.enums.PersonType;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.pedido.domain.ItemPedido;
 import com.meshsuite.pedido.domain.Pedido;
 import com.meshsuite.pedido.domain.enums.StatusPedido;
@@ -49,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 class SaleServiceTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired ParceiroRepository parceiroRepository;
+    @Autowired PartnerRepository partnerRepository;
     @Autowired UserRepository userRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired FiscalRegistrationRepository fiscalRegistrationRepository;
@@ -98,13 +98,13 @@ class SaleServiceTest extends AbstractIntegrationTest {
     }
 
     private UUID createCustomer(UUID tenantId, String document, String tradeName) {
-        Parceiro p = new Parceiro();
+        Partner p = new Partner();
         p.setTenantId(tenantId);
-        p.setTipoPessoa(TipoPessoa.JURIDICA);
-        p.setDocumento(document);
-        p.setNomeFantasia(tradeName);
-        p.getPapeis().add(PapelParceiro.CLIENTE);
-        return parceiroRepository.saveAndFlush(p).getId();
+        p.setPersonType(PersonType.LEGAL_ENTITY);
+        p.setDocument(document);
+        p.setTradeName(tradeName);
+        p.getRoles().add(PartnerRole.CUSTOMER);
+        return partnerRepository.saveAndFlush(p).getId();
     }
 
     private UUID createSalesperson(UUID tenantId, String email) {

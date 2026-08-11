@@ -2,10 +2,10 @@ package com.meshsuite.purchaseorder.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.domain.enums.TipoPessoa;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.domain.enums.PersonType;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.produto.repository.ProdutoRepository;
 import com.meshsuite.purchaseorder.domain.PurchaseOrder;
@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 class PurchaseOrderRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired ParceiroRepository parceiroRepository;
+    @Autowired PartnerRepository partnerRepository;
     @Autowired UserRepository userRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired PurchaseOrderRepository purchaseOrderRepository;
@@ -47,14 +47,14 @@ class PurchaseOrderRepositoryTest extends AbstractIntegrationTest {
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenantId + "'").executeUpdate();
     }
 
-    private Parceiro criarFornecedor(UUID tenantId, String documento) {
-        Parceiro p = new Parceiro();
+    private Partner criarFornecedor(UUID tenantId, String documento) {
+        Partner p = new Partner();
         p.setTenantId(tenantId);
-        p.setTipoPessoa(TipoPessoa.JURIDICA);
-        p.setDocumento(documento);
-        p.setNomeFantasia("Tecidos Aurora");
-        p.getPapeis().add(PapelParceiro.FORNECEDOR);
-        return parceiroRepository.saveAndFlush(p);
+        p.setPersonType(PersonType.LEGAL_ENTITY);
+        p.setDocument(documento);
+        p.setTradeName("Tecidos Aurora");
+        p.getRoles().add(PartnerRole.SUPPLIER);
+        return partnerRepository.saveAndFlush(p);
     }
 
     private User criarComprador(UUID tenantId, String email) {
@@ -76,7 +76,7 @@ class PurchaseOrderRepositoryTest extends AbstractIntegrationTest {
         return produtoRepository.saveAndFlush(p);
     }
 
-    private PurchaseOrder novaOrdem(UUID tenantId, Parceiro supplier, User buyer, int number) {
+    private PurchaseOrder novaOrdem(UUID tenantId, Partner supplier, User buyer, int number) {
         PurchaseOrder order = new PurchaseOrder();
         order.setTenantId(tenantId);
         order.setNumber(number);
@@ -90,7 +90,7 @@ class PurchaseOrderRepositoryTest extends AbstractIntegrationTest {
     void savesPurchaseOrderWithItemsViaCascade() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro supplier = criarFornecedor(tenant.getId(), "11222333000144");
+        Partner supplier = criarFornecedor(tenant.getId(), "11222333000144");
         User buyer = criarComprador(tenant.getId(), "carlos@aurora.com.br");
         Produto product = criarProduto(tenant.getId(), "P0001");
 
@@ -117,7 +117,7 @@ class PurchaseOrderRepositoryTest extends AbstractIntegrationTest {
     void removingAnItemFromTheListDeletesItViaOrphanRemoval() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro supplier = criarFornecedor(tenant.getId(), "11222333000144");
+        Partner supplier = criarFornecedor(tenant.getId(), "11222333000144");
         User buyer = criarComprador(tenant.getId(), "carlos@aurora.com.br");
         Produto product = criarProduto(tenant.getId(), "P0001");
 
@@ -146,7 +146,7 @@ class PurchaseOrderRepositoryTest extends AbstractIntegrationTest {
     void numberMustBeUniquePerTenant() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro supplier = criarFornecedor(tenant.getId(), "11222333000144");
+        Partner supplier = criarFornecedor(tenant.getId(), "11222333000144");
         User buyer = criarComprador(tenant.getId(), "carlos@aurora.com.br");
 
         purchaseOrderRepository.saveAndFlush(novaOrdem(tenant.getId(), supplier, buyer, 1));
@@ -161,7 +161,7 @@ class PurchaseOrderRepositoryTest extends AbstractIntegrationTest {
     void rlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro supplier = criarFornecedor(tenant.getId(), "11222333000144");
+        Partner supplier = criarFornecedor(tenant.getId(), "11222333000144");
         User buyer = criarComprador(tenant.getId(), "carlos@aurora.com.br");
         purchaseOrderRepository.saveAndFlush(novaOrdem(tenant.getId(), supplier, buyer, 1));
         entityManager.clear();
@@ -225,7 +225,7 @@ class PurchaseOrderRepositoryTest extends AbstractIntegrationTest {
     void purchaseOrderItemRlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        Parceiro supplier = criarFornecedor(tenant.getId(), "11222333000144");
+        Partner supplier = criarFornecedor(tenant.getId(), "11222333000144");
         User buyer = criarComprador(tenant.getId(), "carlos@aurora.com.br");
         Produto product = criarProduto(tenant.getId(), "P0001");
 

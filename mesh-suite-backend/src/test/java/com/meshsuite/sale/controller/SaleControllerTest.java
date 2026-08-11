@@ -8,10 +8,10 @@ import com.meshsuite.company.domain.Company;
 import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.fiscal.domain.FiscalRegistration;
 import com.meshsuite.fiscal.repository.FiscalRegistrationRepository;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.domain.enums.TipoPessoa;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.domain.enums.PersonType;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.produto.repository.ProdutoRepository;
 import com.meshsuite.tenant.domain.Tenant;
@@ -41,7 +41,7 @@ class SaleControllerTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ParceiroRepository parceiroRepository;
+    @Autowired PartnerRepository partnerRepository;
     @Autowired ProdutoRepository produtoRepository;
     @Autowired FiscalRegistrationRepository fiscalRegistrationRepository;
     @Autowired PasswordEncoder passwordEncoder;
@@ -87,13 +87,13 @@ class SaleControllerTest extends AbstractIntegrationTest {
         salesperson.setProfile(Profile.SALES);
         userRepository.saveAndFlush(salesperson);
 
-        Parceiro customer = new Parceiro();
+        Partner customer = new Partner();
         customer.setTenantId(tenant.getId());
-        customer.setTipoPessoa(TipoPessoa.JURIDICA);
-        customer.setDocumento(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
-        customer.setNomeFantasia("Mercado Silva");
-        customer.getPapeis().add(PapelParceiro.CLIENTE);
-        parceiroRepository.saveAndFlush(customer);
+        customer.setPersonType(PersonType.LEGAL_ENTITY);
+        customer.setDocument(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
+        customer.setTradeName("Mercado Silva");
+        customer.getRoles().add(PartnerRole.CUSTOMER);
+        partnerRepository.saveAndFlush(customer);
 
         FiscalRegistration registration = new FiscalRegistration();
         registration.setTenantId(tenant.getId());
