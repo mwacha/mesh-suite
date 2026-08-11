@@ -16,7 +16,7 @@ CREATE TABLE sale (
     tenant_id UUID NOT NULL REFERENCES tenant(id),
     number INTEGER NOT NULL,
     order_id UUID NOT NULL UNIQUE REFERENCES pedido(id),
-    customer_id UUID NOT NULL REFERENCES parceiro(id),
+    customer_id UUID NOT NULL REFERENCES partner(id),
     salesperson_id UUID NOT NULL REFERENCES app_user(id),
     issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
     discount NUMERIC(12,2) NOT NULL DEFAULT 0,

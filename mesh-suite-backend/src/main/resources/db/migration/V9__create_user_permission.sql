@@ -9,7 +9,7 @@ ALTER TABLE user_permission ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_permission FORCE ROW LEVEL SECURITY;
 
 -- No tenant_id column here -- isolation is enforced through the parent app_user
--- row's own RLS policy, matched by user_id. Same pattern as parceiro_papel.
+-- row's own RLS policy, matched by user_id. Same pattern as partner_role.
 CREATE POLICY user_permission_tenant_isolation ON user_permission
     USING (EXISTS (
         SELECT 1 FROM app_user u

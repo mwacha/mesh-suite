@@ -14,7 +14,7 @@ CREATE TABLE pedido (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenant(id),
     numero INTEGER NOT NULL,
-    cliente_id UUID NOT NULL REFERENCES parceiro(id),
+    cliente_id UUID NOT NULL REFERENCES partner(id),
     vendedor_id UUID NOT NULL REFERENCES usuario(id),
     data_pedido DATE NOT NULL DEFAULT CURRENT_DATE,
     data_entrega DATE,
@@ -52,7 +52,7 @@ ALTER TABLE item_pedido ENABLE ROW LEVEL SECURITY;
 ALTER TABLE item_pedido FORCE ROW LEVEL SECURITY;
 
 -- No tenant_id column here -- isolation is enforced through the parent pedido
--- row's own RLS policy, matched by pedido_id. Same pattern as parceiro_contato.
+-- row's own RLS policy, matched by pedido_id. Same pattern as partner_contact.
 CREATE POLICY item_pedido_tenant_isolation ON item_pedido
     USING (EXISTS (
         SELECT 1 FROM pedido p

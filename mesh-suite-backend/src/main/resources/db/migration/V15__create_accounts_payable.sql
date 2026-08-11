@@ -16,7 +16,7 @@ CREATE TABLE accounts_payable (
     number INTEGER NOT NULL,
     installment_number INTEGER NOT NULL,
     total_installments INTEGER NOT NULL,
-    supplier_id UUID NOT NULL REFERENCES parceiro(id),
+    supplier_id UUID NOT NULL REFERENCES partner(id),
     amount NUMERIC(12,2) NOT NULL,
     issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
     due_date DATE NOT NULL,

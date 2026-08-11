@@ -14,7 +14,7 @@ CREATE TABLE purchase_order (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenant(id),
     number INTEGER NOT NULL,
-    supplier_id UUID NOT NULL REFERENCES parceiro(id),
+    supplier_id UUID NOT NULL REFERENCES partner(id),
     buyer_id UUID NOT NULL REFERENCES app_user(id),
     order_date DATE NOT NULL DEFAULT CURRENT_DATE,
     expected_delivery_date DATE,
@@ -53,7 +53,7 @@ ALTER TABLE purchase_order_item FORCE ROW LEVEL SECURITY;
 
 -- No tenant_id column here -- isolation is enforced through the parent
 -- purchase_order row's own RLS policy, matched by purchase_order_id. Same
--- pattern as item_pedido/parceiro_contato.
+-- pattern as item_pedido/partner_contact.
 CREATE POLICY purchase_order_item_tenant_isolation ON purchase_order_item
     USING (EXISTS (
         SELECT 1 FROM purchase_order po
