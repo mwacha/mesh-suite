@@ -47,7 +47,7 @@ Replace the entire content of `V5__create_partner.sql` with:
 CREATE TABLE partner (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenant(id),
-    person_type VARCHAR(10) NOT NULL CHECK (person_type IN ('INDIVIDUAL','LEGAL_ENTITY')),
+    person_type VARCHAR(20) NOT NULL CHECK (person_type IN ('INDIVIDUAL','LEGAL_ENTITY')),
     document VARCHAR(14) NOT NULL,
     trade_name VARCHAR(255) NOT NULL,
     legal_name VARCHAR(255),
@@ -402,7 +402,7 @@ public class Partner {
     private UUID tenantId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "person_type", nullable = false, length = 10)
+    @Column(name = "person_type", nullable = false, length = 20)
     private PersonType personType;
 
     @Column(nullable = false, length = 14)
