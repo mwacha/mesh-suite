@@ -17,7 +17,7 @@ public final class PurchaseOrderSpecifications {
         Integer number = tryParseInt(search.trim());
         return (root, query, cb) -> {
             var byText = cb.or(
-                    cb.like(cb.lower(root.get("supplier").get("nomeFantasia")), term),
+                    cb.like(cb.lower(root.get("supplier").get("tradeName")), term),
                     cb.like(cb.lower(root.get("buyer").get("name")), term));
             if (number != null) {
                 return cb.or(byText, cb.equal(root.get("number"), number));
