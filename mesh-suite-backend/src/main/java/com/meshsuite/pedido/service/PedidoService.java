@@ -3,9 +3,9 @@ package com.meshsuite.pedido.service;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.pedido.domain.ItemPedido;
 import com.meshsuite.pedido.domain.Pedido;
 import com.meshsuite.pedido.domain.enums.StatusPedido;
@@ -34,12 +34,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
-    private final ParceiroRepository parceiroRepository;
+    private final PartnerRepository parceiroRepository;
     private final UserRepository userRepository;
     private final ProdutoRepository produtoRepository;
     private final EntityManager entityManager;
 
-    public PedidoService(PedidoRepository pedidoRepository, ParceiroRepository parceiroRepository,
+    public PedidoService(PedidoRepository pedidoRepository, PartnerRepository parceiroRepository,
                           UserRepository userRepository, ProdutoRepository produtoRepository,
                           EntityManager entityManager) {
         this.pedidoRepository = pedidoRepository;
@@ -76,7 +76,7 @@ public class PedidoService {
     @Transactional
     @RequiresPermission(module = Module.ORDER, action = Action.CREATE)
     public PedidoResponse criar(UUID tenantId, PedidoRequest request) {
-        Parceiro cliente = buscarClienteValido(request.clienteId());
+        Partner cliente = buscarClienteValido(request.clienteId());
         User vendedor = buscarVendedorValido(request.vendedorId());
 
         Pedido pedido = new Pedido();
@@ -89,7 +89,7 @@ public class PedidoService {
     @Transactional
     @RequiresPermission(module = Module.ORDER, action = Action.EDIT)
     public PedidoResponse atualizar(UUID id, PedidoRequest request) {
-        Parceiro cliente = buscarClienteValido(request.clienteId());
+        Partner cliente = buscarClienteValido(request.clienteId());
         User vendedor = buscarVendedorValido(request.vendedorId());
 
         Pedido pedido = buscarEntidadePorId(id);
@@ -125,10 +125,10 @@ public class PedidoService {
         return pedidoRepository.findById(id).orElseThrow(PedidoNaoEncontradoException::new);
     }
 
-    private Parceiro buscarClienteValido(UUID clienteId) {
-        Parceiro parceiro = parceiroRepository.findById(clienteId)
+    private Partner buscarClienteValido(UUID clienteId) {
+        Partner parceiro = parceiroRepository.findById(clienteId)
                 .orElseThrow(() -> new PedidoValidacaoException("Cliente não encontrado"));
-        if (!parceiro.getPapeis().contains(PapelParceiro.CLIENTE)) {
+        if (!parceiro.getRoles().contains(PartnerRole.CUSTOMER)) {
             throw new PedidoValidacaoException("O parceiro selecionado não tem o papel Cliente");
         }
         return parceiro;
@@ -162,7 +162,7 @@ public class PedidoService {
         return ((Number) resultado).intValue();
     }
 
-    private void aplicar(Pedido pedido, Parceiro cliente, User vendedor, PedidoRequest request) {
+    private void aplicar(Pedido pedido, Partner cliente, User vendedor, PedidoRequest request) {
         pedido.setCliente(cliente);
         pedido.setVendedor(vendedor);
         pedido.setDataPedido(request.dataPedido() != null ? request.dataPedido() : LocalDate.now());
@@ -189,7 +189,7 @@ public class PedidoService {
     }
 
     private PedidoSummaryResponse toSummary(Pedido p) {
-        return new PedidoSummaryResponse(p.getId(), p.getNumero(), p.getCliente().getNomeFantasia(),
+        return new PedidoSummaryResponse(p.getId(), p.getNumero(), p.getCliente().getTradeName(),
                 p.getVendedor().getName(), p.getDataPedido(), p.getTotal(), p.getStatus());
     }
 
@@ -198,7 +198,7 @@ public class PedidoService {
                 .map(i -> new ItemPedidoResponse(i.getProduto().getId(), i.getProduto().getNome(),
                         i.getQuantidade(), i.getValorUnitario(), i.getValorTotal()))
                 .toList();
-        return new PedidoResponse(p.getId(), p.getNumero(), p.getCliente().getId(), p.getCliente().getNomeFantasia(),
+        return new PedidoResponse(p.getId(), p.getNumero(), p.getCliente().getId(), p.getCliente().getTradeName(),
                 p.getVendedor().getId(), p.getVendedor().getName(), p.getDataPedido(), p.getDataEntrega(),
                 p.getStatus(), p.getDesconto(), p.getSubtotal(), p.getTotal(), itens);
     }

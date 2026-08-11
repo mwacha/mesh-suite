@@ -5,9 +5,9 @@ import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.exception.PermissionDeniedException;
 import com.meshsuite.auth.service.AuthContextService;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.produto.repository.ProdutoRepository;
 import com.meshsuite.purchaseorder.domain.PurchaseOrder;
@@ -38,12 +38,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class PurchaseOrderService {
 
     private final PurchaseOrderRepository purchaseOrderRepository;
-    private final ParceiroRepository parceiroRepository;
+    private final PartnerRepository parceiroRepository;
     private final UserRepository userRepository;
     private final ProdutoRepository produtoRepository;
     private final EntityManager entityManager;
 
-    public PurchaseOrderService(PurchaseOrderRepository purchaseOrderRepository, ParceiroRepository parceiroRepository,
+    public PurchaseOrderService(PurchaseOrderRepository purchaseOrderRepository, PartnerRepository parceiroRepository,
                                  UserRepository userRepository, ProdutoRepository produtoRepository,
                                  EntityManager entityManager) {
         this.purchaseOrderRepository = purchaseOrderRepository;
@@ -81,7 +81,7 @@ public class PurchaseOrderService {
     @RequiresPermission(module = Module.PURCHASE, action = Action.CREATE)
     public PurchaseOrderResponse create(UUID tenantId, PurchaseOrderRequest request) {
         garantirPapelAutorizado();
-        Parceiro supplier = findValidSupplier(request.supplierId());
+        Partner supplier = findValidSupplier(request.supplierId());
         User buyer = findValidBuyer(request.buyerId());
 
         PurchaseOrder order = new PurchaseOrder();
@@ -95,7 +95,7 @@ public class PurchaseOrderService {
     @RequiresPermission(module = Module.PURCHASE, action = Action.EDIT)
     public PurchaseOrderResponse update(UUID id, PurchaseOrderRequest request) {
         garantirPapelAutorizado();
-        Parceiro supplier = findValidSupplier(request.supplierId());
+        Partner supplier = findValidSupplier(request.supplierId());
         User buyer = findValidBuyer(request.buyerId());
 
         PurchaseOrder order = findEntityById(id);
@@ -132,10 +132,10 @@ public class PurchaseOrderService {
         return purchaseOrderRepository.findById(id).orElseThrow(PurchaseOrderNotFoundException::new);
     }
 
-    private Parceiro findValidSupplier(UUID supplierId) {
-        Parceiro parceiro = parceiroRepository.findById(supplierId)
+    private Partner findValidSupplier(UUID supplierId) {
+        Partner parceiro = parceiroRepository.findById(supplierId)
                 .orElseThrow(() -> new PurchaseOrderValidationException("Fornecedor não encontrado"));
-        if (!parceiro.getPapeis().contains(PapelParceiro.FORNECEDOR)) {
+        if (!parceiro.getRoles().contains(PartnerRole.SUPPLIER)) {
             throw new PurchaseOrderValidationException("O parceiro selecionado não tem o papel Fornecedor");
         }
         return parceiro;
@@ -183,7 +183,7 @@ public class PurchaseOrderService {
         return ((Number) result).intValue();
     }
 
-    private void apply(PurchaseOrder order, Parceiro supplier, User buyer, PurchaseOrderRequest request) {
+    private void apply(PurchaseOrder order, Partner supplier, User buyer, PurchaseOrderRequest request) {
         order.setSupplier(supplier);
         order.setBuyer(buyer);
         order.setOrderDate(request.orderDate() != null ? request.orderDate() : LocalDate.now());
@@ -214,7 +214,7 @@ public class PurchaseOrderService {
     }
 
     private PurchaseOrderSummaryResponse toSummary(PurchaseOrder o) {
-        return new PurchaseOrderSummaryResponse(o.getId(), o.getNumber(), o.getSupplier().getNomeFantasia(),
+        return new PurchaseOrderSummaryResponse(o.getId(), o.getNumber(), o.getSupplier().getTradeName(),
                 o.getBuyer().getName(), o.getOrderDate(), o.getTotal(), o.getStatus());
     }
 
@@ -223,7 +223,7 @@ public class PurchaseOrderService {
                 .map(i -> new PurchaseOrderItemResponse(i.getProduct().getId(), i.getProduct().getNome(),
                         i.getQuantity(), i.getUnitPrice(), i.getTotalValue()))
                 .toList();
-        return new PurchaseOrderResponse(o.getId(), o.getNumber(), o.getSupplier().getId(), o.getSupplier().getNomeFantasia(),
+        return new PurchaseOrderResponse(o.getId(), o.getNumber(), o.getSupplier().getId(), o.getSupplier().getTradeName(),
                 o.getBuyer().getId(), o.getBuyer().getName(), o.getOrderDate(), o.getExpectedDeliveryDate(),
                 o.getStatus(), o.getDiscount(), o.getSubtotal(), o.getTotal(), items);
     }

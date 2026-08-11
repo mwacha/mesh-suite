@@ -1,6 +1,6 @@
 package com.meshsuite.pedido.domain;
 
-import com.meshsuite.parceiro.domain.Parceiro;
+import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.pedido.domain.enums.StatusPedido;
 import com.meshsuite.user.domain.User;
 import jakarta.persistence.*;
@@ -33,7 +33,7 @@ public class Pedido {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id", nullable = false)
-    private Parceiro cliente;
+    private Partner cliente;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendedor_id", nullable = false)

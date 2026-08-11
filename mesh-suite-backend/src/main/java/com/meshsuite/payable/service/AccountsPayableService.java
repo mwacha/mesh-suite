@@ -3,9 +3,9 @@ package com.meshsuite.payable.service;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
-import com.meshsuite.parceiro.domain.Parceiro;
-import com.meshsuite.parceiro.domain.enums.PapelParceiro;
-import com.meshsuite.parceiro.repository.ParceiroRepository;
+import com.meshsuite.partner.domain.Partner;
+import com.meshsuite.partner.domain.enums.PartnerRole;
+import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.payable.domain.AccountsPayable;
 import com.meshsuite.payable.domain.enums.AccountsPayableStatus;
 import com.meshsuite.payable.dto.*;
@@ -28,11 +28,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountsPayableService {
 
     private final AccountsPayableRepository accountsPayableRepository;
-    private final ParceiroRepository parceiroRepository;
+    private final PartnerRepository parceiroRepository;
     private final EntityManager entityManager;
 
     public AccountsPayableService(AccountsPayableRepository accountsPayableRepository,
-                                   ParceiroRepository parceiroRepository, EntityManager entityManager) {
+                                   PartnerRepository parceiroRepository, EntityManager entityManager) {
         this.accountsPayableRepository = accountsPayableRepository;
         this.parceiroRepository = parceiroRepository;
         this.entityManager = entityManager;
@@ -41,7 +41,7 @@ public class AccountsPayableService {
     @Transactional
     public List<AccountsPayableResponse> createInstallments(UUID tenantId, UUID supplierId, UUID referenceId,
                                                               List<AccountsPayableInstallmentInput> installments) {
-        Parceiro supplier = findValidSupplier(supplierId);
+        Partner supplier = findValidSupplier(supplierId);
         int total = installments.size();
         List<AccountsPayableResponse> result = new ArrayList<>();
         int installmentNumber = 1;
@@ -92,10 +92,10 @@ public class AccountsPayableService {
         return accountsPayableRepository.findById(id).orElseThrow(AccountsPayableNotFoundException::new);
     }
 
-    private Parceiro findValidSupplier(UUID supplierId) {
-        Parceiro parceiro = parceiroRepository.findById(supplierId)
+    private Partner findValidSupplier(UUID supplierId) {
+        Partner parceiro = parceiroRepository.findById(supplierId)
                 .orElseThrow(() -> new AccountsPayableValidationException("Fornecedor não encontrado"));
-        if (!parceiro.getPapeis().contains(PapelParceiro.FORNECEDOR)) {
+        if (!parceiro.getRoles().contains(PartnerRole.SUPPLIER)) {
             throw new AccountsPayableValidationException("O parceiro selecionado não tem o papel Fornecedor");
         }
         return parceiro;
@@ -121,7 +121,7 @@ public class AccountsPayableService {
 
     private AccountsPayableResponse toResponse(AccountsPayable e) {
         return new AccountsPayableResponse(e.getId(), e.getNumber(), e.getInstallmentNumber(), e.getTotalInstallments(),
-                e.getSupplier().getId(), e.getSupplier().getNomeFantasia(), e.getAmount(), e.getIssueDate(),
+                e.getSupplier().getId(), e.getSupplier().getTradeName(), e.getAmount(), e.getIssueDate(),
                 e.getDueDate(), e.getPaymentDate(), e.getStatus(), e.getReferenceId(), e.getCreatedAt());
     }
 }

@@ -161,7 +161,7 @@ public class SaleService {
     }
 
     private SaleSummaryResponse toSummary(Sale s) {
-        return new SaleSummaryResponse(s.getId(), s.getNumber(), s.getCustomer().getNomeFantasia(),
+        return new SaleSummaryResponse(s.getId(), s.getNumber(), s.getCustomer().getTradeName(),
                 s.getIssueDate(), s.getTotal());
     }
 
@@ -172,7 +172,7 @@ public class SaleService {
                         i.getIcmsAmount(), i.getIpiAmount(), i.getPisAmount(), i.getCofinsAmount()))
                 .toList();
         return new SaleResponse(s.getId(), s.getNumber(), s.getOrder().getId(), s.getOrder().getNumero(),
-                s.getCustomer().getId(), s.getCustomer().getNomeFantasia(),
+                s.getCustomer().getId(), s.getCustomer().getTradeName(),
                 s.getSalesperson().getId(), s.getSalesperson().getName(),
                 s.getIssueDate(), s.getDiscount(), s.getSubtotal(), s.getTotal(),
                 s.getIcmsAmount(), s.getIpiAmount(), s.getPisAmount(), s.getCofinsAmount(), items);

@@ -1,6 +1,6 @@
 package com.meshsuite.purchaseorder.domain;
 
-import com.meshsuite.parceiro.domain.Parceiro;
+import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.purchaseorder.domain.enums.PurchaseOrderStatus;
 import com.meshsuite.user.domain.User;
 import jakarta.persistence.*;
@@ -33,7 +33,7 @@ public class PurchaseOrder {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
-    private Parceiro supplier;
+    private Partner supplier;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)

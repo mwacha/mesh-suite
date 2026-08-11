@@ -1,6 +1,6 @@
 package com.meshsuite.sale.domain;
 
-import com.meshsuite.parceiro.domain.Parceiro;
+import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.pedido.domain.Pedido;
 import com.meshsuite.user.domain.User;
 import jakarta.persistence.CascadeType;
@@ -47,7 +47,7 @@ public class Sale {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
-    private Parceiro customer;
+    private Partner customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "salesperson_id", nullable = false)

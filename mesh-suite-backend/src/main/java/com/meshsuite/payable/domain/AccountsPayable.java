@@ -1,6 +1,6 @@
 package com.meshsuite.payable.domain;
 
-import com.meshsuite.parceiro.domain.Parceiro;
+import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.payable.domain.enums.AccountsPayableStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -36,7 +36,7 @@ public class AccountsPayable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
-    private Parceiro supplier;
+    private Partner supplier;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
