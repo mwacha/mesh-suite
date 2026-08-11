@@ -1,7 +1,7 @@
 CREATE TABLE partner (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenant(id),
-    person_type VARCHAR(10) NOT NULL CHECK (person_type IN ('INDIVIDUAL','LEGAL_ENTITY')),
+    person_type VARCHAR(20) NOT NULL CHECK (person_type IN ('INDIVIDUAL','LEGAL_ENTITY')),
     document VARCHAR(14) NOT NULL,
     trade_name VARCHAR(255) NOT NULL,
     legal_name VARCHAR(255),
