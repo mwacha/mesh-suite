@@ -56,7 +56,7 @@ public class SaleService {
     }
 
     // SaleSummaryResponse.customerName is a projection, not a direct Sale property --
-    // the actual JPA path is the customer association's nomeFantasia. Remap here so
+    // the actual JPA path is the customer association's tradeName. Remap here so
     // sorting by "customerName" (as sent by the frontend) doesn't blow up with a
     // PropertyReferenceException.
     private Pageable remapCustomerNameSort(Pageable pageable) {
@@ -65,7 +65,7 @@ public class SaleService {
         }
         Sort remapped = Sort.by(pageable.getSort().stream()
                 .map(order -> "customerName".equals(order.getProperty())
-                        ? order.withProperty("customer.nomeFantasia")
+                        ? order.withProperty("customer.tradeName")
                         : order)
                 .toList());
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), remapped);
