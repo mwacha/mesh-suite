@@ -12,14 +12,14 @@
           :class="{ 'item-rail-ativo': item.id === parceiroId }"
           @click="selecionar(item.id)"
         >
-          <div class="item-rail-nome">{{ item.nomeFantasia }}</div>
-          <div class="item-rail-info">{{ item.cidade }}</div>
+          <div class="item-rail-nome">{{ item.tradeName }}</div>
+          <div class="item-rail-info">{{ item.city }}</div>
         </div>
       </aside>
 
       <div v-if="parceiro" class="painel">
         <div class="painel-header">
-          <h1>{{ parceiro.nomeFantasia }}</h1>
+          <h1>{{ parceiro.tradeName }}</h1>
           <div class="painel-acoes">
             <button type="button" class="btn-secondary" data-test="cancelar" @click="cancelar">Cancelar</button>
             <button type="button" class="btn-secondary" data-test="editar" @click="editar">✏️ Editar</button>
@@ -47,10 +47,10 @@
         </div>
 
         <div v-if="abaAtiva === 'Dados'" class="grid grid-2">
-          <div><label class="field-label">Razão Social</label><input :value="parceiro.razaoSocial" readonly /></div>
-          <div><label class="field-label">CNPJ / CPF</label><input :value="parceiro.documento" readonly /></div>
-          <div><label class="field-label">Nome Fantasia</label><input :value="parceiro.nomeFantasia" readonly /></div>
-          <div><label class="field-label">Inscrição Estadual</label><input :value="parceiro.inscricaoEstadual" readonly /></div>
+          <div><label class="field-label">Razão Social</label><input :value="parceiro.legalName" readonly /></div>
+          <div><label class="field-label">CNPJ / CPF</label><input :value="parceiro.document" readonly /></div>
+          <div><label class="field-label">Nome Fantasia</label><input :value="parceiro.tradeName" readonly /></div>
+          <div><label class="field-label">Inscrição Estadual</label><input :value="parceiro.stateRegistration" readonly /></div>
           <div>
             <label class="field-label">Tabela de Preço</label>
             <select disabled title="Depende do domínio Financeiro, ainda não implementado"><option>—</option></select>
@@ -70,15 +70,15 @@
         </div>
 
         <div v-else-if="abaAtiva === 'Endereços'" class="endereco">
-          <p>{{ parceiro.logradouro }}, {{ parceiro.numero }} — {{ parceiro.bairro }}</p>
-          <p>{{ parceiro.cidade }} / {{ parceiro.uf }} — CEP {{ parceiro.cep }}</p>
+          <p>{{ parceiro.street }}, {{ parceiro.number }} — {{ parceiro.neighborhood }}</p>
+          <p>{{ parceiro.city }} / {{ parceiro.state }} — CEP {{ parceiro.zipCode }}</p>
         </div>
 
         <div v-else-if="abaAtiva === 'Contatos'">
-          <div v-if="parceiro.contatos.length === 0" class="estado-vazio">Nenhum contato cadastrado</div>
-          <div v-for="(contato, index) in parceiro.contatos" :key="index" class="contato-item">
-            <strong>{{ contato.nome }}</strong> — {{ contato.cargo }}
-            <div>{{ contato.email }} · {{ contato.telefoneComercial }}</div>
+          <div v-if="parceiro.contacts.length === 0" class="estado-vazio">Nenhum contato cadastrado</div>
+          <div v-for="(contato, index) in parceiro.contacts" :key="index" class="contato-item">
+            <strong>{{ contato.name }}</strong> — {{ contato.jobTitle }}
+            <div>{{ contato.email }} · {{ contato.businessPhone }}</div>
           </div>
         </div>
 
@@ -94,7 +94,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
-import { buscarParceiro, listarParceiros, type ParceiroResponse, type ParceiroSummary } from '@/api/parceiros'
+import { getPartner, listPartners, type PartnerResponse, type PartnerListItem } from '@/api/partners'
 
 const route = useRoute()
 const router = useRouter()
@@ -103,8 +103,8 @@ const tabs = ['Dados', 'Endereços', 'Contatos', 'Pedidos', 'Financeiro'] as con
 const abaAtiva = ref<(typeof tabs)[number]>('Dados')
 
 const parceiroId = ref('')
-const parceiro = ref<ParceiroResponse | null>(null)
-const listaRail = ref<ParceiroSummary[]>([])
+const parceiro = ref<PartnerResponse | null>(null)
+const listaRail = ref<PartnerListItem[]>([])
 const buscaRail = ref('')
 const erro = ref('')
 
@@ -112,7 +112,7 @@ async function carregarParceiro(id: string) {
   parceiroId.value = id
   erro.value = ''
   try {
-    parceiro.value = await buscarParceiro(id)
+    parceiro.value = await getPartner(id)
     abaAtiva.value = 'Dados'
   } catch {
     erro.value = 'Não foi possível carregar os dados do cliente.'
@@ -122,7 +122,7 @@ async function carregarParceiro(id: string) {
 async function carregarRail() {
   erro.value = ''
   try {
-    const pagina = await listarParceiros({ busca: buscaRail.value || undefined, page: 0, size: 10 })
+    const pagina = await listPartners({ busca: buscaRail.value || undefined, page: 0, size: 10 })
     listaRail.value = pagina.content
   } catch {
     erro.value = 'Não foi possível carregar a lista de clientes.'

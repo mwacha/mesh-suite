@@ -4,12 +4,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import PurchaseOrderFormView from '@/views/PurchaseOrderFormView.vue'
 import * as purchaseOrdersApi from '@/api/purchaseOrders'
-import * as parceirosApi from '@/api/parceiros'
+import * as partnersApi from '@/api/partners'
 import * as usersApi from '@/api/users'
 import * as produtosApi from '@/api/produtos'
 
 vi.mock('@/api/purchaseOrders')
-vi.mock('@/api/parceiros')
+vi.mock('@/api/partners')
 vi.mock('@/api/users')
 vi.mock('@/api/produtos')
 
@@ -30,9 +30,9 @@ function mountWithRouter(path = '/compras/novo') {
 }
 
 const fornecedorBase = {
-  id: 'f1', nomeFantasia: 'Tecidos Aurora', razaoSocial: 'Tecidos Aurora Ltda',
-  documento: '11222333000144', tipoPessoa: 'JURIDICA' as const,
-  cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO' as const,
+  id: 'f1', tradeName: 'Tecidos Aurora', legalName: 'Tecidos Aurora Ltda',
+  document: '11222333000144', personType: 'LEGAL_ENTITY' as const,
+  city: 'São Paulo', state: 'SP', whatsapp: '', status: 'ACTIVE' as const,
 }
 
 const compradorBase = { id: 'b1', name: 'Carlos Comprador' }
@@ -47,7 +47,7 @@ describe('PurchaseOrderFormView', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.mocked(usersApi.listBuyers).mockResolvedValue([compradorBase])
-    vi.mocked(parceirosApi.listarParceiros).mockResolvedValue({
+    vi.mocked(partnersApi.listPartners).mockResolvedValue({
       content: [fornecedorBase], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
     vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
@@ -83,8 +83,8 @@ describe('PurchaseOrderFormView', () => {
     await wrapper.find('[data-test="fornecedor-busca"]').setValue('aurora')
     await flushPromises()
 
-    expect(parceirosApi.listarParceiros).toHaveBeenCalledWith(
-      expect.objectContaining({ busca: 'aurora', papel: 'FORNECEDOR' }),
+    expect(partnersApi.listPartners).toHaveBeenCalledWith(
+      expect.objectContaining({ busca: 'aurora', papel: 'SUPPLIER' }),
     )
     await wrapper.find('[data-test="fornecedor-resultados"] li').trigger('click')
 

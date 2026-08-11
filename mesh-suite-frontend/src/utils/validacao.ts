@@ -22,9 +22,9 @@ export function telefoneValido(telefone: string): boolean {
   return digitos.length === 10 || digitos.length === 11
 }
 
-export function documentoValido(documento: string, tipoPessoa: 'FISICA' | 'JURIDICA'): boolean {
+export function documentoValido(documento: string, tipoPessoa: 'INDIVIDUAL' | 'LEGAL_ENTITY'): boolean {
   const digitos = documento.replace(/\D/g, '')
-  return digitos.length === (tipoPessoa === 'JURIDICA' ? 14 : 11)
+  return digitos.length === (tipoPessoa === 'LEGAL_ENTITY' ? 14 : 11)
 }
 
 export function cepValido(cep: string): boolean {

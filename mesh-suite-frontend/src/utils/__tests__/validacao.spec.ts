@@ -42,17 +42,17 @@ describe('telefoneValido', () => {
 })
 
 describe('documentoValido', () => {
-  it('accepts an 11-digit CPF for FISICA', () => {
-    expect(documentoValido('111.222.333-44', 'FISICA')).toBe(true)
+  it('accepts an 11-digit CPF for INDIVIDUAL', () => {
+    expect(documentoValido('111.222.333-44', 'INDIVIDUAL')).toBe(true)
   })
 
-  it('accepts a 14-digit CNPJ for JURIDICA', () => {
-    expect(documentoValido('11.222.333/0001-44', 'JURIDICA')).toBe(true)
+  it('accepts a 14-digit CNPJ for LEGAL_ENTITY', () => {
+    expect(documentoValido('11.222.333/0001-44', 'LEGAL_ENTITY')).toBe(true)
   })
 
   it('rejects the wrong digit count for the given tipoPessoa', () => {
-    expect(documentoValido('111.222.333-44', 'JURIDICA')).toBe(false)
-    expect(documentoValido('11.222.333/0001-44', 'FISICA')).toBe(false)
+    expect(documentoValido('111.222.333-44', 'LEGAL_ENTITY')).toBe(false)
+    expect(documentoValido('11.222.333/0001-44', 'INDIVIDUAL')).toBe(false)
   })
 })
 

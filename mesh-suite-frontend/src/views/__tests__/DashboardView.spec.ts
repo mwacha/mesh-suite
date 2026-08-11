@@ -5,11 +5,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '@/views/DashboardView.vue'
 import { useAuthStore } from '@/stores/auth'
 import * as pedidosApi from '@/api/pedidos'
-import * as parceirosApi from '@/api/parceiros'
+import * as partnersApi from '@/api/partners'
 import * as produtosApi from '@/api/produtos'
 
 vi.mock('@/api/pedidos')
-vi.mock('@/api/parceiros')
+vi.mock('@/api/partners')
 vi.mock('@/api/produtos')
 
 function mountWithRouter() {
@@ -46,8 +46,8 @@ describe('DashboardView', () => {
     vi.mocked(pedidosApi.listarPedidos).mockResolvedValue({
       content: [pedidoRecente], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
-    vi.mocked(parceirosApi.buscarResumoParceiros).mockResolvedValue({
-      total: 1500, ativos: 1240, emRisco: 30, bloqueados: 5,
+    vi.mocked(partnersApi.getPartnerSummary).mockResolvedValue({
+      total: 1500, active: 1240, atRisk: 30, blocked: 5,
     })
     vi.mocked(produtosApi.buscarResumoProdutos).mockResolvedValue({
       total: 900, ativos: 856, inativos: 44,

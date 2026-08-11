@@ -30,7 +30,7 @@
           <TextField
             v-model="numeroDocFiltro"
             placeholder="Número do documento"
-            :mask="(v) => maskDocumento(v, TIPO_LABELS[tipoDocFiltro] ?? 'JURIDICA')"
+            :mask="(v) => maskDocumento(v, TIPO_LABELS[tipoDocFiltro] ?? 'LEGAL_ENTITY')"
             test-id="documento-filtro-numero"
           />
           <button
@@ -50,9 +50,9 @@
         <span class="table-card-title">Lista de Clientes</span>
         <div v-if="resumo" class="table-card-stats">
           <StatPill :value="resumo.total" label="Total" color="dark" />
-          <StatPill :value="resumo.ativos" label="Ativos" color="green" />
-          <StatPill :value="resumo.emRisco" label="Em Risco" color="amber" />
-          <StatPill :value="resumo.bloqueados" label="Bloqueados" color="red" />
+          <StatPill :value="resumo.active" label="Ativos" color="green" />
+          <StatPill :value="resumo.atRisk" label="Em Risco" color="amber" />
+          <StatPill :value="resumo.blocked" label="Bloqueados" color="red" />
         </div>
       </div>
 
@@ -82,9 +82,9 @@
           :data-test="`row-${parceiro.id}`"
           @click="editarCliente(parceiro.id)"
         >
-          <div class="table-grid-cell table-grid-cell-nome">{{ parceiro.nomeFantasia }}</div>
-          <div class="table-grid-cell">{{ maskDocumento(parceiro.documento, parceiro.tipoPessoa) }}</div>
-          <div class="table-grid-cell">{{ parceiro.cidade }}</div>
+          <div class="table-grid-cell table-grid-cell-nome">{{ parceiro.tradeName }}</div>
+          <div class="table-grid-cell">{{ maskDocumento(parceiro.document, parceiro.personType) }}</div>
+          <div class="table-grid-cell">{{ parceiro.city }}</div>
           <div class="table-grid-cell">{{ maskTelefone(parceiro.whatsapp) }}</div>
           <div class="table-grid-cell">
             <StatusBadge :label="statusLabel(parceiro.status)" :color="statusColor(parceiro.status)" />
@@ -120,22 +120,22 @@ import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
 import Pagination from '@/components/Pagination.vue'
 import type { Page } from '@/api/types'
 import {
-  listarParceiros,
-  buscarResumoParceiros,
-  atualizarStatusParceiro,
-  excluirParceiro,
-  type ParceiroSummary,
-  type ParceiroResumo,
-  type StatusParceiro,
-  type TipoPessoa,
-} from '@/api/parceiros'
+  listPartners,
+  getPartnerSummary,
+  updatePartnerStatus,
+  deletePartner,
+  type PartnerListItem,
+  type PartnerSummary,
+  type PartnerStatus,
+  type PersonType,
+} from '@/api/partners'
 import { listarMunicipios } from '@/api/municipios'
 import { maskTelefone, maskDocumento } from '@/utils/masks'
 
 const router = useRouter()
 
-const STATUS_LABELS: Record<string, StatusParceiro> = { Ativo: 'ATIVO', 'Em Risco': 'EM_RISCO', Bloqueado: 'BLOQUEADO' }
-const TIPO_LABELS: Record<string, TipoPessoa> = { CNPJ: 'JURIDICA', CPF: 'FISICA' }
+const STATUS_LABELS: Record<string, PartnerStatus> = { Ativo: 'ACTIVE', 'Em Risco': 'AT_RISK', Bloqueado: 'BLOCKED' }
+const TIPO_LABELS: Record<string, PersonType> = { CNPJ: 'LEGAL_ENTITY', CPF: 'INDIVIDUAL' }
 const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
   'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
 
@@ -155,18 +155,18 @@ const filtrosAvancados = ref<Record<string, string[]>>({})
 const sortField = ref<'nomeFantasia' | 'cidade' | 'status' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 
-const pagina = ref<Page<ParceiroSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
-const resumo = ref<ParceiroResumo | null>(null)
+const pagina = ref<Page<PartnerListItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+const resumo = ref<PartnerSummary | null>(null)
 const erro = ref('')
 
 const countLabel = computed(() => (resumo.value ? `${resumo.value.total} clientes cadastrados` : undefined))
 
-function statusLabel(status: StatusParceiro) {
-  return { ATIVO: 'Ativo', EM_RISCO: 'Em Risco', BLOQUEADO: 'Bloqueado' }[status]
+function statusLabel(status: PartnerStatus) {
+  return { ACTIVE: 'Ativo', AT_RISK: 'Em Risco', BLOCKED: 'Bloqueado' }[status]
 }
 
-function statusColor(status: StatusParceiro): StatusBadgeColor {
-  return { ATIVO: 'green', EM_RISCO: 'amber', BLOQUEADO: 'red' }[status] as StatusBadgeColor
+function statusColor(status: PartnerStatus): StatusBadgeColor {
+  return { ACTIVE: 'green', AT_RISK: 'amber', BLOCKED: 'red' }[status] as StatusBadgeColor
 }
 
 function sortIcon(field: 'nomeFantasia' | 'cidade' | 'status') {
@@ -190,7 +190,7 @@ function labelsFor(categoria: string): string[] {
   return filtrosAvancados.value[categoria] ?? []
 }
 
-function parseFiltroDocumento(): { tipoDocumento?: TipoPessoa[]; documento?: string } {
+function parseFiltroDocumento(): { tipoDocumento?: PersonType[]; documento?: string } {
   const valor = labelsFor('Nr. Documento')[0]
   if (!valor) {
     return {}
@@ -211,9 +211,9 @@ async function carregar(page: number) {
   const uf = labelsFor('UF')
   const cidade = labelsFor('Cidade')
   try {
-    pagina.value = await listarParceiros({
+    pagina.value = await listPartners({
       busca: filtros.busca || undefined,
-      papel: 'CLIENTE',
+      papel: 'CUSTOMER',
       status: status.length ? status : undefined,
       tipoDocumento,
       documento,
@@ -231,7 +231,7 @@ async function carregar(page: number) {
 async function carregarResumo() {
   erro.value = ''
   try {
-    resumo.value = await buscarResumoParceiros('CLIENTE')
+    resumo.value = await getPartnerSummary('CUSTOMER')
   } catch {
     erro.value = 'Não foi possível carregar o resumo de clientes.'
   }
@@ -279,36 +279,36 @@ function editarCliente(id: string) {
   router.push({ name: 'clientes-editar', params: { id } })
 }
 
-async function alternarStatus(parceiro: ParceiroSummary) {
+async function alternarStatus(parceiro: PartnerListItem) {
   erro.value = ''
-  const novoStatus = parceiro.status === 'BLOQUEADO' ? 'ATIVO' : 'BLOQUEADO'
+  const novoStatus = parceiro.status === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED'
   try {
-    await atualizarStatusParceiro(parceiro.id, novoStatus)
+    await updatePartnerStatus(parceiro.id, novoStatus)
     await Promise.all([carregar(pagina.value.number), carregarResumo()])
   } catch {
     erro.value = 'Não foi possível atualizar o status.'
   }
 }
 
-async function excluir(parceiro: ParceiroSummary) {
-  if (!confirm(`Excluir o cliente "${parceiro.nomeFantasia}"?`)) {
+async function excluir(parceiro: PartnerListItem) {
+  if (!confirm(`Excluir o cliente "${parceiro.tradeName}"?`)) {
     return
   }
   erro.value = ''
   try {
-    await excluirParceiro(parceiro.id)
+    await deletePartner(parceiro.id)
     await Promise.all([carregar(pagina.value.number), carregarResumo()])
   } catch {
     erro.value = 'Não foi possível excluir o cliente.'
   }
 }
 
-function acoesPara(parceiro: ParceiroSummary): ActionsMenuItem[] {
+function acoesPara(parceiro: PartnerListItem): ActionsMenuItem[] {
   return [
     { label: 'Ver', action: () => abrirCliente(parceiro.id), testId: 'acao-ver' },
     { label: 'Editar', action: () => editarCliente(parceiro.id), testId: 'acao-editar' },
     {
-      label: parceiro.status === 'BLOQUEADO' ? 'Ativar' : 'Bloquear',
+      label: parceiro.status === 'BLOCKED' ? 'Ativar' : 'Bloquear',
       action: () => alternarStatus(parceiro),
       testId: 'acao-status',
     },

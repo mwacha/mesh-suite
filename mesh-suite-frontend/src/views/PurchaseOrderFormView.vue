@@ -15,7 +15,7 @@
             />
             <p v-if="erros.supplierId" class="field-error">{{ erros.supplierId }}</p>
             <ul v-if="resultadosFornecedores.length" class="dropdown-busca" data-test="fornecedor-resultados">
-              <li v-for="f in resultadosFornecedores" :key="f.id" @click="selecionarFornecedor(f)">{{ f.nomeFantasia }}</li>
+              <li v-for="f in resultadosFornecedores" :key="f.id" @click="selecionarFornecedor(f)">{{ f.tradeName }}</li>
             </ul>
           </div>
           <div>
@@ -126,7 +126,7 @@ import {
   type PurchaseOrderRequest,
   type PurchaseOrderItemRequest,
 } from '@/api/purchaseOrders'
-import { listarParceiros, type ParceiroSummary } from '@/api/parceiros'
+import { listPartners, type PartnerListItem } from '@/api/partners'
 import { listBuyers, type Buyer } from '@/api/users'
 import { listarProdutos, type ProdutoSummary } from '@/api/produtos'
 
@@ -165,7 +165,7 @@ const erroGeral = ref('')
 const salvando = ref(false)
 
 const fornecedorBusca = ref('')
-const resultadosFornecedores = ref<ParceiroSummary[]>([])
+const resultadosFornecedores = ref<PartnerListItem[]>([])
 const compradores = ref<Buyer[]>([])
 
 const produtoBusca = ref('')
@@ -185,16 +185,16 @@ async function buscarFornecedores() {
     return
   }
   try {
-    const pagina = await listarParceiros({ busca: fornecedorBusca.value, papel: 'FORNECEDOR', size: 5 })
+    const pagina = await listPartners({ busca: fornecedorBusca.value, papel: 'SUPPLIER', size: 5 })
     resultadosFornecedores.value = pagina.content
   } catch {
     resultadosFornecedores.value = []
   }
 }
 
-function selecionarFornecedor(fornecedor: ParceiroSummary) {
+function selecionarFornecedor(fornecedor: PartnerListItem) {
   form.supplierId = fornecedor.id
-  fornecedorBusca.value = fornecedor.nomeFantasia
+  fornecedorBusca.value = fornecedor.tradeName
   resultadosFornecedores.value = []
 }
 

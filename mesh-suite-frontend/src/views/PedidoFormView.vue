@@ -15,7 +15,7 @@
             />
             <p v-if="erros.clienteId" class="field-error">{{ erros.clienteId }}</p>
             <ul v-if="resultadosClientes.length" class="dropdown-busca" data-test="cliente-resultados">
-              <li v-for="c in resultadosClientes" :key="c.id" @click="selecionarCliente(c)">{{ c.nomeFantasia }}</li>
+              <li v-for="c in resultadosClientes" :key="c.id" @click="selecionarCliente(c)">{{ c.tradeName }}</li>
             </ul>
           </div>
           <div>
@@ -120,7 +120,7 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import { buscarPedido, criarPedido, atualizarPedido, type PedidoRequest, type ItemPedidoRequest } from '@/api/pedidos'
-import { listarParceiros, type ParceiroSummary } from '@/api/parceiros'
+import { listPartners, type PartnerListItem } from '@/api/partners'
 import { listSalesReps, type SalesRep } from '@/api/users'
 import { listarProdutos, type ProdutoSummary } from '@/api/produtos'
 
@@ -159,7 +159,7 @@ const erroGeral = ref('')
 const salvando = ref(false)
 
 const clienteBusca = ref('')
-const resultadosClientes = ref<ParceiroSummary[]>([])
+const resultadosClientes = ref<PartnerListItem[]>([])
 const representantes = ref<SalesRep[]>([])
 
 const produtoBusca = ref('')
@@ -179,16 +179,16 @@ async function buscarClientes() {
     return
   }
   try {
-    const pagina = await listarParceiros({ busca: clienteBusca.value, papel: 'CLIENTE', size: 5 })
+    const pagina = await listPartners({ busca: clienteBusca.value, papel: 'CUSTOMER', size: 5 })
     resultadosClientes.value = pagina.content
   } catch {
     resultadosClientes.value = []
   }
 }
 
-function selecionarCliente(cliente: ParceiroSummary) {
+function selecionarCliente(cliente: PartnerListItem) {
   form.clienteId = cliente.id
-  clienteBusca.value = cliente.nomeFantasia
+  clienteBusca.value = cliente.tradeName
   resultadosClientes.value = []
 }
 

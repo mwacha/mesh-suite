@@ -4,12 +4,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import PedidoFormView from '@/views/PedidoFormView.vue'
 import * as pedidosApi from '@/api/pedidos'
-import * as parceirosApi from '@/api/parceiros'
+import * as partnersApi from '@/api/partners'
 import * as usersApi from '@/api/users'
 import * as produtosApi from '@/api/produtos'
 
 vi.mock('@/api/pedidos')
-vi.mock('@/api/parceiros')
+vi.mock('@/api/partners')
 vi.mock('@/api/users')
 vi.mock('@/api/produtos')
 
@@ -30,9 +30,9 @@ function mountWithRouter(path = '/pedidos/novo') {
 }
 
 const clienteBase = {
-  id: 'c1', nomeFantasia: 'Mercado Silva', razaoSocial: 'Mercado Silva Ltda',
-  documento: '11222333000144', tipoPessoa: 'JURIDICA' as const,
-  cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO' as const,
+  id: 'c1', tradeName: 'Mercado Silva', legalName: 'Mercado Silva Ltda',
+  document: '11222333000144', personType: 'LEGAL_ENTITY' as const,
+  city: 'São Paulo', state: 'SP', whatsapp: '', status: 'ACTIVE' as const,
 }
 
 const salesRepBase = { id: 'v1', name: 'Carla Vendedora' }
@@ -47,7 +47,7 @@ describe('PedidoFormView', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.mocked(usersApi.listSalesReps).mockResolvedValue([salesRepBase])
-    vi.mocked(parceirosApi.listarParceiros).mockResolvedValue({
+    vi.mocked(partnersApi.listPartners).mockResolvedValue({
       content: [clienteBase], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
     vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
@@ -83,8 +83,8 @@ describe('PedidoFormView', () => {
     await wrapper.find('[data-test="cliente-busca"]').setValue('silva')
     await flushPromises()
 
-    expect(parceirosApi.listarParceiros).toHaveBeenCalledWith(
-      expect.objectContaining({ busca: 'silva', papel: 'CLIENTE' }),
+    expect(partnersApi.listPartners).toHaveBeenCalledWith(
+      expect.objectContaining({ busca: 'silva', papel: 'CUSTOMER' }),
     )
     await wrapper.find('[data-test="cliente-resultados"] li').trigger('click')
 

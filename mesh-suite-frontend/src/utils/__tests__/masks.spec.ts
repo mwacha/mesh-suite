@@ -67,11 +67,11 @@ describe('maskCnpj', () => {
 })
 
 describe('maskDocumento', () => {
-  it('uses the CPF mask for FISICA', () => {
-    expect(maskDocumento('11122233344', 'FISICA')).toBe('111.222.333-44')
+  it('uses the CPF mask for INDIVIDUAL', () => {
+    expect(maskDocumento('11122233344', 'INDIVIDUAL')).toBe('111.222.333-44')
   })
 
-  it('uses the CNPJ mask for JURIDICA', () => {
-    expect(maskDocumento('11222333000144', 'JURIDICA')).toBe('11.222.333/0001-44')
+  it('uses the CNPJ mask for LEGAL_ENTITY', () => {
+    expect(maskDocumento('11222333000144', 'LEGAL_ENTITY')).toBe('11.222.333/0001-44')
   })
 })

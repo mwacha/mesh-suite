@@ -6,23 +6,23 @@
         <div class="grid grid-3">
           <div>
             <label class="field-label">Tipo de Pessoa *</label>
-            <select v-model="form.tipoPessoa">
-              <option value="JURIDICA">Jurídica</option>
-              <option value="FISICA">Física</option>
+            <select v-model="form.personType">
+              <option value="LEGAL_ENTITY">Jurídica</option>
+              <option value="INDIVIDUAL">Física</option>
             </select>
           </div>
           <TextField
-            v-model="form.documento"
+            v-model="form.document"
             label="CNPJ / CPF"
             required
-            :mask="(v) => maskDocumento(v, form.tipoPessoa)"
-            :maxlength="form.tipoPessoa === 'JURIDICA' ? 18 : 14"
+            :mask="(v) => maskDocumento(v, form.personType)"
+            :maxlength="form.personType === 'LEGAL_ENTITY' ? 18 : 14"
             :error="erros.documento"
             test-id="documento"
             @blur="validarDocumento"
           />
           <TextField
-            v-model="form.nomeFantasia"
+            v-model="form.tradeName"
             label="Nome Fantasia"
             required
             placeholder="Ex: Mercado Silva"
@@ -32,7 +32,7 @@
           />
         </div>
         <TextField
-          v-model="form.razaoSocial"
+          v-model="form.legalName"
           label="Razão Social"
           required
           :error="erros.razaoSocial"
@@ -45,11 +45,11 @@
           </label>
           <div class="checkbox-row">
             <label class="checkbox-label">
-              <input type="checkbox" :checked="form.papeis.includes('CLIENTE')" @change="togglePapel('CLIENTE')" />
+              <input type="checkbox" :checked="form.roles.includes('CUSTOMER')" @change="togglePapel('CUSTOMER')" />
               Cliente
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" :checked="form.papeis.includes('FORNECEDOR')" @change="togglePapel('FORNECEDOR')" />
+              <input type="checkbox" :checked="form.roles.includes('SUPPLIER')" @change="togglePapel('SUPPLIER')" />
               Fornecedor
             </label>
             <label
@@ -67,7 +67,7 @@
       <CollapsibleSection title="Contato para Cobrança e Faturamento">
         <div class="grid grid-2">
           <TextField
-            v-model="form.emailsCobranca"
+            v-model="form.billingEmails"
             label="E-mail(s)"
             placeholder="email@exemplo.com.br"
             :error="erros.emailsCobranca"
@@ -90,24 +90,24 @@
         <div class="grid grid-4">
           <div>
             <label class="field-label">Indicador de Inscrição Estadual</label>
-            <select v-model="form.indicadorIe">
+            <select v-model="form.taxIndicator">
               <option :value="null">Selecione...</option>
-              <option value="NAO_CONTRIBUINTE">Não contribuinte</option>
-              <option value="CONTRIBUINTE">Contribuinte</option>
-              <option value="CONTRIBUINTE_ISENTO">Contribuinte isento</option>
+              <option value="NON_TAXPAYER">Não contribuinte</option>
+              <option value="TAXPAYER">Contribuinte</option>
+              <option value="EXEMPT_TAXPAYER">Contribuinte isento</option>
             </select>
           </div>
           <div>
             <label class="field-label">Inscrição Estadual</label>
-            <input v-model="form.inscricaoEstadual" />
+            <input v-model="form.stateRegistration" />
           </div>
           <div>
             <label class="field-label">Inscrição Municipal</label>
-            <input v-model="form.inscricaoMunicipal" />
+            <input v-model="form.municipalRegistration" />
           </div>
           <div>
             <label class="field-label">Inscrição Suframa</label>
-            <input v-model="form.inscricaoSuframa" />
+            <input v-model="form.suframaRegistration" />
           </div>
         </div>
       </CollapsibleSection>
@@ -118,7 +118,7 @@
             <label class="field-label">CEP</label>
             <div class="input-action">
               <TextField
-                v-model="form.cep"
+                v-model="form.zipCode"
                 :mask="maskCep"
                 :maxlength="9"
                 :error="erros.cep"
@@ -131,39 +131,39 @@
           </div>
           <div>
             <label class="field-label">Endereço</label>
-            <input v-model="form.logradouro" data-test="logradouro" />
+            <input v-model="form.street" data-test="logradouro" />
           </div>
           <div>
             <label class="field-label">Número</label>
-            <input v-model="form.numero" />
+            <input v-model="form.number" />
           </div>
         </div>
         <div class="grid grid-4">
           <div>
             <label class="field-label">Estado</label>
-            <select v-model="form.uf" data-test="uf">
+            <select v-model="form.state" data-test="uf">
               <option value="">UF</option>
               <option v-for="estado in UFS" :key="estado" :value="estado">{{ estado }}</option>
             </select>
           </div>
           <div>
             <label class="field-label">Cidade</label>
-            <input v-model="form.cidade" data-test="cidade" />
+            <input v-model="form.city" data-test="cidade" />
           </div>
           <div>
             <label class="field-label">Bairro</label>
-            <input v-model="form.bairro" />
+            <input v-model="form.neighborhood" />
           </div>
           <div>
             <label class="field-label">Complemento</label>
-            <input v-model="form.complemento" />
+            <input v-model="form.complement" />
           </div>
         </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="Outros Contatos">
-        <div v-for="(contato, index) in form.contatos" :key="index" class="grid grid-contato">
-          <input v-model="contato.nome" placeholder="Nome" />
+        <div v-for="(contato, index) in form.contacts" :key="index" class="grid grid-contato">
+          <input v-model="contato.name" placeholder="Nome" />
           <TextField
             v-model="contato.email"
             placeholder="email@exemplo.com"
@@ -171,22 +171,22 @@
             @blur="validarContatoEmail(index)"
           />
           <TextField
-            v-model="contato.telefoneComercial"
+            v-model="contato.businessPhone"
             placeholder="(11) 3333-3333"
             :mask="maskTelefone"
             :maxlength="15"
-            :error="errosContatos[index]?.telefoneComercial"
-            @blur="validarContatoTelefone(index, 'telefoneComercial')"
+            :error="errosContatos[index]?.businessPhone"
+            @blur="validarContatoTelefone(index, 'businessPhone')"
           />
           <TextField
-            v-model="contato.telefoneCelular"
+            v-model="contato.mobilePhone"
             placeholder="(11) 99999-9999"
             :mask="maskTelefone"
             :maxlength="15"
-            :error="errosContatos[index]?.telefoneCelular"
-            @blur="validarContatoTelefone(index, 'telefoneCelular')"
+            :error="errosContatos[index]?.mobilePhone"
+            @blur="validarContatoTelefone(index, 'mobilePhone')"
           />
-          <input v-model="contato.cargo" placeholder="Ex: Financeiro" />
+          <input v-model="contato.jobTitle" placeholder="Ex: Financeiro" />
           <button type="button" class="btn-remove" @click="removerContato(index)">🗑</button>
         </div>
         <button type="button" class="btn-add-contato" @click="adicionarContato">+ Adicionar Contato</button>
@@ -194,7 +194,7 @@
 
       <section class="card">
         <h2>Observação</h2>
-        <textarea v-model="form.observacao" rows="4" placeholder="Informações adicionais sobre o cliente..."></textarea>
+        <textarea v-model="form.notes" rows="4" placeholder="Informações adicionais sobre o cliente..."></textarea>
       </section>
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
@@ -214,12 +214,12 @@ import AppShell from '@/components/AppShell.vue'
 import TextField from '@/components/TextField.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import {
-  buscarParceiro,
-  criarParceiro,
-  atualizarParceiro,
-  type ParceiroRequest,
-  type PapelParceiro,
-} from '@/api/parceiros'
+  getPartner,
+  createPartner,
+  updatePartner,
+  type PartnerRequest,
+  type PartnerRole,
+} from '@/api/partners'
 import { buscarEnderecoPorCep } from '@/api/cep'
 import { maskTelefone, maskCep, maskDocumento } from '@/utils/masks'
 import { emailValido, emailsValidos, telefoneValido, documentoValido, cepValido } from '@/utils/validacao'
@@ -237,38 +237,38 @@ const router = useRouter()
 
 const modoEdicao = computed(() => typeof route.params.id === 'string')
 
-function novoFormulario(): ParceiroRequest {
+function novoFormulario(): PartnerRequest {
   return {
-    tipoPessoa: 'JURIDICA',
-    documento: '',
-    nomeFantasia: '',
-    razaoSocial: '',
-    papeis: ['CLIENTE'],
-    emailsCobranca: '',
+    personType: 'LEGAL_ENTITY',
+    document: '',
+    tradeName: '',
+    legalName: '',
+    roles: ['CUSTOMER'],
+    billingEmails: '',
     whatsapp: '',
-    indicadorIe: null,
-    inscricaoEstadual: '',
-    inscricaoMunicipal: '',
-    inscricaoSuframa: '',
-    cep: '',
-    logradouro: '',
-    numero: '',
-    bairro: '',
-    complemento: '',
-    uf: '',
-    cidade: '',
-    observacao: '',
-    contatos: [],
+    taxIndicator: null,
+    stateRegistration: '',
+    municipalRegistration: '',
+    suframaRegistration: '',
+    zipCode: '',
+    street: '',
+    number: '',
+    neighborhood: '',
+    complement: '',
+    state: '',
+    city: '',
+    notes: '',
+    contacts: [],
   }
 }
 
 interface ErrosContato {
   email?: string
-  telefoneComercial?: string
-  telefoneCelular?: string
+  businessPhone?: string
+  mobilePhone?: string
 }
 
-const form = reactive<ParceiroRequest>(novoFormulario())
+const form = reactive<PartnerRequest>(novoFormulario())
 const erros = reactive<{
   nomeFantasia?: string
   razaoSocial?: string
@@ -287,67 +287,67 @@ onMounted(async () => {
   const id = route.params.id
   if (typeof id === 'string') {
     try {
-      const parceiro = await buscarParceiro(id)
+      const parceiro = await getPartner(id)
       Object.assign(form, parceiro)
-      errosContatos.value = form.contatos.map(() => ({}))
+      errosContatos.value = form.contacts.map(() => ({}))
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados do cliente. Tente novamente em instantes.'
     }
   }
 })
 
-function togglePapel(papel: PapelParceiro) {
-  const index = form.papeis.indexOf(papel)
+function togglePapel(papel: PartnerRole) {
+  const index = form.roles.indexOf(papel)
   if (index === -1) {
-    form.papeis.push(papel)
+    form.roles.push(papel)
   } else {
-    form.papeis.splice(index, 1)
+    form.roles.splice(index, 1)
   }
 }
 
 function adicionarContato() {
-  form.contatos.push({ nome: '', email: '', telefoneComercial: '', telefoneCelular: '', cargo: '' })
+  form.contacts.push({ name: '', email: '', businessPhone: '', mobilePhone: '', jobTitle: '' })
   errosContatos.value.push({})
 }
 
 function removerContato(index: number) {
-  form.contatos.splice(index, 1)
+  form.contacts.splice(index, 1)
   errosContatos.value.splice(index, 1)
 }
 
 async function buscarCep() {
   erroCep.value = ''
-  const endereco = await buscarEnderecoPorCep(form.cep)
+  const endereco = await buscarEnderecoPorCep(form.zipCode)
   if (!endereco) {
     erroCep.value = 'CEP não encontrado — preencha o endereço manualmente'
     return
   }
-  form.logradouro = endereco.logradouro
-  form.bairro = endereco.bairro
-  form.cidade = endereco.localidade
-  form.uf = endereco.uf
+  form.street = endereco.logradouro
+  form.neighborhood = endereco.bairro
+  form.city = endereco.localidade
+  form.state = endereco.uf
 }
 
 function validarNomeFantasia() {
-  erros.nomeFantasia = form.nomeFantasia.trim() ? undefined : 'Campo obrigatório'
+  erros.nomeFantasia = form.tradeName.trim() ? undefined : 'Campo obrigatório'
 }
 
 function validarRazaoSocial() {
-  erros.razaoSocial = form.razaoSocial.trim() ? undefined : 'Campo obrigatório'
+  erros.razaoSocial = form.legalName.trim() ? undefined : 'Campo obrigatório'
 }
 
 function validarDocumento() {
-  if (!form.documento.trim()) {
+  if (!form.document.trim()) {
     erros.documento = 'Campo obrigatório'
-  } else if (!documentoValido(form.documento, form.tipoPessoa)) {
-    erros.documento = `Informe um ${form.tipoPessoa === 'JURIDICA' ? 'CNPJ' : 'CPF'} válido`
+  } else if (!documentoValido(form.document, form.personType)) {
+    erros.documento = `Informe um ${form.personType === 'LEGAL_ENTITY' ? 'CNPJ' : 'CPF'} válido`
   } else {
     erros.documento = undefined
   }
 }
 
 function validarEmailsCobranca() {
-  erros.emailsCobranca = emailsValidos(form.emailsCobranca) ? undefined : 'Informe um e-mail válido'
+  erros.emailsCobranca = emailsValidos(form.billingEmails) ? undefined : 'Informe um e-mail válido'
 }
 
 function validarWhatsapp() {
@@ -355,19 +355,19 @@ function validarWhatsapp() {
 }
 
 function validarCep() {
-  erros.cep = !form.cep || cepValido(form.cep) ? undefined : 'CEP inválido'
+  erros.cep = !form.zipCode || cepValido(form.zipCode) ? undefined : 'CEP inválido'
 }
 
 function validarContatoEmail(index: number) {
-  const contato = form.contatos[index]
+  const contato = form.contacts[index]
   errosContatos.value[index] = {
     ...errosContatos.value[index],
     email: !contato.email || emailValido(contato.email) ? undefined : 'E-mail inválido',
   }
 }
 
-function validarContatoTelefone(index: number, campo: 'telefoneComercial' | 'telefoneCelular') {
-  const contato = form.contatos[index]
+function validarContatoTelefone(index: number, campo: 'businessPhone' | 'mobilePhone') {
+  const contato = form.contacts[index]
   const valor = contato[campo]
   errosContatos.value[index] = {
     ...errosContatos.value[index],
@@ -376,7 +376,7 @@ function validarContatoTelefone(index: number, campo: 'telefoneComercial' | 'tel
 }
 
 function validarPapeis() {
-  erros.papeis = form.papeis.some((p) => p === 'CLIENTE' || p === 'FORNECEDOR')
+  erros.papeis = form.roles.some((p) => p === 'CUSTOMER' || p === 'SUPPLIER')
     ? undefined
     : 'Selecione ao menos Cliente ou Fornecedor'
 }
@@ -389,14 +389,14 @@ function validar(): boolean {
   validarWhatsapp()
   validarCep()
   validarPapeis()
-  form.contatos.forEach((_, index) => {
+  form.contacts.forEach((_, index) => {
     validarContatoEmail(index)
-    validarContatoTelefone(index, 'telefoneComercial')
-    validarContatoTelefone(index, 'telefoneCelular')
+    validarContatoTelefone(index, 'businessPhone')
+    validarContatoTelefone(index, 'mobilePhone')
   })
 
   const semErroContatos = errosContatos.value.every(
-    (e) => !e?.email && !e?.telefoneComercial && !e?.telefoneCelular,
+    (e) => !e?.email && !e?.businessPhone && !e?.mobilePhone,
   )
   return (
     !erros.nomeFantasia &&
@@ -419,9 +419,9 @@ async function salvar() {
   try {
     const id = route.params.id
     if (typeof id === 'string') {
-      await atualizarParceiro(id, form)
+      await updatePartner(id, form)
     } else {
-      await criarParceiro(form)
+      await createPartner(form)
     }
     showToast('Cliente salvo com sucesso!')
     router.push({ name: 'clientes' })

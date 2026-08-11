@@ -3,11 +3,11 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import ClienteFormView from '@/views/ClienteFormView.vue'
-import * as parceirosApi from '@/api/parceiros'
+import * as partnersApi from '@/api/partners'
 import * as cepApi from '@/api/cep'
 import { useToast } from '@/composables/useToast'
 
-vi.mock('@/api/parceiros')
+vi.mock('@/api/partners')
 vi.mock('@/api/cep')
 
 function mountWithRouter(path = '/clientes/novo') {
@@ -40,7 +40,7 @@ describe('ClienteFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Campo obrigatório')
-    expect(parceirosApi.criarParceiro).not.toHaveBeenCalled()
+    expect(partnersApi.createPartner).not.toHaveBeenCalled()
   })
 
   it('shows a required-field error when razaoSocial is blank on submit', async () => {
@@ -51,7 +51,7 @@ describe('ClienteFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Campo obrigatório')
-    expect(parceirosApi.criarParceiro).not.toHaveBeenCalled()
+    expect(partnersApi.createPartner).not.toHaveBeenCalled()
   })
 
   it('requires at least Cliente or Fornecedor to be selected', async () => {
@@ -68,7 +68,7 @@ describe('ClienteFormView', () => {
   })
 
   it('submits the form and navigates to the list on success', async () => {
-    vi.mocked(parceirosApi.criarParceiro).mockResolvedValue({} as any)
+    vi.mocked(partnersApi.createPartner).mockResolvedValue({} as any)
     const { router, wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
@@ -77,7 +77,7 @@ describe('ClienteFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(parceirosApi.criarParceiro).toHaveBeenCalled()
+    expect(partnersApi.createPartner).toHaveBeenCalled()
     expect(router.currentRoute.value.name).toBe('clientes')
     expect(useToast().toasts.some((t) => t.message === 'Cliente salvo com sucesso!')).toBe(true)
   })
@@ -164,12 +164,12 @@ describe('ClienteFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(parceirosApi.criarParceiro).not.toHaveBeenCalled()
+    expect(partnersApi.createPartner).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('Informe um CNPJ válido')
   })
 
   it('shows a conflict message on duplicate documento (409)', async () => {
-    vi.mocked(parceirosApi.criarParceiro).mockRejectedValue({ response: { status: 409 } })
+    vi.mocked(partnersApi.createPartner).mockRejectedValue({ response: { status: 409 } })
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
@@ -182,7 +182,7 @@ describe('ClienteFormView', () => {
   })
 
   it('shows a permission-denied message on 403', async () => {
-    vi.mocked(parceirosApi.criarParceiro).mockRejectedValue({ response: { status: 403 } })
+    vi.mocked(partnersApi.createPartner).mockRejectedValue({ response: { status: 403 } })
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
@@ -220,28 +220,28 @@ describe('ClienteFormView', () => {
   })
 
   it('loads existing parceiro data in edit mode', async () => {
-    vi.mocked(parceirosApi.buscarParceiro).mockResolvedValue({
-      id: 'abc-123', tipoPessoa: 'JURIDICA', documento: '11222333000144', nomeFantasia: 'Mercado Silva',
-      razaoSocial: '', status: 'ATIVO', papeis: ['CLIENTE'], emailsCobranca: '', whatsapp: '',
-      indicadorIe: null, inscricaoEstadual: '', inscricaoMunicipal: '', inscricaoSuframa: '',
-      cep: '', logradouro: '', numero: '', bairro: '', complemento: '', uf: '', cidade: '',
-      observacao: '', contatos: [],
+    vi.mocked(partnersApi.getPartner).mockResolvedValue({
+      id: 'abc-123', personType: 'LEGAL_ENTITY', document: '11222333000144', tradeName: 'Mercado Silva',
+      legalName: '', status: 'ACTIVE', roles: ['CUSTOMER'], billingEmails: '', whatsapp: '',
+      taxIndicator: null, stateRegistration: '', municipalRegistration: '', suframaRegistration: '',
+      zipCode: '', street: '', number: '', neighborhood: '', complement: '', state: '', city: '',
+      notes: '', contacts: [],
     } as any)
 
     const { wrapper } = await mountWithRouter('/clientes/abc-123/editar')
     await flushPromises()
 
-    expect(parceirosApi.buscarParceiro).toHaveBeenCalledWith('abc-123')
+    expect(partnersApi.getPartner).toHaveBeenCalledWith('abc-123')
     expect((wrapper.find('[data-test="nomeFantasia"]').element as HTMLInputElement).value).toBe('Mercado Silva')
   })
 
   it('shows an error message when loading parceiro data fails in edit mode', async () => {
-    vi.mocked(parceirosApi.buscarParceiro).mockRejectedValue(new Error('network error'))
+    vi.mocked(partnersApi.getPartner).mockRejectedValue(new Error('network error'))
 
     const { wrapper } = await mountWithRouter('/clientes/abc-123/editar')
     await flushPromises()
 
-    expect(parceirosApi.buscarParceiro).toHaveBeenCalledWith('abc-123')
+    expect(partnersApi.getPartner).toHaveBeenCalledWith('abc-123')
     expect(wrapper.text()).toContain('Não foi possível carregar os dados do cliente')
   })
 })

@@ -96,7 +96,7 @@ import {
   type PedidoSummary,
   type StatusPedido,
 } from '@/api/pedidos'
-import { buscarResumoParceiros, type ParceiroResumo } from '@/api/parceiros'
+import { getPartnerSummary, type PartnerSummary } from '@/api/partners'
 import { buscarResumoProdutos, type ProdutoResumo } from '@/api/produtos'
 
 const router = useRouter()
@@ -112,13 +112,13 @@ interface Stat {
 // rest of the dashboard; that section just falls back to "—" / an empty
 // state instead of blocking the whole page.
 const pedidoResumo = ref<PedidoResumo | null>(null)
-const parceiroResumo = ref<ParceiroResumo | null>(null)
+const parceiroResumo = ref<PartnerSummary | null>(null)
 const produtoResumo = ref<ProdutoResumo | null>(null)
 const pedidosRecentes = ref<PedidoSummary[]>([])
 
 const stats = computed<Stat[]>(() => [
   { icon: '📋', label: 'Total de Pedidos', value: pedidoResumo.value ? String(pedidoResumo.value.total) : '—' },
-  { icon: '👥', label: 'Clientes Ativos', value: parceiroResumo.value ? String(parceiroResumo.value.ativos) : '—' },
+  { icon: '👥', label: 'Clientes Ativos', value: parceiroResumo.value ? String(parceiroResumo.value.active) : '—' },
   { icon: '🧾', label: 'Pedidos Faturados', value: pedidoResumo.value ? String(pedidoResumo.value.faturados) : '—' },
   { icon: '📦', label: 'Produtos Ativos', value: produtoResumo.value ? String(produtoResumo.value.ativos) : '—' },
 ])
@@ -155,7 +155,7 @@ function formatarData(data: string) {
 onMounted(async () => {
   const [pedidoR, parceiroR, produtoR, pedidosR] = await Promise.allSettled([
     buscarResumoPedidos(),
-    buscarResumoParceiros(),
+    getPartnerSummary(),
     buscarResumoProdutos(),
     listarPedidos({ page: 0, size: 5 }),
   ])

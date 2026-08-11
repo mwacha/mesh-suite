@@ -58,6 +58,6 @@ export function maskCnpj(valor: string): string {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
 }
 
-export function maskDocumento(valor: string, tipoPessoa: 'FISICA' | 'JURIDICA'): string {
-  return tipoPessoa === 'JURIDICA' ? maskCnpj(valor) : maskCpf(valor)
+export function maskDocumento(valor: string, tipoPessoa: 'INDIVIDUAL' | 'LEGAL_ENTITY'): string {
+  return tipoPessoa === 'LEGAL_ENTITY' ? maskCnpj(valor) : maskCpf(valor)
 }

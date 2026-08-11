@@ -3,16 +3,16 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import ClienteDetailView from '@/views/ClienteDetailView.vue'
-import * as parceirosApi from '@/api/parceiros'
+import * as partnersApi from '@/api/partners'
 
-vi.mock('@/api/parceiros')
+vi.mock('@/api/partners')
 
 const parceiroCompleto = {
-  id: 'p1', tipoPessoa: 'JURIDICA', documento: '11222333000144', nomeFantasia: 'Mercado Silva',
-  razaoSocial: 'Mercado Silva Ltda', status: 'ATIVO', papeis: ['CLIENTE'], emailsCobranca: '', whatsapp: '',
-  indicadorIe: null, inscricaoEstadual: '', inscricaoMunicipal: '', inscricaoSuframa: '',
-  cep: '01310100', logradouro: 'Av. Paulista', numero: '1000', bairro: 'Bela Vista', complemento: '',
-  uf: 'SP', cidade: 'São Paulo', observacao: '', contatos: [],
+  id: 'p1', personType: 'LEGAL_ENTITY', document: '11222333000144', tradeName: 'Mercado Silva',
+  legalName: 'Mercado Silva Ltda', status: 'ACTIVE', roles: ['CUSTOMER'], billingEmails: '', whatsapp: '',
+  taxIndicator: null, stateRegistration: '', municipalRegistration: '', suframaRegistration: '',
+  zipCode: '01310100', street: 'Av. Paulista', number: '1000', neighborhood: 'Bela Vista', complement: '',
+  state: 'SP', city: 'São Paulo', notes: '', contacts: [],
 } as any
 
 function mountWithRouter() {
@@ -34,11 +34,11 @@ function mountWithRouter() {
 describe('ClienteDetailView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(parceirosApi.buscarParceiro).mockResolvedValue(parceiroCompleto)
-    vi.mocked(parceirosApi.listarParceiros).mockResolvedValue({
+    vi.mocked(partnersApi.getPartner).mockResolvedValue(parceiroCompleto)
+    vi.mocked(partnersApi.listPartners).mockResolvedValue({
       content: [{
-        id: 'p1', nomeFantasia: 'Mercado Silva', razaoSocial: '', documento: '', tipoPessoa: 'JURIDICA',
-        cidade: 'São Paulo', uf: 'SP', whatsapp: '', status: 'ATIVO',
+        id: 'p1', tradeName: 'Mercado Silva', legalName: '', document: '', personType: 'LEGAL_ENTITY',
+        city: 'São Paulo', state: 'SP', whatsapp: '', status: 'ACTIVE',
       }],
       totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
@@ -84,7 +84,7 @@ describe('ClienteDetailView', () => {
   })
 
   it('shows an error message when loading the client fails', async () => {
-    vi.mocked(parceirosApi.buscarParceiro).mockRejectedValue(new Error('network error'))
+    vi.mocked(partnersApi.getPartner).mockRejectedValue(new Error('network error'))
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 

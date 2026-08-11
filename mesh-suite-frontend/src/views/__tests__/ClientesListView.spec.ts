@@ -3,10 +3,10 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import ClientesListView from '@/views/ClientesListView.vue'
-import * as parceirosApi from '@/api/parceiros'
+import * as partnersApi from '@/api/partners'
 import * as municipiosApi from '@/api/municipios'
 
-vi.mock('@/api/parceiros')
+vi.mock('@/api/partners')
 vi.mock('@/api/municipios')
 
 function mountWithRouter() {
@@ -29,19 +29,19 @@ function mountWithRouter() {
 }
 
 const parceiroBase = {
-  id: 'p1', nomeFantasia: 'Mercado Silva', razaoSocial: 'Mercado Silva Ltda',
-  documento: '11222333000144', tipoPessoa: 'JURIDICA' as const,
-  cidade: 'São Paulo', uf: 'SP', whatsapp: '11934567890',
-  status: 'ATIVO' as const,
+  id: 'p1', tradeName: 'Mercado Silva', legalName: 'Mercado Silva Ltda',
+  document: '11222333000144', personType: 'LEGAL_ENTITY' as const,
+  city: 'São Paulo', state: 'SP', whatsapp: '11934567890',
+  status: 'ACTIVE' as const,
 }
 
 describe('ClientesListView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(parceirosApi.listarParceiros).mockResolvedValue({
+    vi.mocked(partnersApi.listPartners).mockResolvedValue({
       content: [parceiroBase], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
-    vi.mocked(parceirosApi.buscarResumoParceiros).mockResolvedValue({ total: 1, ativos: 1, emRisco: 0, bloqueados: 0 })
+    vi.mocked(partnersApi.getPartnerSummary).mockResolvedValue({ total: 1, active: 1, atRisk: 0, blocked: 0 })
     vi.mocked(municipiosApi.listarMunicipios).mockResolvedValue(['São Paulo'])
   })
 
@@ -65,9 +65,9 @@ describe('ClientesListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(expect.objectContaining({ papel: 'CLIENTE' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ papel: 'CUSTOMER' }))
     expect(municipiosApi.listarMunicipios).toHaveBeenCalledWith({ uf: undefined })
-    expect(parceirosApi.buscarResumoParceiros).toHaveBeenCalledWith('CLIENTE')
+    expect(partnersApi.getPartnerSummary).toHaveBeenCalledWith('CUSTOMER')
 
     await wrapper.find('[data-test="filter-bar-more"]').trigger('click')
     await wrapper.find('[data-test="filter-cat-Cidade"]').trigger('click')
@@ -95,7 +95,7 @@ describe('ClientesListView', () => {
     await wrapper.find('[data-test="filter-bar-search"]').setValue('silva')
     await flushPromises()
 
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'silva' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'silva' }))
   })
 
   it('re-fetches with mapped API values when a multi-value Status filter is applied', async () => {
@@ -109,8 +109,8 @@ describe('ClientesListView', () => {
     await wrapper.find('[data-test="filter-bar-apply"]').trigger('click')
     await flushPromises()
 
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(
-      expect.objectContaining({ status: ['ATIVO', 'BLOQUEADO'] }),
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: ['ACTIVE', 'BLOCKED'] }),
     )
   })
 
@@ -137,8 +137,8 @@ describe('ClientesListView', () => {
     await wrapper.find('[data-test="documento-filtro-aplicar"]').trigger('click')
     await flushPromises()
 
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(
-      expect.objectContaining({ tipoDocumento: ['JURIDICA'], documento: '11.222.333/0001-44' }),
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(
+      expect.objectContaining({ tipoDocumento: ['LEGAL_ENTITY'], documento: '11.222.333/0001-44' }),
     )
   })
 
@@ -152,7 +152,7 @@ describe('ClientesListView', () => {
     await wrapper.find('[data-test="documento-filtro-aplicar"]').trigger('click')
     await flushPromises()
 
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(
       expect.objectContaining({ tipoDocumento: undefined, documento: undefined }),
     )
   })
@@ -163,11 +163,11 @@ describe('ClientesListView', () => {
 
     await wrapper.find('[data-test="col-cidade"]').trigger('click')
     await flushPromises()
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'cidade,asc' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'cidade,asc' }))
 
     await wrapper.find('[data-test="col-cidade"]').trigger('click')
     await flushPromises()
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'cidade,desc' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'cidade,desc' }))
   })
 
   it('sorts by Nome and Status columns as well', async () => {
@@ -176,11 +176,11 @@ describe('ClientesListView', () => {
 
     await wrapper.find('[data-test="col-nome"]').trigger('click')
     await flushPromises()
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'nomeFantasia,asc' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'nomeFantasia,asc' }))
 
     await wrapper.find('[data-test="col-status"]').trigger('click')
     await flushPromises()
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'status,asc' }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'status,asc' }))
   })
 
   it('navigates to the create form when "+ Novo Cliente" is clicked', async () => {
@@ -227,7 +227,7 @@ describe('ClientesListView', () => {
   })
 
   it('toggles a client status via the Ações menu', async () => {
-    vi.mocked(parceirosApi.atualizarStatusParceiro).mockResolvedValue()
+    vi.mocked(partnersApi.updatePartnerStatus).mockResolvedValue()
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -235,11 +235,11 @@ describe('ClientesListView', () => {
     await wrapper.find('[data-test="acao-status"]').trigger('click')
     await flushPromises()
 
-    expect(parceirosApi.atualizarStatusParceiro).toHaveBeenCalledWith('p1', 'BLOQUEADO')
+    expect(partnersApi.updatePartnerStatus).toHaveBeenCalledWith('p1', 'BLOCKED')
   })
 
   it('re-fetches with the new page when pagination is used', async () => {
-    vi.mocked(parceirosApi.listarParceiros).mockResolvedValue({
+    vi.mocked(partnersApi.listPartners).mockResolvedValue({
       content: [parceiroBase], totalElements: 25, totalPages: 3, number: 0, size: 10,
     })
     const { wrapper } = await mountWithRouter()
@@ -248,11 +248,11 @@ describe('ClientesListView', () => {
     await wrapper.find('[data-test="pagination-page-2"]').trigger('click')
     await flushPromises()
 
-    expect(parceirosApi.listarParceiros).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }))
+    expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }))
   })
 
   it('shows an error message when loading the client list fails', async () => {
-    vi.mocked(parceirosApi.listarParceiros).mockRejectedValue(new Error('network error'))
+    vi.mocked(partnersApi.listPartners).mockRejectedValue(new Error('network error'))
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
