@@ -1,4 +1,4 @@
-package com.meshsuite.produto.service;
+package com.meshsuite.product.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -6,12 +6,11 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.service.AuthContextService;
-import com.meshsuite.produto.domain.enums.StatusProduto;
-import com.meshsuite.produto.domain.enums.UnidadeMedida;
-import com.meshsuite.produto.dto.ProdutoRequest;
-import com.meshsuite.produto.exception.ProdutoNaoEncontradoException;
-import com.meshsuite.produto.exception.SkuDuplicadoException;
-import com.meshsuite.produto.service.ProdutoService;
+import com.meshsuite.product.domain.enums.ProductStatus;
+import com.meshsuite.product.domain.enums.MeasurementUnit;
+import com.meshsuite.product.dto.ProductRequest;
+import com.meshsuite.product.exception.ProductNotFoundException;
+import com.meshsuite.product.exception.DuplicateSkuException;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
@@ -33,10 +32,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-class ProdutoServiceTest extends AbstractIntegrationTest {
+class ProductServiceTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired ProdutoService produtoService;
+    @Autowired ProductService produtoService;
     @Autowired EntityManager entityManager;
     @Autowired UserRepository userRepository;
 
@@ -74,80 +73,80 @@ class ProdutoServiceTest extends AbstractIntegrationTest {
         return tenant.getId();
     }
 
-    private ProdutoRequest request(String sku, BigDecimal precoVenda) {
-        return new ProdutoRequest(
+    private ProductRequest request(String sku, BigDecimal salePrice) {
+        return new ProductRequest(
                 "Camiseta Polo Masculina", sku, "7891234567890", "Marca Alpha", null, null,
-                precoVenda, new BigDecimal("25.00"), StatusProduto.ATIVO, "Descrição de teste",
-                new BigDecimal("10"), UnidadeMedida.UN, new BigDecimal("2"), new BigDecimal("50"),
+                salePrice, new BigDecimal("25.00"), ProductStatus.ACTIVE, "Descrição de teste",
+                new BigDecimal("10"), MeasurementUnit.UN, new BigDecimal("2"), new BigDecimal("50"),
                 new BigDecimal("0.300"), new BigDecimal("30"), new BigDecimal("20"), new BigDecimal("2"));
     }
 
     @Test
-    void criaERecuperaProduto() {
+    void createsAndRetrievesProduct() {
         setUpTenant("aurora");
 
         var criado = produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
 
         var buscado = produtoService.buscarPorId(criado.id());
-        assertThat(buscado.nome()).isEqualTo("Camiseta Polo Masculina");
-        assertThat(buscado.status()).isEqualTo(StatusProduto.ATIVO);
+        assertThat(buscado.name()).isEqualTo("Camiseta Polo Masculina");
+        assertThat(buscado.status()).isEqualTo(ProductStatus.ACTIVE);
     }
 
     @Test
-    void rejeitaSkuDuplicadoNoMesmoTenant() {
+    void rejectsDuplicateSkuInSameTenant() {
         setUpTenant("aurora");
         produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
 
-        assertThrows(SkuDuplicadoException.class,
+        assertThrows(DuplicateSkuException.class,
                 () -> produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("39.90"))));
     }
 
     @Test
-    void atualizaProdutoMantendoOProprioSku() {
+    void updatesProductKeepingItsOwnSku() {
         setUpTenant("aurora");
         var criado = produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
 
         var atualizado = produtoService.atualizar(criado.id(), request("P0001", new BigDecimal("64.90")));
 
-        assertThat(atualizado.precoVenda()).isEqualByComparingTo("64.90");
+        assertThat(atualizado.salePrice()).isEqualByComparingTo("64.90");
     }
 
     @Test
-    void rejeitaAtualizacaoParaSkuDeOutroProduto() {
+    void rejectsUpdateToAnotherProductsSku() {
         setUpTenant("aurora");
         produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
         var segundo = produtoService.criar(TenantContext.get(), request("P0002", new BigDecimal("39.90")));
 
-        assertThrows(SkuDuplicadoException.class,
+        assertThrows(DuplicateSkuException.class,
                 () -> produtoService.atualizar(segundo.id(), request("P0001", new BigDecimal("39.90"))));
     }
 
     @Test
-    void atualizaStatusParaInativo() {
+    void updatesStatusToInactive() {
         setUpTenant("aurora");
         var criado = produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
 
-        var atualizado = produtoService.atualizarStatus(criado.id(), StatusProduto.INATIVO);
+        var atualizado = produtoService.atualizarStatus(criado.id(), ProductStatus.INACTIVE);
 
-        assertThat(atualizado.status()).isEqualTo(StatusProduto.INATIVO);
+        assertThat(atualizado.status()).isEqualTo(ProductStatus.INACTIVE);
     }
 
     @Test
-    void resumoContaPorStatus() {
+    void summaryCountsByStatus() {
         setUpTenant("aurora");
         var a = produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
         produtoService.criar(TenantContext.get(), request("P0002", new BigDecimal("39.90")));
-        produtoService.atualizarStatus(a.id(), StatusProduto.INATIVO);
+        produtoService.atualizarStatus(a.id(), ProductStatus.INACTIVE);
 
         var resumo = produtoService.resumo();
 
         assertThat(resumo.total()).isEqualTo(2);
-        assertThat(resumo.ativos()).isEqualTo(1);
-        assertThat(resumo.inativos()).isEqualTo(1);
+        assertThat(resumo.active()).isEqualTo(1);
+        assertThat(resumo.inactive()).isEqualTo(1);
     }
 
     @Test
-    void listaComFiltroDeBusca() {
+    void listsWithSearchFilter() {
         setUpTenant("aurora");
         produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
 
@@ -158,13 +157,13 @@ class ProdutoServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void excluiProduto() {
+    void deletesProduct() {
         setUpTenant("aurora");
         var criado = produtoService.criar(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
 
         produtoService.excluir(criado.id());
 
-        assertThrows(ProdutoNaoEncontradoException.class, () -> produtoService.buscarPorId(criado.id()));
+        assertThrows(ProductNotFoundException.class, () -> produtoService.buscarPorId(criado.id()));
     }
 
     @Test

@@ -1,25 +1,25 @@
-package com.meshsuite.produto.repository.specification;
+package com.meshsuite.product.repository.specification;
 
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.domain.enums.StatusProduto;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.domain.enums.ProductStatus;
 import org.springframework.data.jpa.domain.Specification;
 
-public final class ProdutoSpecifications {
+public final class ProductSpecifications {
 
-    private ProdutoSpecifications() {
+    private ProductSpecifications() {
     }
 
-    public static Specification<Produto> comBusca(String busca) {
+    public static Specification<Product> comBusca(String busca) {
         if (busca == null || busca.isBlank()) {
             return null;
         }
         String termo = "%" + busca.toLowerCase() + "%";
         return (root, query, cb) -> cb.or(
-                cb.like(cb.lower(root.get("nome")), termo),
+                cb.like(cb.lower(root.get("name")), termo),
                 cb.like(cb.lower(root.get("sku")), termo));
     }
 
-    public static Specification<Produto> comStatus(StatusProduto status) {
+    public static Specification<Product> comStatus(ProductStatus status) {
         if (status == null) {
             return null;
         }
