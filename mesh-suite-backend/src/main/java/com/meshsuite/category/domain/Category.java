@@ -1,4 +1,4 @@
-package com.meshsuite.produto.domain;
+package com.meshsuite.category.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,10 +9,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "categoria")
+@Table(name = "category")
 @Getter
 @Setter
-public class Categoria {
+public class Category {
 
     @Id
     @GeneratedValue
@@ -23,14 +23,14 @@ public class Categoria {
     private UUID tenantId;
 
     @Column(nullable = false, length = 100)
-    private String nome;
+    private String name;
 
     @Column(length = 255)
-    private String descricao;
+    private String description;
 
     @Column(nullable = false)
-    private Boolean ativo = true;
+    private Boolean active = true;
 
-    @Column(name = "criado_em", nullable = false, updatable = false)
-    private Instant criadoEm = Instant.now();
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
 }

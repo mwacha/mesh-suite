@@ -1,9 +1,9 @@
-package com.meshsuite.produto.repository;
+package com.meshsuite.category.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.produto.domain.Categoria;
-import com.meshsuite.produto.repository.CategoriaRepository;
+import com.meshsuite.category.domain.Category;
+import com.meshsuite.category.repository.CategoryRepository;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import jakarta.persistence.EntityManager;
@@ -12,10 +12,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-class CategoriaRepositoryTest extends AbstractIntegrationTest {
+class CategoryRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired CategoriaRepository categoriaRepository;
+    @Autowired CategoryRepository categoryRepository;
     @Autowired EntityManager entityManager;
 
     private Tenant createTenant(String codigo) {
@@ -29,50 +29,50 @@ class CategoriaRepositoryTest extends AbstractIntegrationTest {
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenantId + "'").executeUpdate();
     }
 
-    private Categoria novaCategoria(UUID tenantId, String nome) {
-        Categoria c = new Categoria();
+    private Category novaCategoria(UUID tenantId, String nome) {
+        Category c = new Category();
         c.setTenantId(tenantId);
-        c.setNome(nome);
+        c.setName(nome);
         return c;
     }
 
     @Test
     @Transactional
-    void savesCategoriaWithDefaults() {
+    void savesCategoryWithDefaults() {
         Tenant tenant = createTenant("aurora-cat");
         setTenantContext(tenant.getId());
 
-        Categoria saved = categoriaRepository.saveAndFlush(novaCategoria(tenant.getId(), "Camisas"));
+        Category saved = categoryRepository.saveAndFlush(novaCategoria(tenant.getId(), "Camisas"));
         entityManager.clear();
 
-        Categoria reloaded = categoriaRepository.findById(saved.getId()).orElseThrow();
-        assertThat(reloaded.getAtivo()).isTrue();
+        Category reloaded = categoryRepository.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getActive()).isTrue();
     }
 
     @Test
     @Transactional
-    void nomeMustBeUniquePerTenant() {
+    void nameMustBeUniquePerTenant() {
         Tenant tenant = createTenant("aurora-cat");
         setTenantContext(tenant.getId());
 
-        categoriaRepository.saveAndFlush(novaCategoria(tenant.getId(), "Camisas"));
+        categoryRepository.saveAndFlush(novaCategoria(tenant.getId(), "Camisas"));
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 org.springframework.dao.DataIntegrityViolationException.class,
-                () -> categoriaRepository.saveAndFlush(novaCategoria(tenant.getId(), "Camisas")));
+                () -> categoryRepository.saveAndFlush(novaCategoria(tenant.getId(), "Camisas")));
     }
 
     @Test
     @Transactional
-    void sameNomeAllowedAcrossDifferentTenants() {
+    void sameNameAllowedAcrossDifferentTenants() {
         Tenant tenantA = createTenant("aurora-cat");
         Tenant tenantB = createTenant("boreal-cat");
 
         setTenantContext(tenantA.getId());
-        categoriaRepository.saveAndFlush(novaCategoria(tenantA.getId(), "Camisas"));
+        categoryRepository.saveAndFlush(novaCategoria(tenantA.getId(), "Camisas"));
 
         setTenantContext(tenantB.getId());
-        Categoria saved = categoriaRepository.saveAndFlush(novaCategoria(tenantB.getId(), "Camisas"));
+        Category saved = categoryRepository.saveAndFlush(novaCategoria(tenantB.getId(), "Camisas"));
 
         assertThat(saved.getId()).isNotNull();
     }
@@ -82,13 +82,13 @@ class CategoriaRepositoryTest extends AbstractIntegrationTest {
     void rlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora-cat");
         setTenantContext(tenant.getId());
-        categoriaRepository.saveAndFlush(novaCategoria(tenant.getId(), "Camisas"));
+        categoryRepository.saveAndFlush(novaCategoria(tenant.getId(), "Camisas"));
         entityManager.clear();
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
         Long count = ((Number) entityManager
-                .createNativeQuery("SELECT count(*) FROM categoria")
+                .createNativeQuery("SELECT count(*) FROM category")
                 .getSingleResult()).longValue();
 
         assertThat(count).isZero();
