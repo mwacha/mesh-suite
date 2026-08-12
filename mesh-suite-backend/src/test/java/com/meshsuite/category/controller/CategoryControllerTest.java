@@ -1,4 +1,4 @@
-package com.meshsuite.produto.controller;
+package com.meshsuite.category.controller;
 
 import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Transactional
-class CategoriaControllerTest extends AbstractIntegrationTest {
+class CategoryControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
@@ -107,72 +107,72 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
         return cookieHeader.split("mesh_token=")[1].split(";")[0];
     }
 
-    private String categoriaPayload(String nome) {
+    private String categoryPayload(String name) {
         return """
                 {
-                  "nome": "%s"
+                  "name": "%s"
                 }
-                """.formatted(nome);
+                """.formatted(name);
     }
 
     @Test
-    void createsListsUpdatesAndDeletesCategoria() throws Exception {
+    void createsListsUpdatesAndDeletesCategory() throws Exception {
         String token = loginAndGetCookie("aurora-cat", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        String created = mockMvc.perform(post("/api/categorias").cookie(cookie)
+        String created = mockMvc.perform(post("/api/categories").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoriaPayload("Camisas")))
+                        .content(categoryPayload("Camisas")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.nome").value("Camisas"))
+                .andExpect(jsonPath("$.name").value("Camisas"))
                 .andReturn().getResponse().getContentAsString();
 
         String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(get("/api/categorias").cookie(cookie))
+        mockMvc.perform(get("/api/categories").cookie(cookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].nome").value("Camisas"));
+                .andExpect(jsonPath("$.content[0].name").value("Camisas"));
 
-        mockMvc.perform(put("/api/categorias/" + id).cookie(cookie)
+        mockMvc.perform(put("/api/categories/" + id).cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoriaPayload("Camisas Atualizadas")))
+                        .content(categoryPayload("Camisas Atualizadas")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Camisas Atualizadas"));
+                .andExpect(jsonPath("$.name").value("Camisas Atualizadas"));
 
-        mockMvc.perform(delete("/api/categorias/" + id).cookie(cookie))
+        mockMvc.perform(delete("/api/categories/" + id).cookie(cookie))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/categorias/" + id).cookie(cookie))
+        mockMvc.perform(get("/api/categories/" + id).cookie(cookie))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void rejectsDuplicateNomeWithConflict() throws Exception {
+    void rejectsDuplicateNameWithConflict() throws Exception {
         String token = loginAndGetCookie("aurora-cat", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(post("/api/categorias").cookie(cookie)
+        mockMvc.perform(post("/api/categories").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoriaPayload("Camisas")))
+                        .content(categoryPayload("Camisas")))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/categorias").cookie(cookie)
+        mockMvc.perform(post("/api/categories").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoriaPayload("Camisas")))
+                        .content(categoryPayload("Camisas")))
                 .andExpect(status().isConflict());
     }
 
     @Test
-    void rejectsDeletingACategoriaInUseWithBadRequest() throws Exception {
+    void rejectsDeletingACategoryInUseWithBadRequest() throws Exception {
         String token = loginAndGetCookie("aurora-cat", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        String created = mockMvc.perform(post("/api/categorias").cookie(cookie)
+        String created = mockMvc.perform(post("/api/categories").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoriaPayload("Camisas")))
+                        .content(categoryPayload("Camisas")))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String categoriaId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
+        String categoryId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
         mockMvc.perform(post("/api/produtos").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -185,21 +185,21 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
                                   "quantidadeEstoque": 10,
                                   "unidadeMedida": "UN"
                                 }
-                                """.formatted(categoriaId)))
+                                """.formatted(categoryId)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(delete("/api/categorias/" + categoriaId).cookie(cookie))
+        mockMvc.perform(delete("/api/categories/" + categoryId).cookie(cookie))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void tenantACannotAccessTenantBsCategoria() throws Exception {
+    void tenantACannotAccessTenantBsCategory() throws Exception {
         String tokenA = loginAndGetCookie("aurora-cat", "marina@aurora.com.br", "11222333000144");
         Cookie cookieA = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, tokenA);
 
-        String body = mockMvc.perform(post("/api/categorias").cookie(cookieA)
+        String body = mockMvc.perform(post("/api/categories").cookie(cookieA)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoriaPayload("Camisas")))
+                        .content(categoryPayload("Camisas")))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String id = com.jayway.jsonpath.JsonPath.read(body, "$.id");
@@ -213,13 +213,13 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
         // 200 instead of the expected 404.
         entityManager.clear();
 
-        mockMvc.perform(get("/api/categorias/" + id).cookie(cookieB))
+        mockMvc.perform(get("/api/categories/" + id).cookie(cookieB))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void unauthenticatedRequestIsRejected() throws Exception {
-        mockMvc.perform(get("/api/categorias"))
+        mockMvc.perform(get("/api/categories"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -228,7 +228,7 @@ class CategoriaControllerTest extends AbstractIntegrationTest {
         String token = loginWithoutProductPermission("sem-permissao-cat", "sem-permissao@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(get("/api/categorias").cookie(cookie))
+        mockMvc.perform(get("/api/categories").cookie(cookie))
                 .andExpect(status().isForbidden());
     }
 }
