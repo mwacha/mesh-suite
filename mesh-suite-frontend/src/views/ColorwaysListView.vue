@@ -30,17 +30,17 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="corEstampa in pagina.content" :key="corEstampa.id">
-            <td>{{ corEstampa.nome }}</td>
-            <td>{{ formatarData(corEstampa.dataVigencia) }}</td>
-            <td>{{ corEstampa.produtosVinculados }} produtos</td>
-            <td><span class="badge" :class="corEstampa.ativo ? 'badge-ATIVO' : 'badge-INATIVO'">{{ corEstampa.ativo ? 'Ativo' : 'Inativo' }}</span></td>
+          <tr v-for="colorway in pagina.content" :key="colorway.id">
+            <td>{{ colorway.name }}</td>
+            <td>{{ formatarData(colorway.effectiveDate) }}</td>
+            <td>{{ colorway.linkedProducts }} produtos</td>
+            <td><span class="badge" :class="colorway.active ? 'badge-ATIVO' : 'badge-INATIVO'">{{ colorway.active ? 'Ativo' : 'Inativo' }}</span></td>
             <td class="acoes">
               <button
                 type="button"
                 class="btn-acoes"
                 data-test="btn-acoes"
-                @click="toggleAcoes(corEstampa.id, $event)"
+                @click="toggleAcoes(colorway.id, $event)"
               >
                 Ações
               </button>
@@ -74,16 +74,16 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
-  listarCoresEstampas,
-  excluirCorEstampa,
-  type CorEstampaResponse,
+  listColorways,
+  deleteColorway,
+  type ColorwayResponse,
   type Page as ApiPage,
-} from '@/api/coresEstampas'
+} from '@/api/colorways'
 
 const router = useRouter()
 
 const filtros = reactive({ busca: '', ativo: '' })
-const pagina = ref<ApiPage<CorEstampaResponse>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+const pagina = ref<ApiPage<ColorwayResponse>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const acoesAbertas = ref<string | null>(null)
 const posicaoDropdown = ref({ top: '0px', left: '0px' })
 const erro = ref('')
@@ -100,7 +100,7 @@ function formatarData(data: string) {
 async function carregar(page: number) {
   erro.value = ''
   try {
-    pagina.value = await listarCoresEstampas({
+    pagina.value = await listColorways({
       busca: filtros.busca || undefined,
       ativo: filtros.ativo === '' ? undefined : filtros.ativo === 'true',
       page,
@@ -133,14 +133,14 @@ function toggleAcoes(id: string, event: MouseEvent) {
   acoesAbertas.value = id
 }
 
-async function excluir(corEstampa: CorEstampaResponse) {
+async function excluir(colorway: ColorwayResponse) {
   acoesAbertas.value = null
-  if (!confirm(`Excluir a cor/estampa "${corEstampa.nome}"?`)) {
+  if (!confirm(`Excluir a cor/estampa "${colorway.name}"?`)) {
     return
   }
   erro.value = ''
   try {
-    await excluirCorEstampa(corEstampa.id)
+    await deleteColorway(colorway.id)
     await carregar(pagina.value.number)
   } catch (err: any) {
     erro.value = err?.response?.data?.mensagem ?? 'Não foi possível excluir a cor/estampa.'

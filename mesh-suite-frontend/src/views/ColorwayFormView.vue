@@ -6,18 +6,18 @@
         <div class="grid grid-2">
           <div>
             <label class="field-label">Cor / Estampa *</label>
-            <input v-model="form.nome" data-test="nome" placeholder="Ex: Azul Marinho, Floral Primavera" />
-            <p v-if="erros.nome" class="field-error">{{ erros.nome }}</p>
+            <input v-model="form.name" data-test="nome" placeholder="Ex: Azul Marinho, Floral Primavera" />
+            <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
           </div>
           <div>
             <label class="field-label">Data de Vigência *</label>
-            <input v-model="form.dataVigencia" type="date" data-test="data-vigencia" />
-            <p v-if="erros.dataVigencia" class="field-error">{{ erros.dataVigencia }}</p>
+            <input v-model="form.effectiveDate" type="date" data-test="data-vigencia" />
+            <p v-if="erros.effectiveDate" class="field-error">{{ erros.effectiveDate }}</p>
           </div>
         </div>
         <div>
           <label class="field-label">Descrição</label>
-          <textarea v-model="form.descricao" data-test="descricao" rows="3" placeholder="Descrição opcional..."></textarea>
+          <textarea v-model="form.description" data-test="descricao" rows="3" placeholder="Descrição opcional..."></textarea>
         </div>
         <div>
           <label class="field-label">Status</label>
@@ -25,18 +25,18 @@
             <button
               type="button"
               class="status-btn"
-              :class="{ 'status-btn-active-ativo': form.ativo }"
+              :class="{ 'status-btn-active-ativo': form.active }"
               data-test="status-ativo"
-              @click="form.ativo = true"
+              @click="form.active = true"
             >
               Ativo
             </button>
             <button
               type="button"
               class="status-btn"
-              :class="{ 'status-btn-active-inativo': !form.ativo }"
+              :class="{ 'status-btn-active-inativo': !form.active }"
               data-test="status-inativo"
-              @click="form.ativo = false"
+              @click="form.active = false"
             >
               Inativo
             </button>
@@ -59,23 +59,23 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
-  buscarCorEstampa,
-  criarCorEstampa,
-  atualizarCorEstampa,
-  type CorEstampaRequest,
-} from '@/api/coresEstampas'
+  getColorway,
+  createColorway,
+  updateColorway,
+  type ColorwayRequest,
+} from '@/api/colorways'
 
 const route = useRoute()
 const router = useRouter()
 
 const modoEdicao = computed(() => typeof route.params.id === 'string')
 
-function novoFormulario(): CorEstampaRequest {
-  return { nome: '', dataVigencia: '', descricao: '', ativo: true }
+function novoFormulario(): ColorwayRequest {
+  return { name: '', effectiveDate: '', description: '', active: true }
 }
 
-const form = reactive<CorEstampaRequest>(novoFormulario())
-const erros = reactive<{ nome?: string; dataVigencia?: string }>({})
+const form = reactive<ColorwayRequest>(novoFormulario())
+const erros = reactive<{ name?: string; effectiveDate?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
 
@@ -83,11 +83,11 @@ onMounted(async () => {
   const id = route.params.id
   if (typeof id === 'string') {
     try {
-      const corEstampa = await buscarCorEstampa(id)
-      form.nome = corEstampa.nome
-      form.dataVigencia = corEstampa.dataVigencia
-      form.descricao = corEstampa.descricao
-      form.ativo = corEstampa.ativo
+      const colorway = await getColorway(id)
+      form.name = colorway.name
+      form.effectiveDate = colorway.effectiveDate
+      form.description = colorway.description
+      form.active = colorway.active
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados da cor/estampa.'
     }
@@ -95,9 +95,9 @@ onMounted(async () => {
 })
 
 function validar(): boolean {
-  erros.nome = form.nome.trim() ? undefined : 'Campo obrigatório'
-  erros.dataVigencia = form.dataVigencia ? undefined : 'Campo obrigatório'
-  return !erros.nome && !erros.dataVigencia
+  erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
+  erros.effectiveDate = form.effectiveDate ? undefined : 'Campo obrigatório'
+  return !erros.name && !erros.effectiveDate
 }
 
 async function salvar() {
@@ -109,9 +109,9 @@ async function salvar() {
   try {
     const id = route.params.id
     if (typeof id === 'string') {
-      await atualizarCorEstampa(id, form)
+      await updateColorway(id, form)
     } else {
-      await criarCorEstampa(form)
+      await createColorway(form)
     }
     router.push({ name: 'cores-estampas' })
   } catch (err: any) {
