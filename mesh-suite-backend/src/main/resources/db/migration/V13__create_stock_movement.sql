@@ -1,7 +1,7 @@
 CREATE TABLE stock_movement (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenant(id),
-    product_id UUID NOT NULL REFERENCES produto(id),
+    product_id UUID NOT NULL REFERENCES product(id),
     type VARCHAR(10) NOT NULL CHECK (type IN ('INBOUND','OUTBOUND')),
     quantity NUMERIC(12,3) NOT NULL,
     origin VARCHAR(10) NOT NULL CHECK (origin IN ('MANUAL','PURCHASE')),

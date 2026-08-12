@@ -40,7 +40,7 @@ CREATE POLICY pedido_tenant_isolation ON pedido
 CREATE TABLE item_pedido (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     pedido_id UUID NOT NULL REFERENCES pedido(id) ON DELETE CASCADE,
-    produto_id UUID NOT NULL REFERENCES produto(id),
+    produto_id UUID NOT NULL REFERENCES product(id),
     quantidade NUMERIC(12,3) NOT NULL,
     valor_unitario NUMERIC(12,2) NOT NULL,
     valor_total NUMERIC(12,2) NOT NULL

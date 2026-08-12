@@ -40,7 +40,7 @@ CREATE POLICY purchase_order_tenant_isolation ON purchase_order
 CREATE TABLE purchase_order_item (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     purchase_order_id UUID NOT NULL REFERENCES purchase_order(id) ON DELETE CASCADE,
-    product_id UUID NOT NULL REFERENCES produto(id),
+    product_id UUID NOT NULL REFERENCES product(id),
     quantity NUMERIC(12,3) NOT NULL,
     unit_price NUMERIC(12,2) NOT NULL,
     total_value NUMERIC(12,2) NOT NULL

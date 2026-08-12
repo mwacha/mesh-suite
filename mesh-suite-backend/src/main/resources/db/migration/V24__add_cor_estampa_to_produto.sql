@@ -1,1 +1,1 @@
-ALTER TABLE produto ADD COLUMN cor_estampa_id UUID REFERENCES colorway(id);
+ALTER TABLE product ADD COLUMN colorway_id UUID REFERENCES colorway(id);

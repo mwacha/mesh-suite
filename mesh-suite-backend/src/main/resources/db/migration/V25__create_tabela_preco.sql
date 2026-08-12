@@ -31,7 +31,7 @@ CREATE POLICY tabela_preco_tenant_isolation ON tabela_preco
 CREATE TABLE tabela_preco_item (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tabela_preco_id UUID NOT NULL REFERENCES tabela_preco(id) ON DELETE CASCADE,
-    produto_id UUID NOT NULL REFERENCES produto(id),
+    produto_id UUID NOT NULL REFERENCES product(id),
     preco_nesta_tabela NUMERIC(12,2),
     percentual_comissao NUMERIC(5,2)
 );

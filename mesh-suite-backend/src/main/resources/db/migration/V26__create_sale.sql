@@ -44,7 +44,7 @@ CREATE POLICY sale_tenant_isolation ON sale
 CREATE TABLE sale_item (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sale_id UUID NOT NULL REFERENCES sale(id) ON DELETE CASCADE,
-    product_id UUID NOT NULL REFERENCES produto(id),
+    product_id UUID NOT NULL REFERENCES product(id),
     quantity NUMERIC(12,3) NOT NULL,
     unit_price NUMERIC(12,2) NOT NULL,
     total_amount NUMERIC(12,2) NOT NULL,
