@@ -1270,16 +1270,32 @@ Note: after this task, `mesh-suite-backend/src/main/java/com/meshsuite/produto/`
 
 ---
 
-### Task 8: Bridge — `Produto.java`, `ProdutoService.java`
+### Task 8: Bridge — `Produto.java`, `ProdutoService.java`, `GlobalExceptionHandler.java`
 
 **Files:**
 - Modify: `mesh-suite-backend/src/main/java/com/meshsuite/produto/domain/Produto.java`
 - Modify: `mesh-suite-backend/src/main/java/com/meshsuite/produto/service/ProdutoService.java`
+- Modify: `mesh-suite-backend/src/main/java/com/meshsuite/shared/handler/GlobalExceptionHandler.java`
 
 **Interfaces:**
-- Consumes: `Category`, `CategoryRepository`, `CategoryNotFoundException` (Task 3), `Colorway`, `ColorwayRepository`, `ColorwayNotFoundException` (Task 6).
+- Consumes: `Category`, `CategoryRepository`, `CategoryNotFoundException`, `DuplicateCategoryNameException`, `CategoryInUseException` (Task 3), `Colorway`, `ColorwayRepository`, `ColorwayNotFoundException`, `DuplicateColorwayNameException`, `ColorwayInUseException` (Task 6).
 
 This is the FIRST task where the whole `mesh-suite-backend` module should `mvn test-compile` cleanly again — every other file that references `Categoria`/`CorEstampa` has now been renamed or deleted in Tasks 2-7.
+
+**Gap found during execution**: this plan originally omitted `GlobalExceptionHandler.java` entirely (unlike the prior Parceiro→Partner plan, which had a dedicated task for it) — it has 6 `@ExceptionHandler` blocks with fully-qualified references to the now-deleted `Categoria*`/`CorEstampa*` exception classes, discovered when Task 8's own implementer found `mvn test-compile` still failing after fixing `Produto.java`/`ProdutoService.java`. Folded into this task rather than spun out separately, since it's a small, mechanical, single-file addition.
+
+- [ ] **Step 0: Rename the 6 `@ExceptionHandler` blocks in `GlobalExceptionHandler.java`**
+
+Rename (method name AND the fully-qualified exception type in both the `@ExceptionHandler` annotation and the parameter — keep the `"mensagem"` key and `e.getMessage()` body unchanged, and do NOT touch the `TabelaPreco*` handlers immediately after these, which belong to a separate future sub-project):
+
+| Old method (catches) | New method (catches) | HTTP status |
+|---|---|---|
+| `handleCategoriaNaoEncontrada` (`com.meshsuite.produto.exception.CategoriaNaoEncontradaException`) | `handleCategoryNotFound` (`com.meshsuite.category.exception.CategoryNotFoundException`) | `NOT_FOUND` |
+| `handleCategoriaNomeDuplicado` (`CategoriaNomeDuplicadoException`) | `handleDuplicateCategoryName` (`com.meshsuite.category.exception.DuplicateCategoryNameException`) | `CONFLICT` |
+| `handleCategoriaEmUso` (`CategoriaEmUsoException`) | `handleCategoryInUse` (`com.meshsuite.category.exception.CategoryInUseException`) | `BAD_REQUEST` |
+| `handleCorEstampaNaoEncontrada` (`CorEstampaNaoEncontradaException`) | `handleColorwayNotFound` (`com.meshsuite.colorway.exception.ColorwayNotFoundException`) | `NOT_FOUND` |
+| `handleCorEstampaNomeDuplicado` (`CorEstampaNomeDuplicadoException`) | `handleDuplicateColorwayName` (`com.meshsuite.colorway.exception.DuplicateColorwayNameException`) | `CONFLICT` |
+| `handleCorEstampaEmUso` (`CorEstampaEmUsoException`) | `handleColorwayInUse` (`com.meshsuite.colorway.exception.ColorwayInUseException`) | `BAD_REQUEST` |
 
 - [ ] **Step 1: Add imports and change the two field types in `Produto.java`**
 
@@ -1447,8 +1463,9 @@ Expected: `BUILD SUCCESS`, all tests pass — this confirms `ProdutoServiceTest`
 
 ```bash
 git add mesh-suite-backend/src/main/java/com/meshsuite/produto/domain/Produto.java \
-        mesh-suite-backend/src/main/java/com/meshsuite/produto/service/ProdutoService.java
-git commit -m "refactor(produto): bridge-patch Produto/ProdutoService to consume the renamed Category/Colorway types"
+        mesh-suite-backend/src/main/java/com/meshsuite/produto/service/ProdutoService.java \
+        mesh-suite-backend/src/main/java/com/meshsuite/shared/handler/GlobalExceptionHandler.java
+git commit -m "refactor(produto): bridge-patch Produto/ProdutoService/GlobalExceptionHandler to consume the renamed Category/Colorway types"
 ```
 
 ---
