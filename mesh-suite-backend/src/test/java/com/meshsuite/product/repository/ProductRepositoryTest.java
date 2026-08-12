@@ -1,11 +1,10 @@
-package com.meshsuite.produto.repository;
+package com.meshsuite.product.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.domain.enums.StatusProduto;
-import com.meshsuite.produto.domain.enums.UnidadeMedida;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.domain.enums.ProductStatus;
+import com.meshsuite.product.domain.enums.MeasurementUnit;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import jakarta.persistence.EntityManager;
@@ -15,10 +14,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-class ProdutoRepositoryTest extends AbstractIntegrationTest {
+class ProductRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository productRepository;
     @Autowired EntityManager entityManager;
 
     private Tenant createTenant(String codigo) {
@@ -32,28 +31,28 @@ class ProdutoRepositoryTest extends AbstractIntegrationTest {
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenantId + "'").executeUpdate();
     }
 
-    private Produto novoProduto(UUID tenantId, String sku) {
-        Produto p = new Produto();
+    private Product newProduct(UUID tenantId, String sku) {
+        Product p = new Product();
         p.setTenantId(tenantId);
-        p.setNome("Camiseta Polo");
+        p.setName("Camiseta Polo");
         p.setSku(sku);
-        p.setPrecoVenda(new BigDecimal("59.90"));
+        p.setSalePrice(new BigDecimal("59.90"));
         return p;
     }
 
     @Test
     @Transactional
-    void savesProdutoWithDefaults() {
+    void savesProductWithDefaults() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
 
-        Produto saved = produtoRepository.saveAndFlush(novoProduto(tenant.getId(), "P0001"));
+        Product saved = productRepository.saveAndFlush(newProduct(tenant.getId(), "P0001"));
         entityManager.clear();
 
-        Produto reloaded = produtoRepository.findById(saved.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(StatusProduto.ATIVO);
-        assertThat(reloaded.getUnidadeMedida()).isEqualTo(UnidadeMedida.UN);
-        assertThat(reloaded.getQuantidadeEstoque()).isEqualByComparingTo("0");
+        Product reloaded = productRepository.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(reloaded.getMeasurementUnit()).isEqualTo(MeasurementUnit.UN);
+        assertThat(reloaded.getStockQuantity()).isEqualByComparingTo("0");
     }
 
     @Test
@@ -62,11 +61,11 @@ class ProdutoRepositoryTest extends AbstractIntegrationTest {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
 
-        produtoRepository.saveAndFlush(novoProduto(tenant.getId(), "P0001"));
+        productRepository.saveAndFlush(newProduct(tenant.getId(), "P0001"));
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 org.springframework.dao.DataIntegrityViolationException.class,
-                () -> produtoRepository.saveAndFlush(novoProduto(tenant.getId(), "P0001")));
+                () -> productRepository.saveAndFlush(newProduct(tenant.getId(), "P0001")));
     }
 
     @Test
@@ -76,10 +75,10 @@ class ProdutoRepositoryTest extends AbstractIntegrationTest {
         Tenant tenantB = createTenant("boreal");
 
         setTenantContext(tenantA.getId());
-        produtoRepository.saveAndFlush(novoProduto(tenantA.getId(), "P0001"));
+        productRepository.saveAndFlush(newProduct(tenantA.getId(), "P0001"));
 
         setTenantContext(tenantB.getId());
-        Produto saved = produtoRepository.saveAndFlush(novoProduto(tenantB.getId(), "P0001"));
+        Product saved = productRepository.saveAndFlush(newProduct(tenantB.getId(), "P0001"));
 
         assertThat(saved.getId()).isNotNull();
     }
@@ -89,13 +88,13 @@ class ProdutoRepositoryTest extends AbstractIntegrationTest {
     void rlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
-        produtoRepository.saveAndFlush(novoProduto(tenant.getId(), "P0001"));
+        productRepository.saveAndFlush(newProduct(tenant.getId(), "P0001"));
         entityManager.clear();
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
         Long count = ((Number) entityManager
-                .createNativeQuery("SELECT count(*) FROM produto")
+                .createNativeQuery("SELECT count(*) FROM product")
                 .getSingleResult()).longValue();
 
         assertThat(count).isZero();

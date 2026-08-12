@@ -1,6 +1,6 @@
-package com.meshsuite.produto.domain.enums;
+package com.meshsuite.product.domain.enums;
 
-public enum UnidadeMedida {
+public enum MeasurementUnit {
     UN,
     KG,
     G,
