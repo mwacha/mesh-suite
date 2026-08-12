@@ -30,17 +30,17 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="categoria in pagina.content" :key="categoria.id">
-            <td>{{ categoria.nome }}</td>
-            <td>{{ categoria.descricao }}</td>
-            <td>{{ categoria.produtosVinculados }} produtos</td>
-            <td><span class="badge" :class="categoria.ativo ? 'badge-ATIVO' : 'badge-INATIVO'">{{ categoria.ativo ? 'Ativo' : 'Inativo' }}</span></td>
+          <tr v-for="category in pagina.content" :key="category.id">
+            <td>{{ category.name }}</td>
+            <td>{{ category.description }}</td>
+            <td>{{ category.linkedProducts }} produtos</td>
+            <td><span class="badge" :class="category.active ? 'badge-ATIVO' : 'badge-INATIVO'">{{ category.active ? 'Ativo' : 'Inativo' }}</span></td>
             <td class="acoes">
               <button
                 type="button"
                 class="btn-acoes"
                 data-test="btn-acoes"
-                @click="toggleAcoes(categoria.id, $event)"
+                @click="toggleAcoes(category.id, $event)"
               >
                 Ações
               </button>
@@ -74,16 +74,16 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
-  listarCategorias,
-  excluirCategoria,
-  type CategoriaResponse,
+  listCategories,
+  deleteCategory,
+  type CategoryResponse,
   type Page as ApiPage,
-} from '@/api/categorias'
+} from '@/api/categories'
 
 const router = useRouter()
 
 const filtros = reactive({ busca: '', ativo: '' })
-const pagina = ref<ApiPage<CategoriaResponse>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+const pagina = ref<ApiPage<CategoryResponse>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const acoesAbertas = ref<string | null>(null)
 const posicaoDropdown = ref({ top: '0px', left: '0px' })
 const erro = ref('')
@@ -95,7 +95,7 @@ const categoriaAcoesAtual = computed(() =>
 async function carregar(page: number) {
   erro.value = ''
   try {
-    pagina.value = await listarCategorias({
+    pagina.value = await listCategories({
       busca: filtros.busca || undefined,
       ativo: filtros.ativo === '' ? undefined : filtros.ativo === 'true',
       page,
@@ -128,14 +128,14 @@ function toggleAcoes(id: string, event: MouseEvent) {
   acoesAbertas.value = id
 }
 
-async function excluir(categoria: CategoriaResponse) {
+async function excluir(category: CategoryResponse) {
   acoesAbertas.value = null
-  if (!confirm(`Excluir a categoria "${categoria.nome}"?`)) {
+  if (!confirm(`Excluir a categoria "${category.name}"?`)) {
     return
   }
   erro.value = ''
   try {
-    await excluirCategoria(categoria.id)
+    await deleteCategory(category.id)
     await carregar(pagina.value.number)
   } catch (err: any) {
     erro.value = err?.response?.data?.mensagem ?? 'Não foi possível excluir a categoria.'

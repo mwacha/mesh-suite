@@ -2,28 +2,28 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
-import CategoriaFormView from '@/views/CategoriaFormView.vue'
-import * as categoriasApi from '@/api/categorias'
+import CategoryFormView from '@/views/CategoryFormView.vue'
+import * as categoriesApi from '@/api/categories'
 
-vi.mock('@/api/categorias')
+vi.mock('@/api/categories')
 
 function mountWithRouter(path = '/categorias/novo') {
   const router = createRouter({
     history: createWebHistory(),
     routes: [
       { path: '/categorias', name: 'categorias', component: { template: '<div />' } },
-      { path: '/categorias/novo', name: 'categorias-novo', component: CategoriaFormView },
-      { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoriaFormView },
+      { path: '/categorias/novo', name: 'categorias-novo', component: CategoryFormView },
+      { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoryFormView },
     ],
   })
   router.push(path)
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(CategoriaFormView, { global: { plugins: [router] } }),
+    wrapper: mount(CategoryFormView, { global: { plugins: [router] } }),
   }))
 }
 
-describe('CategoriaFormView', () => {
+describe('CategoryFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -36,25 +36,25 @@ describe('CategoriaFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Campo obrigatório')
-    expect(categoriasApi.criarCategoria).not.toHaveBeenCalled()
+    expect(categoriesApi.createCategory).not.toHaveBeenCalled()
   })
 
   it('submits the form and navigates to the list on success', async () => {
-    vi.mocked(categoriasApi.criarCategoria).mockResolvedValue({} as any)
+    vi.mocked(categoriesApi.createCategory).mockResolvedValue({} as any)
     const { router, wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nome"]').setValue('Camisas')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(categoriasApi.criarCategoria).toHaveBeenCalledWith(
-      expect.objectContaining({ nome: 'Camisas', ativo: true }),
+    expect(categoriesApi.createCategory).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Camisas', active: true }),
     )
     expect(router.currentRoute.value.name).toBe('categorias')
   })
 
   it('shows a conflict message on duplicate nome (409)', async () => {
-    vi.mocked(categoriasApi.criarCategoria).mockRejectedValue({ response: { status: 409 } })
+    vi.mocked(categoriesApi.createCategory).mockRejectedValue({ response: { status: 409 } })
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nome"]').setValue('Camisas')
@@ -68,31 +68,31 @@ describe('CategoriaFormView', () => {
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="status-inativo"]').trigger('click')
-    vi.mocked(categoriasApi.criarCategoria).mockResolvedValue({} as any)
+    vi.mocked(categoriesApi.createCategory).mockResolvedValue({} as any)
     await wrapper.find('[data-test="nome"]').setValue('Camisas')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(categoriasApi.criarCategoria).toHaveBeenCalledWith(
-      expect.objectContaining({ ativo: false }),
+    expect(categoriesApi.createCategory).toHaveBeenCalledWith(
+      expect.objectContaining({ active: false }),
     )
   })
 
   it('loads existing categoria data in edit mode', async () => {
-    vi.mocked(categoriasApi.buscarCategoria).mockResolvedValue({
-      id: 'cat-1', nome: 'Camisas', descricao: 'Descrição', ativo: true,
-      produtosVinculados: 2, criadoEm: '2026-01-01T00:00:00Z',
+    vi.mocked(categoriesApi.getCategory).mockResolvedValue({
+      id: 'cat-1', name: 'Camisas', description: 'Descrição', active: true,
+      linkedProducts: 2, createdAt: '2026-01-01T00:00:00Z',
     })
 
     const { wrapper } = await mountWithRouter('/categorias/cat-1/editar')
     await flushPromises()
 
-    expect(categoriasApi.buscarCategoria).toHaveBeenCalledWith('cat-1')
+    expect(categoriesApi.getCategory).toHaveBeenCalledWith('cat-1')
     expect((wrapper.find('[data-test="nome"]').element as HTMLInputElement).value).toBe('Camisas')
   })
 
   it('shows an error message when loading categoria data fails in edit mode', async () => {
-    vi.mocked(categoriasApi.buscarCategoria).mockRejectedValue(new Error('network error'))
+    vi.mocked(categoriesApi.getCategory).mockRejectedValue(new Error('network error'))
 
     const { wrapper } = await mountWithRouter('/categorias/cat-1/editar')
     await flushPromises()

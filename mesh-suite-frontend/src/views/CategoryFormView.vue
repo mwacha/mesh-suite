@@ -5,12 +5,12 @@
         <h2>Informações Gerais</h2>
         <div>
           <label class="field-label">Nome *</label>
-          <input v-model="form.nome" data-test="nome" placeholder="Ex: Camisas" />
-          <p v-if="erros.nome" class="field-error">{{ erros.nome }}</p>
+          <input v-model="form.name" data-test="nome" placeholder="Ex: Camisas" />
+          <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
         </div>
         <div>
           <label class="field-label">Descrição</label>
-          <textarea v-model="form.descricao" data-test="descricao" rows="3" placeholder="Descrição opcional..."></textarea>
+          <textarea v-model="form.description" data-test="descricao" rows="3" placeholder="Descrição opcional..."></textarea>
         </div>
         <div>
           <label class="field-label">Status</label>
@@ -18,18 +18,18 @@
             <button
               type="button"
               class="status-btn"
-              :class="{ 'status-btn-active-ativo': form.ativo }"
+              :class="{ 'status-btn-active-ativo': form.active }"
               data-test="status-ativo"
-              @click="form.ativo = true"
+              @click="form.active = true"
             >
               Ativo
             </button>
             <button
               type="button"
               class="status-btn"
-              :class="{ 'status-btn-active-inativo': !form.ativo }"
+              :class="{ 'status-btn-active-inativo': !form.active }"
               data-test="status-inativo"
-              @click="form.ativo = false"
+              @click="form.active = false"
             >
               Inativo
             </button>
@@ -52,23 +52,23 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
-  buscarCategoria,
-  criarCategoria,
-  atualizarCategoria,
-  type CategoriaRequest,
-} from '@/api/categorias'
+  getCategory,
+  createCategory,
+  updateCategory,
+  type CategoryRequest,
+} from '@/api/categories'
 
 const route = useRoute()
 const router = useRouter()
 
 const modoEdicao = computed(() => typeof route.params.id === 'string')
 
-function novoFormulario(): CategoriaRequest {
-  return { nome: '', descricao: '', ativo: true }
+function novoFormulario(): CategoryRequest {
+  return { name: '', description: '', active: true }
 }
 
-const form = reactive<CategoriaRequest>(novoFormulario())
-const erros = reactive<{ nome?: string }>({})
+const form = reactive<CategoryRequest>(novoFormulario())
+const erros = reactive<{ name?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
 
@@ -76,10 +76,10 @@ onMounted(async () => {
   const id = route.params.id
   if (typeof id === 'string') {
     try {
-      const categoria = await buscarCategoria(id)
-      form.nome = categoria.nome
-      form.descricao = categoria.descricao
-      form.ativo = categoria.ativo
+      const category = await getCategory(id)
+      form.name = category.name
+      form.description = category.description
+      form.active = category.active
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados da categoria.'
     }
@@ -87,8 +87,8 @@ onMounted(async () => {
 })
 
 function validar(): boolean {
-  erros.nome = form.nome.trim() ? undefined : 'Campo obrigatório'
-  return !erros.nome
+  erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
+  return !erros.name
 }
 
 async function salvar() {
@@ -100,9 +100,9 @@ async function salvar() {
   try {
     const id = route.params.id
     if (typeof id === 'string') {
-      await atualizarCategoria(id, form)
+      await updateCategory(id, form)
     } else {
-      await criarCategoria(form)
+      await createCategory(form)
     }
     router.push({ name: 'categorias' })
   } catch (err: any) {
