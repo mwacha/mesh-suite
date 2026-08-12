@@ -3,16 +3,16 @@ package com.meshsuite.produto.service;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
+import com.meshsuite.category.exception.CategoryNotFoundException;
+import com.meshsuite.category.repository.CategoryRepository;
+import com.meshsuite.colorway.exception.ColorwayNotFoundException;
+import com.meshsuite.colorway.repository.ColorwayRepository;
 import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.produto.domain.enums.StatusProduto;
 import com.meshsuite.produto.domain.enums.UnidadeMedida;
 import com.meshsuite.produto.dto.*;
-import com.meshsuite.produto.exception.CategoriaNaoEncontradaException;
-import com.meshsuite.produto.exception.CorEstampaNaoEncontradaException;
 import com.meshsuite.produto.exception.ProdutoNaoEncontradoException;
 import com.meshsuite.produto.exception.SkuDuplicadoException;
-import com.meshsuite.produto.repository.CategoriaRepository;
-import com.meshsuite.produto.repository.CorEstampaRepository;
 import com.meshsuite.produto.repository.ProdutoRepository;
 import com.meshsuite.produto.repository.specification.ProdutoSpecifications;
 import java.math.BigDecimal;
@@ -27,11 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
-    private final CategoriaRepository categoriaRepository;
-    private final CorEstampaRepository corEstampaRepository;
+    private final CategoryRepository categoriaRepository;
+    private final ColorwayRepository corEstampaRepository;
 
-    public ProdutoService(ProdutoRepository produtoRepository, CategoriaRepository categoriaRepository,
-                           CorEstampaRepository corEstampaRepository) {
+    public ProdutoService(ProdutoRepository produtoRepository, CategoryRepository categoriaRepository,
+                           ColorwayRepository corEstampaRepository) {
         this.produtoRepository = produtoRepository;
         this.categoriaRepository = categoriaRepository;
         this.corEstampaRepository = corEstampaRepository;
@@ -114,10 +114,10 @@ public class ProdutoService {
         produto.setCodigoBarras(request.codigoBarras());
         produto.setMarca(request.marca());
         produto.setCategoria(request.categoriaId() != null
-                ? categoriaRepository.findById(request.categoriaId()).orElseThrow(CategoriaNaoEncontradaException::new)
+                ? categoriaRepository.findById(request.categoriaId()).orElseThrow(CategoryNotFoundException::new)
                 : null);
         produto.setCorEstampa(request.corEstampaId() != null
-                ? corEstampaRepository.findById(request.corEstampaId()).orElseThrow(CorEstampaNaoEncontradaException::new)
+                ? corEstampaRepository.findById(request.corEstampaId()).orElseThrow(ColorwayNotFoundException::new)
                 : null);
         produto.setPrecoVenda(request.precoVenda());
         produto.setPrecoCusto(request.precoCusto());
@@ -142,9 +142,9 @@ public class ProdutoService {
         return new ProdutoResponse(
                 p.getId(), p.getNome(), p.getSku(), p.getCodigoBarras(), p.getMarca(),
                 p.getCategoria() != null ? p.getCategoria().getId() : null,
-                p.getCategoria() != null ? p.getCategoria().getNome() : null,
+                p.getCategoria() != null ? p.getCategoria().getName() : null,
                 p.getCorEstampa() != null ? p.getCorEstampa().getId() : null,
-                p.getCorEstampa() != null ? p.getCorEstampa().getNome() : null,
+                p.getCorEstampa() != null ? p.getCorEstampa().getName() : null,
                 p.getPrecoVenda(), p.getPrecoCusto(), p.getStatus(), p.getDescricao(), p.getQuantidadeEstoque(),
                 p.getUnidadeMedida(), p.getEstoqueMinimo(), p.getEstoqueMaximo(), p.getPeso(), p.getComprimento(),
                 p.getLargura(), p.getAltura());

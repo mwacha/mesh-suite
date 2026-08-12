@@ -118,39 +118,39 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.CategoriaNaoEncontradaException.class)
-    public ResponseEntity<Map<String, String>> handleCategoriaNaoEncontrada(
-            com.meshsuite.produto.exception.CategoriaNaoEncontradaException e) {
+    @ExceptionHandler(com.meshsuite.category.exception.CategoryNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleCategoryNotFound(
+            com.meshsuite.category.exception.CategoryNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.CategoriaNomeDuplicadoException.class)
-    public ResponseEntity<Map<String, String>> handleCategoriaNomeDuplicado(
-            com.meshsuite.produto.exception.CategoriaNomeDuplicadoException e) {
+    @ExceptionHandler(com.meshsuite.category.exception.DuplicateCategoryNameException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateCategoryName(
+            com.meshsuite.category.exception.DuplicateCategoryNameException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.CategoriaEmUsoException.class)
-    public ResponseEntity<Map<String, String>> handleCategoriaEmUso(
-            com.meshsuite.produto.exception.CategoriaEmUsoException e) {
+    @ExceptionHandler(com.meshsuite.category.exception.CategoryInUseException.class)
+    public ResponseEntity<Map<String, String>> handleCategoryInUse(
+            com.meshsuite.category.exception.CategoryInUseException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.CorEstampaNaoEncontradaException.class)
-    public ResponseEntity<Map<String, String>> handleCorEstampaNaoEncontrada(
-            com.meshsuite.produto.exception.CorEstampaNaoEncontradaException e) {
+    @ExceptionHandler(com.meshsuite.colorway.exception.ColorwayNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleColorwayNotFound(
+            com.meshsuite.colorway.exception.ColorwayNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.CorEstampaNomeDuplicadoException.class)
-    public ResponseEntity<Map<String, String>> handleCorEstampaNomeDuplicado(
-            com.meshsuite.produto.exception.CorEstampaNomeDuplicadoException e) {
+    @ExceptionHandler(com.meshsuite.colorway.exception.DuplicateColorwayNameException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateColorwayName(
+            com.meshsuite.colorway.exception.DuplicateColorwayNameException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.CorEstampaEmUsoException.class)
-    public ResponseEntity<Map<String, String>> handleCorEstampaEmUso(
-            com.meshsuite.produto.exception.CorEstampaEmUsoException e) {
+    @ExceptionHandler(com.meshsuite.colorway.exception.ColorwayInUseException.class)
+    public ResponseEntity<Map<String, String>> handleColorwayInUse(
+            com.meshsuite.colorway.exception.ColorwayInUseException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 

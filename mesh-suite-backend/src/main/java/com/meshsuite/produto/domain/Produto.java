@@ -1,5 +1,7 @@
 package com.meshsuite.produto.domain;
 
+import com.meshsuite.category.domain.Category;
+import com.meshsuite.colorway.domain.Colorway;
 import com.meshsuite.fiscal.domain.FiscalRegistration;
 import com.meshsuite.produto.domain.enums.StatusProduto;
 import com.meshsuite.produto.domain.enums.UnidadeMedida;
@@ -39,11 +41,11 @@ public class Produto {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_id")
-    private Categoria categoria;
+    private Category categoria;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cor_estampa_id")
-    private CorEstampa corEstampa;
+    private Colorway corEstampa;
 
     @Column(name = "preco_venda", nullable = false, precision = 12, scale = 2)
     private BigDecimal precoVenda;
