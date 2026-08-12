@@ -1,4 +1,4 @@
-package com.meshsuite.produto.service;
+package com.meshsuite.category.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -8,11 +8,11 @@ import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.service.AuthContextService;
 import com.meshsuite.produto.domain.enums.StatusProduto;
 import com.meshsuite.produto.domain.enums.UnidadeMedida;
-import com.meshsuite.produto.dto.CategoriaRequest;
-import com.meshsuite.produto.exception.CategoriaEmUsoException;
-import com.meshsuite.produto.exception.CategoriaNaoEncontradaException;
-import com.meshsuite.produto.exception.CategoriaNomeDuplicadoException;
-import com.meshsuite.produto.service.CategoriaService;
+import com.meshsuite.category.dto.CategoryRequest;
+import com.meshsuite.category.exception.CategoryInUseException;
+import com.meshsuite.category.exception.CategoryNotFoundException;
+import com.meshsuite.category.exception.DuplicateCategoryNameException;
+import com.meshsuite.category.service.CategoryService;
 import com.meshsuite.produto.service.ProdutoService;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
@@ -32,9 +32,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-class CategoriaServiceTest extends AbstractIntegrationTest {
+class CategoryServiceTest extends AbstractIntegrationTest {
 
-    @Autowired CategoriaService categoriaService;
+    @Autowired CategoryService categoryService;
     @Autowired ProdutoService produtoService;
     @Autowired TenantRepository tenantRepository;
     @Autowired UserRepository userRepository;
@@ -67,102 +67,102 @@ class CategoriaServiceTest extends AbstractIntegrationTest {
         return tenant.getId();
     }
 
-    private CategoriaRequest request(String nome) {
-        return new CategoriaRequest(nome, "Descrição de teste", null);
+    private CategoryRequest request(String nome) {
+        return new CategoryRequest(nome, "Descrição de teste", null);
     }
 
     @Test
     @Transactional
-    void criaERecuperaCategoria() {
+    void createsAndRetrievesCategory() {
         setUpTenant("aurora-cat");
 
-        var criada = categoriaService.criar(TenantContext.get(), request("Camisas"));
+        var criada = categoryService.create(TenantContext.get(), request("Camisas"));
 
-        var buscada = categoriaService.buscarPorId(criada.id());
-        assertThat(buscada.nome()).isEqualTo("Camisas");
-        assertThat(buscada.ativo()).isTrue();
-        assertThat(buscada.produtosVinculados()).isEqualTo(0L);
+        var buscada = categoryService.findById(criada.id());
+        assertThat(buscada.name()).isEqualTo("Camisas");
+        assertThat(buscada.active()).isTrue();
+        assertThat(buscada.linkedProducts()).isEqualTo(0L);
     }
 
     @Test
     @Transactional
-    void rejectsDuplicateNomeOnCreate() {
+    void rejectsDuplicateNameOnCreate() {
         setUpTenant("aurora-cat");
-        categoriaService.criar(TenantContext.get(), request("Camisas"));
+        categoryService.create(TenantContext.get(), request("Camisas"));
 
-        assertThatThrownBy(() -> categoriaService.criar(TenantContext.get(), request("Camisas")))
-                .isInstanceOf(CategoriaNomeDuplicadoException.class);
+        assertThatThrownBy(() -> categoryService.create(TenantContext.get(), request("Camisas")))
+                .isInstanceOf(DuplicateCategoryNameException.class);
     }
 
     @Test
     @Transactional
-    void rejectsDuplicateNomeOnUpdateAgainstAnotherCategoria() {
+    void rejectsDuplicateNameOnUpdateAgainstAnotherCategory() {
         setUpTenant("aurora-cat");
-        categoriaService.criar(TenantContext.get(), request("Camisas"));
-        var outra = categoriaService.criar(TenantContext.get(), request("Calças"));
+        categoryService.create(TenantContext.get(), request("Camisas"));
+        var outra = categoryService.create(TenantContext.get(), request("Calças"));
 
-        assertThatThrownBy(() -> categoriaService.atualizar(outra.id(), request("Camisas")))
-                .isInstanceOf(CategoriaNomeDuplicadoException.class);
+        assertThatThrownBy(() -> categoryService.update(outra.id(), request("Camisas")))
+                .isInstanceOf(DuplicateCategoryNameException.class);
     }
 
     @Test
     @Transactional
-    void allowsUpdatingACategoriaWithoutChangingItsOwnNome() {
+    void allowsUpdatingACategoryWithoutChangingItsOwnName() {
         setUpTenant("aurora-cat");
-        var criada = categoriaService.criar(TenantContext.get(), request("Camisas"));
+        var criada = categoryService.create(TenantContext.get(), request("Camisas"));
 
-        var atualizada = categoriaService.atualizar(criada.id(),
-                new CategoriaRequest("Camisas", "Descrição nova", false));
+        var atualizada = categoryService.update(criada.id(),
+                new CategoryRequest("Camisas", "Descrição nova", false));
 
-        assertThat(atualizada.descricao()).isEqualTo("Descrição nova");
-        assertThat(atualizada.ativo()).isFalse();
+        assertThat(atualizada.description()).isEqualTo("Descrição nova");
+        assertThat(atualizada.active()).isFalse();
     }
 
     @Test
     @Transactional
-    void deletesUnusedCategoria() {
+    void deletesUnusedCategory() {
         setUpTenant("aurora-cat");
-        var criada = categoriaService.criar(TenantContext.get(), request("Camisas"));
+        var criada = categoryService.create(TenantContext.get(), request("Camisas"));
 
-        categoriaService.excluir(criada.id());
+        categoryService.delete(criada.id());
 
-        assertThatThrownBy(() -> categoriaService.buscarPorId(criada.id()))
-                .isInstanceOf(CategoriaNaoEncontradaException.class);
+        assertThatThrownBy(() -> categoryService.findById(criada.id()))
+                .isInstanceOf(CategoryNotFoundException.class);
     }
 
     @Test
     @Transactional
-    void rejectsDeletingACategoriaInUseByAProduto() {
+    void rejectsDeletingACategoryInUseByAProduct() {
         setUpTenant("aurora-cat");
-        var categoria = categoriaService.criar(TenantContext.get(), request("Camisas"));
+        var categoria = categoryService.create(TenantContext.get(), request("Camisas"));
         produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
                 "Camiseta Polo", "P0001", null, null, categoria.id(), null,
                 new BigDecimal("59.90"), null, StatusProduto.ATIVO, null,
                 new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
 
-        assertThatThrownBy(() -> categoriaService.excluir(categoria.id()))
-                .isInstanceOf(CategoriaEmUsoException.class);
+        assertThatThrownBy(() -> categoryService.delete(categoria.id()))
+                .isInstanceOf(CategoryInUseException.class);
     }
 
     @Test
     @Transactional
-    void listFiltersByAtivo() {
+    void listFiltersByActive() {
         setUpTenant("aurora-cat");
-        categoriaService.criar(TenantContext.get(), new CategoriaRequest("Camisas", null, true));
-        categoriaService.criar(TenantContext.get(), new CategoriaRequest("Descontinuada", null, false));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Camisas", null, true));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Descontinuada", null, false));
 
-        var ativas = categoriaService.listar(null, true, PageRequest.of(0, 10));
+        var ativas = categoryService.list(null, true, PageRequest.of(0, 10));
 
-        assertThat(ativas.getContent()).extracting("nome").containsExactly("Camisas");
+        assertThat(ativas.getContent()).extracting("name").containsExactly("Camisas");
     }
 
     @Test
     @Transactional
-    void listAggregatesProdutosVinculadosPerCategoriaInASingleBatch() {
+    void listAggregatesLinkedProductsPerCategoryInASingleBatch() {
         setUpTenant("aurora-cat");
-        var camisas = categoriaService.criar(TenantContext.get(), request("Camisas"));
-        var calcas = categoriaService.criar(TenantContext.get(), request("Calças"));
-        var semProdutos = categoriaService.criar(TenantContext.get(), request("Acessórios"));
+        var camisas = categoryService.create(TenantContext.get(), request("Camisas"));
+        var calcas = categoryService.create(TenantContext.get(), request("Calças"));
+        var semProdutos = categoryService.create(TenantContext.get(), request("Acessórios"));
 
         produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
                 "Camiseta Polo", "P0001", null, null, camisas.id(), null,
@@ -177,16 +177,16 @@ class CategoriaServiceTest extends AbstractIntegrationTest {
                 new BigDecimal("119.90"), null, StatusProduto.ATIVO, null,
                 new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
 
-        var pagina = categoriaService.listar(null, null, PageRequest.of(0, 10));
+        var pagina = categoryService.list(null, null, PageRequest.of(0, 10));
 
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(camisas.id())).first()
-                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(2L));
+                .satisfies(c -> assertThat(c.linkedProducts()).isEqualTo(2L));
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(calcas.id())).first()
-                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(1L));
+                .satisfies(c -> assertThat(c.linkedProducts()).isEqualTo(1L));
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(semProdutos.id())).first()
-                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(0L));
+                .satisfies(c -> assertThat(c.linkedProducts()).isEqualTo(0L));
     }
 }
