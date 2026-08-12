@@ -5,6 +5,7 @@ CREATE TABLE product (
     sku VARCHAR(50) NOT NULL,
     barcode VARCHAR(50),
     brand VARCHAR(100),
+    categoria VARCHAR(100),
     sale_price NUMERIC(12,2) NOT NULL,
     cost_price NUMERIC(12,2),
     status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),

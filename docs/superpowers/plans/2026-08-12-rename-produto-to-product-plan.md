@@ -91,6 +91,7 @@ CREATE TABLE product (
     sku VARCHAR(50) NOT NULL,
     barcode VARCHAR(50),
     brand VARCHAR(100),
+    categoria VARCHAR(100),
     sale_price NUMERIC(12,2) NOT NULL,
     cost_price NUMERIC(12,2),
     status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
@@ -118,6 +119,8 @@ CREATE POLICY produto_tenant_isolation ON product
 ```
 
 Note: index/policy names (`idx_produto_tenant_sku`, `produto_tenant_isolation`, etc.) are internal DB object names, not part of the field map — leave them exactly as shown above; do not rename them (matches how prior sub-projects left index/policy names alone during table renames, e.g. `V5`/`V21`/`V23`).
+
+**Correction found during Task 1's review:** the DDL above now includes `categoria VARCHAR(100),` (plain-text column, kept in Portuguese and untranslated — it's dropped by V22 two steps later, never queried by application code). The original plan draft omitted this column entirely, which would have broken V22's `ALTER TABLE product DROP COLUMN categoria;` (nothing to drop) the moment Flyway replayed the migration chain. This column existed in the original `V6__create_produto.sql` as a leftover plain-text category field, superseded by the `categoria_id`/`category_id` FK added in V22 — it must exist in V6 purely so V22 has something to drop.
 
 - [ ] **Step 2: Update V18 (adds fiscal_registration_id) to target the renamed table**
 
