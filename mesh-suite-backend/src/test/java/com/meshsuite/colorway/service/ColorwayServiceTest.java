@@ -1,4 +1,4 @@
-package com.meshsuite.produto.service;
+package com.meshsuite.colorway.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -8,11 +8,11 @@ import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.service.AuthContextService;
 import com.meshsuite.produto.domain.enums.StatusProduto;
 import com.meshsuite.produto.domain.enums.UnidadeMedida;
-import com.meshsuite.produto.dto.CorEstampaRequest;
-import com.meshsuite.produto.exception.CorEstampaEmUsoException;
-import com.meshsuite.produto.exception.CorEstampaNaoEncontradaException;
-import com.meshsuite.produto.exception.CorEstampaNomeDuplicadoException;
-import com.meshsuite.produto.service.CorEstampaService;
+import com.meshsuite.colorway.dto.ColorwayRequest;
+import com.meshsuite.colorway.exception.ColorwayInUseException;
+import com.meshsuite.colorway.exception.ColorwayNotFoundException;
+import com.meshsuite.colorway.exception.DuplicateColorwayNameException;
+import com.meshsuite.colorway.service.ColorwayService;
 import com.meshsuite.produto.service.ProdutoService;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
@@ -33,9 +33,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-class CorEstampaServiceTest extends AbstractIntegrationTest {
+class ColorwayServiceTest extends AbstractIntegrationTest {
 
-    @Autowired CorEstampaService corEstampaService;
+    @Autowired ColorwayService colorwayService;
     @Autowired ProdutoService produtoService;
     @Autowired TenantRepository tenantRepository;
     @Autowired UserRepository userRepository;
@@ -68,104 +68,104 @@ class CorEstampaServiceTest extends AbstractIntegrationTest {
         return tenant.getId();
     }
 
-    private CorEstampaRequest request(String nome) {
-        return new CorEstampaRequest(nome, LocalDate.of(2026, 1, 1), "Descrição de teste", null);
+    private ColorwayRequest request(String nome) {
+        return new ColorwayRequest(nome, LocalDate.of(2026, 1, 1), "Descrição de teste", null);
     }
 
     @Test
     @Transactional
-    void criaERecuperaCorEstampa() {
+    void createsAndRetrievesColorway() {
         setUpTenant("aurora-corest");
 
-        var criada = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
+        var criada = colorwayService.create(TenantContext.get(), request("Azul Marinho"));
 
-        var buscada = corEstampaService.buscarPorId(criada.id());
-        assertThat(buscada.nome()).isEqualTo("Azul Marinho");
-        assertThat(buscada.dataVigencia()).isEqualTo(LocalDate.of(2026, 1, 1));
-        assertThat(buscada.ativo()).isTrue();
-        assertThat(buscada.produtosVinculados()).isEqualTo(0L);
+        var buscada = colorwayService.findById(criada.id());
+        assertThat(buscada.name()).isEqualTo("Azul Marinho");
+        assertThat(buscada.effectiveDate()).isEqualTo(LocalDate.of(2026, 1, 1));
+        assertThat(buscada.active()).isTrue();
+        assertThat(buscada.linkedProducts()).isEqualTo(0L);
     }
 
     @Test
     @Transactional
-    void rejectsDuplicateNomeOnCreate() {
+    void rejectsDuplicateNameOnCreate() {
         setUpTenant("aurora-corest");
-        corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
+        colorwayService.create(TenantContext.get(), request("Azul Marinho"));
 
-        assertThatThrownBy(() -> corEstampaService.criar(TenantContext.get(), request("Azul Marinho")))
-                .isInstanceOf(CorEstampaNomeDuplicadoException.class);
+        assertThatThrownBy(() -> colorwayService.create(TenantContext.get(), request("Azul Marinho")))
+                .isInstanceOf(DuplicateColorwayNameException.class);
     }
 
     @Test
     @Transactional
-    void rejectsDuplicateNomeOnUpdateAgainstAnotherCorEstampa() {
+    void rejectsDuplicateNameOnUpdateAgainstAnotherColorway() {
         setUpTenant("aurora-corest");
-        corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
-        var outra = corEstampaService.criar(TenantContext.get(), request("Vermelho Ferrari"));
+        colorwayService.create(TenantContext.get(), request("Azul Marinho"));
+        var outra = colorwayService.create(TenantContext.get(), request("Vermelho Ferrari"));
 
-        assertThatThrownBy(() -> corEstampaService.atualizar(outra.id(), request("Azul Marinho")))
-                .isInstanceOf(CorEstampaNomeDuplicadoException.class);
+        assertThatThrownBy(() -> colorwayService.update(outra.id(), request("Azul Marinho")))
+                .isInstanceOf(DuplicateColorwayNameException.class);
     }
 
     @Test
     @Transactional
-    void allowsUpdatingACorEstampaWithoutChangingItsOwnNome() {
+    void allowsUpdatingAColorwayWithoutChangingItsOwnName() {
         setUpTenant("aurora-corest");
-        var criada = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
+        var criada = colorwayService.create(TenantContext.get(), request("Azul Marinho"));
 
-        var atualizada = corEstampaService.atualizar(criada.id(),
-                new CorEstampaRequest("Azul Marinho", LocalDate.of(2026, 3, 1), "Descrição nova", false));
+        var atualizada = colorwayService.update(criada.id(),
+                new ColorwayRequest("Azul Marinho", LocalDate.of(2026, 3, 1), "Descrição nova", false));
 
-        assertThat(atualizada.descricao()).isEqualTo("Descrição nova");
-        assertThat(atualizada.dataVigencia()).isEqualTo(LocalDate.of(2026, 3, 1));
-        assertThat(atualizada.ativo()).isFalse();
+        assertThat(atualizada.description()).isEqualTo("Descrição nova");
+        assertThat(atualizada.effectiveDate()).isEqualTo(LocalDate.of(2026, 3, 1));
+        assertThat(atualizada.active()).isFalse();
     }
 
     @Test
     @Transactional
-    void deletesUnusedCorEstampa() {
+    void deletesUnusedColorway() {
         setUpTenant("aurora-corest");
-        var criada = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
+        var criada = colorwayService.create(TenantContext.get(), request("Azul Marinho"));
 
-        corEstampaService.excluir(criada.id());
+        colorwayService.delete(criada.id());
 
-        assertThatThrownBy(() -> corEstampaService.buscarPorId(criada.id()))
-                .isInstanceOf(CorEstampaNaoEncontradaException.class);
+        assertThatThrownBy(() -> colorwayService.findById(criada.id()))
+                .isInstanceOf(ColorwayNotFoundException.class);
     }
 
     @Test
     @Transactional
-    void rejectsDeletingACorEstampaInUseByAProduto() {
+    void rejectsDeletingAColorwayInUseByAProduct() {
         setUpTenant("aurora-corest");
-        var corEstampa = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
+        var corEstampa = colorwayService.create(TenantContext.get(), request("Azul Marinho"));
         produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
                 "Camiseta Polo", "P0001", null, null, null, corEstampa.id(),
                 new BigDecimal("59.90"), null, StatusProduto.ATIVO, null,
                 new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
 
-        assertThatThrownBy(() -> corEstampaService.excluir(corEstampa.id()))
-                .isInstanceOf(CorEstampaEmUsoException.class);
+        assertThatThrownBy(() -> colorwayService.delete(corEstampa.id()))
+                .isInstanceOf(ColorwayInUseException.class);
     }
 
     @Test
     @Transactional
-    void listFiltersByAtivo() {
+    void listFiltersByActive() {
         setUpTenant("aurora-corest");
-        corEstampaService.criar(TenantContext.get(), new CorEstampaRequest("Azul Marinho", LocalDate.of(2026, 1, 1), null, true));
-        corEstampaService.criar(TenantContext.get(), new CorEstampaRequest("Descontinuada", LocalDate.of(2025, 1, 1), null, false));
+        colorwayService.create(TenantContext.get(), new ColorwayRequest("Azul Marinho", LocalDate.of(2026, 1, 1), null, true));
+        colorwayService.create(TenantContext.get(), new ColorwayRequest("Descontinuada", LocalDate.of(2025, 1, 1), null, false));
 
-        var ativas = corEstampaService.listar(null, true, PageRequest.of(0, 10));
+        var ativas = colorwayService.list(null, true, PageRequest.of(0, 10));
 
-        assertThat(ativas.getContent()).extracting("nome").containsExactly("Azul Marinho");
+        assertThat(ativas.getContent()).extracting("name").containsExactly("Azul Marinho");
     }
 
     @Test
     @Transactional
-    void listAggregatesProdutosVinculadosPerCorEstampaInASingleBatch() {
+    void listAggregatesLinkedProductsPerColorwayInASingleBatch() {
         setUpTenant("aurora-corest");
-        var azul = corEstampaService.criar(TenantContext.get(), request("Azul Marinho"));
-        var vermelho = corEstampaService.criar(TenantContext.get(), request("Vermelho Ferrari"));
-        var semProdutos = corEstampaService.criar(TenantContext.get(), request("Preto"));
+        var azul = colorwayService.create(TenantContext.get(), request("Azul Marinho"));
+        var vermelho = colorwayService.create(TenantContext.get(), request("Vermelho Ferrari"));
+        var semProdutos = colorwayService.create(TenantContext.get(), request("Preto"));
 
         produtoService.criar(TenantContext.get(), new com.meshsuite.produto.dto.ProdutoRequest(
                 "Camiseta Polo", "P0001", null, null, null, azul.id(),
@@ -180,16 +180,16 @@ class CorEstampaServiceTest extends AbstractIntegrationTest {
                 new BigDecimal("119.90"), null, StatusProduto.ATIVO, null,
                 new BigDecimal("10"), UnidadeMedida.UN, null, null, null, null, null, null));
 
-        var pagina = corEstampaService.listar(null, null, PageRequest.of(0, 10));
+        var pagina = colorwayService.list(null, null, PageRequest.of(0, 10));
 
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(azul.id())).first()
-                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(2L));
+                .satisfies(c -> assertThat(c.linkedProducts()).isEqualTo(2L));
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(vermelho.id())).first()
-                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(1L));
+                .satisfies(c -> assertThat(c.linkedProducts()).isEqualTo(1L));
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(semProdutos.id())).first()
-                .satisfies(c -> assertThat(c.produtosVinculados()).isEqualTo(0L));
+                .satisfies(c -> assertThat(c.linkedProducts()).isEqualTo(0L));
     }
 }
