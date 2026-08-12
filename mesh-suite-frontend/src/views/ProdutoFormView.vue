@@ -29,7 +29,7 @@
             <select v-model="form.categoriaId" data-test="categoria">
               <option :value="null">Sem categoria</option>
               <option v-for="categoria in categorias" :key="categoria.id" :value="categoria.id">
-                {{ categoria.nome }}
+                {{ categoria.name }}
               </option>
             </select>
           </div>
@@ -40,7 +40,7 @@
             <select v-model="form.corEstampaId" data-test="cor-estampa">
               <option :value="null">Sem cor/estampa</option>
               <option v-for="corEstampa in coresEstampas" :key="corEstampa.id" :value="corEstampa.id">
-                {{ corEstampa.nome }}
+                {{ corEstampa.name }}
               </option>
             </select>
           </div>
@@ -151,8 +151,8 @@ import {
   type StatusProduto,
   type UnidadeMedida,
 } from '@/api/produtos'
-import { listarCategorias, type CategoriaResponse } from '@/api/categorias'
-import { listarCoresEstampas, type CorEstampaResponse } from '@/api/coresEstampas'
+import { listCategories, type CategoryResponse } from '@/api/categories'
+import { listColorways, type ColorwayResponse } from '@/api/colorways'
 
 const UNIDADES: UnidadeMedida[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
 const STATUS_OPCOES: { value: StatusProduto; label: string }[] = [
@@ -192,12 +192,12 @@ const form = reactive<ProdutoRequest>(novoFormulario())
 const erros = reactive<{ nome?: string; sku?: string; precoVenda?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
-const categorias = ref<CategoriaResponse[]>([])
-const coresEstampas = ref<CorEstampaResponse[]>([])
+const categorias = ref<CategoryResponse[]>([])
+const coresEstampas = ref<ColorwayResponse[]>([])
 
 onMounted(async () => {
   try {
-    const pagina = await listarCategorias({ ativo: true, size: 100 })
+    const pagina = await listCategories({ ativo: true, size: 100 })
     categorias.value = pagina.content
   } catch {
     // Categoria list is a convenience dropdown, not a required field --
@@ -206,7 +206,7 @@ onMounted(async () => {
   }
 
   try {
-    const pagina = await listarCoresEstampas({ ativo: true, size: 100 })
+    const pagina = await listColorways({ ativo: true, size: 100 })
     coresEstampas.value = pagina.content
   } catch {
     // Same convenience-dropdown reasoning as categorias above.
@@ -223,8 +223,8 @@ onMounted(async () => {
       // already linked to this produto (it just can't be picked as a new
       // option for produtos without one). Splice in a minimal synthetic entry
       // from the produto response itself so the <select> has a matching
-      // <option> to bind to -- a full CategoriaResponse isn't needed since
-      // the template only reads `id`/`nome`.
+      // <option> to bind to -- a full CategoryResponse isn't needed since
+      // the template only reads `id`/`name`.
       if (
         produto.categoriaId &&
         !categorias.value.some((categoria) => categoria.id === produto.categoriaId)
@@ -233,8 +233,8 @@ onMounted(async () => {
           ...categorias.value,
           {
             id: produto.categoriaId,
-            nome: produto.categoriaNome ?? '',
-          } as CategoriaResponse,
+            name: produto.categoriaNome ?? '',
+          } as CategoryResponse,
         ]
       }
 
@@ -247,8 +247,8 @@ onMounted(async () => {
           ...coresEstampas.value,
           {
             id: produto.corEstampaId,
-            nome: produto.corEstampaNome ?? '',
-          } as CorEstampaResponse,
+            name: produto.corEstampaNome ?? '',
+          } as ColorwayResponse,
         ]
       }
     } catch {

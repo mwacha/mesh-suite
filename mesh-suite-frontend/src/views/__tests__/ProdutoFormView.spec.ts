@@ -6,8 +6,8 @@ import ProdutoFormView from '@/views/ProdutoFormView.vue'
 import * as produtosApi from '@/api/produtos'
 
 vi.mock('@/api/produtos')
-vi.mock('@/api/categorias')
-vi.mock('@/api/coresEstampas')
+vi.mock('@/api/categories')
+vi.mock('@/api/colorways')
 
 function mountWithRouter(path = '/produtos/novo') {
   const router = createRouter({
@@ -143,10 +143,10 @@ describe('ProdutoFormView', () => {
   })
 
   it('loads categorias into the dropdown and lets the user pick one', async () => {
-    const categoriasApi = await import('@/api/categorias')
-    vi.mocked(categoriasApi.listarCategorias).mockResolvedValue({
+    const categoriasApi = await import('@/api/categories')
+    vi.mocked(categoriasApi.listCategories).mockResolvedValue({
       content: [
-        { id: 'cat-1', nome: 'Camisas', descricao: null, ativo: true, produtosVinculados: 0, criadoEm: '2026-01-01T00:00:00Z' },
+        { id: 'cat-1', name: 'Camisas', description: null, active: true, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
@@ -166,12 +166,12 @@ describe('ProdutoFormView', () => {
   })
 
   it('keeps an inactive-but-linked categoria selected in the dropdown when editing', async () => {
-    const categoriasApi = await import('@/api/categorias')
+    const categoriasApi = await import('@/api/categories')
     // The active-only categoria list does NOT include this produto's categoria
     // (simulating it having been deactivated after the produto was linked to it).
-    vi.mocked(categoriasApi.listarCategorias).mockResolvedValue({
+    vi.mocked(categoriasApi.listCategories).mockResolvedValue({
       content: [
-        { id: 'cat-active', nome: 'Camisas', descricao: null, ativo: true, produtosVinculados: 0, criadoEm: '2026-01-01T00:00:00Z' },
+        { id: 'cat-active', name: 'Camisas', description: null, active: true, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
@@ -192,10 +192,10 @@ describe('ProdutoFormView', () => {
   })
 
   it('loads cores/estampas into the dropdown and lets the user pick one', async () => {
-    const coresEstampasApi = await import('@/api/coresEstampas')
-    vi.mocked(coresEstampasApi.listarCoresEstampas).mockResolvedValue({
+    const coresEstampasApi = await import('@/api/colorways')
+    vi.mocked(coresEstampasApi.listColorways).mockResolvedValue({
       content: [
-        { id: 'ce-1', nome: 'Azul Marinho', dataVigencia: '2026-01-01', descricao: null, ativo: true, produtosVinculados: 0, criadoEm: '2026-01-01T00:00:00Z' },
+        { id: 'ce-1', name: 'Azul Marinho', effectiveDate: '2026-01-01', description: null, active: true, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
@@ -215,12 +215,12 @@ describe('ProdutoFormView', () => {
   })
 
   it('keeps an inactive-but-linked cor/estampa selected in the dropdown when editing', async () => {
-    const coresEstampasApi = await import('@/api/coresEstampas')
+    const coresEstampasApi = await import('@/api/colorways')
     // The active-only list does NOT include this produto's cor/estampa
     // (simulating it having been deactivated after the produto was linked to it).
-    vi.mocked(coresEstampasApi.listarCoresEstampas).mockResolvedValue({
+    vi.mocked(coresEstampasApi.listColorways).mockResolvedValue({
       content: [
-        { id: 'ce-active', nome: 'Preto', dataVigencia: '2026-01-01', descricao: null, ativo: true, produtosVinculados: 0, criadoEm: '2026-01-01T00:00:00Z' },
+        { id: 'ce-active', name: 'Preto', effectiveDate: '2026-01-01', description: null, active: true, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })

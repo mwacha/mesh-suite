@@ -9,10 +9,10 @@ import ClientesListView from '@/views/ClientesListView.vue'
 import ClienteDetailView from '@/views/ClienteDetailView.vue'
 import ProdutoFormView from '@/views/ProdutoFormView.vue'
 import ProdutosListView from '@/views/ProdutosListView.vue'
-import CategoriasListView from '@/views/CategoriasListView.vue'
-import CategoriaFormView from '@/views/CategoriaFormView.vue'
-import CoresEstampasListView from '@/views/CoresEstampasListView.vue'
-import CorEstampaFormView from '@/views/CorEstampaFormView.vue'
+import CategoriesListView from '@/views/CategoriesListView.vue'
+import CategoryFormView from '@/views/CategoryFormView.vue'
+import ColorwaysListView from '@/views/ColorwaysListView.vue'
+import ColorwayFormView from '@/views/ColorwayFormView.vue'
 import TabelasPrecoListView from '@/views/TabelasPrecoListView.vue'
 import TabelaPrecoFormView from '@/views/TabelaPrecoFormView.vue'
 import PedidoFormView from '@/views/PedidoFormView.vue'
@@ -38,12 +38,12 @@ const router = createRouter({
     { path: '/produtos', name: 'produtos', component: ProdutosListView },
     { path: '/produtos/novo', name: 'produtos-novo', component: ProdutoFormView },
     { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoFormView },
-    { path: '/categorias', name: 'categorias', component: CategoriasListView },
-    { path: '/categorias/novo', name: 'categorias-novo', component: CategoriaFormView },
-    { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoriaFormView },
-    { path: '/cores-estampas', name: 'cores-estampas', component: CoresEstampasListView },
-    { path: '/cores-estampas/novo', name: 'cores-estampas-novo', component: CorEstampaFormView },
-    { path: '/cores-estampas/:id/editar', name: 'cores-estampas-editar', component: CorEstampaFormView },
+    { path: '/categorias', name: 'categorias', component: CategoriesListView },
+    { path: '/categorias/novo', name: 'categorias-novo', component: CategoryFormView },
+    { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoryFormView },
+    { path: '/cores-estampas', name: 'cores-estampas', component: ColorwaysListView },
+    { path: '/cores-estampas/novo', name: 'cores-estampas-novo', component: ColorwayFormView },
+    { path: '/cores-estampas/:id/editar', name: 'cores-estampas-editar', component: ColorwayFormView },
     { path: '/tabelas-preco', name: 'tabelas-preco', component: TabelasPrecoListView },
     { path: '/tabelas-preco/novo', name: 'tabelas-preco-novo', component: TabelaPrecoFormView },
     { path: '/tabelas-preco/:id/editar', name: 'tabelas-preco-editar', component: TabelaPrecoFormView },
