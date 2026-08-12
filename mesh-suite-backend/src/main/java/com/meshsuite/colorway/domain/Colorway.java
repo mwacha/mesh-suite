@@ -1,4 +1,4 @@
-package com.meshsuite.produto.domain;
+package com.meshsuite.colorway.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -10,10 +10,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "cor_estampa")
+@Table(name = "colorway")
 @Getter
 @Setter
-public class CorEstampa {
+public class Colorway {
 
     @Id
     @GeneratedValue
@@ -24,17 +24,17 @@ public class CorEstampa {
     private UUID tenantId;
 
     @Column(nullable = false, length = 100)
-    private String nome;
+    private String name;
 
-    @Column(name = "data_vigencia", nullable = false)
-    private LocalDate dataVigencia;
+    @Column(name = "effective_date", nullable = false)
+    private LocalDate effectiveDate;
 
     @Column(length = 255)
-    private String descricao;
+    private String description;
 
     @Column(nullable = false)
-    private Boolean ativo = true;
+    private Boolean active = true;
 
-    @Column(name = "criado_em", nullable = false, updatable = false)
-    private Instant criadoEm = Instant.now();
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
 }
