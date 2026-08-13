@@ -1,6 +1,6 @@
 package com.meshsuite.pedido.domain;
 
-import com.meshsuite.produto.domain.Produto;
+import com.meshsuite.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,7 +26,7 @@ public class ItemPedido {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produto_id", nullable = false)
-    private Produto produto;
+    private Product produto;
 
     @Column(nullable = false, precision = 12, scale = 3)
     private BigDecimal quantidade;

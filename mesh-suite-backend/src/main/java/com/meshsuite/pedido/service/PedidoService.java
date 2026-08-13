@@ -14,8 +14,8 @@ import com.meshsuite.pedido.exception.PedidoNaoEncontradoException;
 import com.meshsuite.pedido.exception.PedidoValidacaoException;
 import com.meshsuite.pedido.repository.PedidoRepository;
 import com.meshsuite.pedido.repository.specification.PedidoSpecifications;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.user.domain.User;
 import com.meshsuite.user.domain.enums.Role;
 import com.meshsuite.user.repository.UserRepository;
@@ -36,11 +36,11 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final PartnerRepository parceiroRepository;
     private final UserRepository userRepository;
-    private final ProdutoRepository produtoRepository;
+    private final ProductRepository produtoRepository;
     private final EntityManager entityManager;
 
     public PedidoService(PedidoRepository pedidoRepository, PartnerRepository parceiroRepository,
-                          UserRepository userRepository, ProdutoRepository produtoRepository,
+                          UserRepository userRepository, ProductRepository produtoRepository,
                           EntityManager entityManager) {
         this.pedidoRepository = pedidoRepository;
         this.parceiroRepository = parceiroRepository;
@@ -172,7 +172,7 @@ public class PedidoService {
         pedido.getItens().clear();
         BigDecimal subtotal = BigDecimal.ZERO;
         for (ItemPedidoDto dto : request.itens()) {
-            Produto produto = produtoRepository.findById(dto.produtoId())
+            Product produto = produtoRepository.findById(dto.produtoId())
                     .orElseThrow(() -> new PedidoValidacaoException("Produto não encontrado"));
             ItemPedido item = new ItemPedido();
             item.setPedido(pedido);
@@ -195,7 +195,7 @@ public class PedidoService {
 
     private PedidoResponse toResponse(Pedido p) {
         List<ItemPedidoResponse> itens = p.getItens().stream()
-                .map(i -> new ItemPedidoResponse(i.getProduto().getId(), i.getProduto().getNome(),
+                .map(i -> new ItemPedidoResponse(i.getProduto().getId(), i.getProduto().getName(),
                         i.getQuantidade(), i.getValorUnitario(), i.getValorTotal()))
                 .toList();
         return new PedidoResponse(p.getId(), p.getNumero(), p.getCliente().getId(), p.getCliente().getTradeName(),

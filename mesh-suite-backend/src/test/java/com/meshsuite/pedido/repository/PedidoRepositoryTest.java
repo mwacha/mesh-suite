@@ -12,8 +12,8 @@ import com.meshsuite.pedido.domain.PedidoContador;
 import com.meshsuite.pedido.domain.enums.StatusPedido;
 import com.meshsuite.pedido.repository.PedidoContadorRepository;
 import com.meshsuite.pedido.repository.PedidoRepository;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import com.meshsuite.user.domain.User;
@@ -31,7 +31,7 @@ class PedidoRepositoryTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired PartnerRepository partnerRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired PedidoRepository pedidoRepository;
     @Autowired PedidoContadorRepository pedidoContadorRepository;
     @Autowired EntityManager entityManager;
@@ -67,12 +67,12 @@ class PedidoRepositoryTest extends AbstractIntegrationTest {
         return userRepository.saveAndFlush(u);
     }
 
-    private Produto criarProduto(UUID tenantId, String sku) {
-        Produto p = new Produto();
+    private Product criarProduto(UUID tenantId, String sku) {
+        Product p = new Product();
         p.setTenantId(tenantId);
-        p.setNome("Camiseta Polo");
+        p.setName("Camiseta Polo");
         p.setSku(sku);
-        p.setPrecoVenda(new BigDecimal("59.90"));
+        p.setSalePrice(new BigDecimal("59.90"));
         return produtoRepository.saveAndFlush(p);
     }
 
@@ -92,7 +92,7 @@ class PedidoRepositoryTest extends AbstractIntegrationTest {
         setTenantContext(tenant.getId());
         Partner cliente = criarCliente(tenant.getId(), "11222333000144");
         User vendedor = criarVendedor(tenant.getId(), "marina@aurora.com.br");
-        Produto produto = criarProduto(tenant.getId(), "P0001");
+        Product produto = criarProduto(tenant.getId(), "P0001");
 
         Pedido pedido = novoPedido(tenant.getId(), cliente, vendedor, 1);
         ItemPedido item = new ItemPedido();
@@ -119,7 +119,7 @@ class PedidoRepositoryTest extends AbstractIntegrationTest {
         setTenantContext(tenant.getId());
         Partner cliente = criarCliente(tenant.getId(), "11222333000144");
         User vendedor = criarVendedor(tenant.getId(), "marina@aurora.com.br");
-        Produto produto = criarProduto(tenant.getId(), "P0001");
+        Product produto = criarProduto(tenant.getId(), "P0001");
 
         Pedido pedido = novoPedido(tenant.getId(), cliente, vendedor, 1);
         ItemPedido item = new ItemPedido();
@@ -227,7 +227,7 @@ class PedidoRepositoryTest extends AbstractIntegrationTest {
         setTenantContext(tenant.getId());
         Partner cliente = criarCliente(tenant.getId(), "11222333000144");
         User vendedor = criarVendedor(tenant.getId(), "marina@aurora.com.br");
-        Produto produto = criarProduto(tenant.getId(), "P0001");
+        Product produto = criarProduto(tenant.getId(), "P0001");
 
         Pedido pedido = novoPedido(tenant.getId(), cliente, vendedor, 1);
         ItemPedido item = new ItemPedido();

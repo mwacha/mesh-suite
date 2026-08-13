@@ -16,8 +16,8 @@ import com.meshsuite.pedido.dto.PedidoRequest;
 import com.meshsuite.pedido.exception.PedidoNaoEncontradoException;
 import com.meshsuite.pedido.exception.PedidoValidacaoException;
 import com.meshsuite.pedido.service.PedidoService;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
@@ -44,7 +44,7 @@ class PedidoServiceTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired PartnerRepository partnerRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired PedidoService pedidoService;
     @Autowired EntityManager entityManager;
 
@@ -123,11 +123,11 @@ class PedidoServiceTest extends AbstractIntegrationTest {
     }
 
     private UUID criarProduto(UUID tenantId, String sku, BigDecimal precoVenda) {
-        Produto p = new Produto();
+        Product p = new Product();
         p.setTenantId(tenantId);
-        p.setNome("Camiseta Polo");
+        p.setName("Camiseta Polo");
         p.setSku(sku);
-        p.setPrecoVenda(precoVenda);
+        p.setSalePrice(precoVenda);
         return produtoRepository.saveAndFlush(p).getId();
     }
 
@@ -237,8 +237,8 @@ class PedidoServiceTest extends AbstractIntegrationTest {
         var itens = List.of(new ItemPedidoDto(produtoId, BigDecimal.ONE, new BigDecimal("59.90")));
         var criado = pedidoService.criar(tenantId, request(clienteId, vendedorId, itens, BigDecimal.ZERO));
 
-        Produto produto = produtoRepository.findById(produtoId).orElseThrow();
-        produto.setPrecoVenda(new BigDecimal("99.90"));
+        Product produto = produtoRepository.findById(produtoId).orElseThrow();
+        produto.setSalePrice(new BigDecimal("99.90"));
         produtoRepository.saveAndFlush(produto);
 
         var buscado = pedidoService.buscarPorId(criado.id());
