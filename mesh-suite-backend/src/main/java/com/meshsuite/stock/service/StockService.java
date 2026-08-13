@@ -82,7 +82,7 @@ public class StockService {
 
     // Atomic UPDATE ... RETURNING against the product's own balance column --
     // never read-then-write. For OUTBOUND, the WHERE clause itself guards
-    // against a negative result (quantidade_estoque >= :quantity): if the
+    // against a negative result (stock_quantity >= :quantity): if the
     // guard fails, zero rows match and the query returns no result, all
     // inside the same atomic statement -- a separate check-then-update would
     // reopen the exact race condition this pattern exists to avoid.
