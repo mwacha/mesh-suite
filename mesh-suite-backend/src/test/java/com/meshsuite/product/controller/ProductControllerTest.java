@@ -1,4 +1,4 @@
-package com.meshsuite.produto.controller;
+package com.meshsuite.product.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -8,7 +8,6 @@ import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
 import com.meshsuite.company.domain.Company;
 import com.meshsuite.company.repository.CompanyRepository;
-import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import com.meshsuite.user.domain.User;
@@ -26,7 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-class ProdutoControllerTest extends AbstractIntegrationTest {
+class ProductControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
@@ -110,57 +109,57 @@ class ProdutoControllerTest extends AbstractIntegrationTest {
     private String produtoPayload(String sku) {
         return """
                 {
-                  "nome": "Camiseta Polo Masculina",
+                  "name": "Camiseta Polo Masculina",
                   "sku": "%s",
-                  "precoVenda": 59.90,
-                  "quantidadeEstoque": 10,
-                  "unidadeMedida": "UN"
+                  "salePrice": 59.90,
+                  "stockQuantity": 10,
+                  "measurementUnit": "UN"
                 }
                 """.formatted(sku);
     }
 
     @Test
-    void createsListsUpdatesAndDeletesProduto() throws Exception {
+    void createsListsUpdatesAndDeletesProduct() throws Exception {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        String created = mockMvc.perform(post("/api/produtos").cookie(cookie)
+        String created = mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(produtoPayload("P0001")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.nome").value("Camiseta Polo Masculina"))
+                .andExpect(jsonPath("$.name").value("Camiseta Polo Masculina"))
                 .andReturn().getResponse().getContentAsString();
 
         String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(get("/api/produtos").cookie(cookie))
+        mockMvc.perform(get("/api/products").cookie(cookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].sku").value("P0001"));
 
-        mockMvc.perform(put("/api/produtos/" + id).cookie(cookie)
+        mockMvc.perform(put("/api/products/" + id).cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "nome": "Camiseta Polo Masculina Atualizada",
+                                  "name": "Camiseta Polo Masculina Atualizada",
                                   "sku": "P0001",
-                                  "precoVenda": 64.90,
-                                  "quantidadeEstoque": 10,
-                                  "unidadeMedida": "UN"
+                                  "salePrice": 64.90,
+                                  "stockQuantity": 10,
+                                  "measurementUnit": "UN"
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Camiseta Polo Masculina Atualizada"));
+                .andExpect(jsonPath("$.name").value("Camiseta Polo Masculina Atualizada"));
 
-        mockMvc.perform(patch("/api/produtos/" + id + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/products/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"INATIVO\"}"))
+                        .content("{\"status\":\"INACTIVE\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("INATIVO"));
+                .andExpect(jsonPath("$.status").value("INACTIVE"));
 
-        mockMvc.perform(delete("/api/produtos/" + id).cookie(cookie))
+        mockMvc.perform(delete("/api/products/" + id).cookie(cookie))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/produtos/" + id).cookie(cookie))
+        mockMvc.perform(get("/api/products/" + id).cookie(cookie))
                 .andExpect(status().isNotFound());
     }
 
@@ -169,27 +168,27 @@ class ProdutoControllerTest extends AbstractIntegrationTest {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(post("/api/produtos").cookie(cookie)
+        mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(produtoPayload("P0001")))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/produtos").cookie(cookie)
+        mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(produtoPayload("P0001")))
                 .andExpect(status().isConflict());
     }
 
     @Test
-    void rejectsMissingPrecoVendaWithBadRequest() throws Exception {
+    void rejectsMissingSalePriceWithBadRequest() throws Exception {
         String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(post("/api/produtos").cookie(cookie)
+        mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "nome": "Produto Sem Preço",
+                                  "name": "Produto Sem Preço",
                                   "sku": "P0099"
                                 }
                                 """))
@@ -197,11 +196,11 @@ class ProdutoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void tenantACannotAccessTenantBsProduto() throws Exception {
+    void tenantACannotAccessTenantBsProduct() throws Exception {
         String tokenA = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookieA = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, tokenA);
 
-        String body = mockMvc.perform(post("/api/produtos").cookie(cookieA)
+        String body = mockMvc.perform(post("/api/products").cookie(cookieA)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(produtoPayload("P0001")))
                 .andExpect(status().isCreated())
@@ -217,13 +216,13 @@ class ProdutoControllerTest extends AbstractIntegrationTest {
         // 200 instead of the expected 404 -- see the Global Constraints note.
         entityManager.clear();
 
-        mockMvc.perform(get("/api/produtos/" + id).cookie(cookieB))
+        mockMvc.perform(get("/api/products/" + id).cookie(cookieB))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void unauthenticatedRequestIsRejected() throws Exception {
-        mockMvc.perform(get("/api/produtos"))
+        mockMvc.perform(get("/api/products"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -232,7 +231,7 @@ class ProdutoControllerTest extends AbstractIntegrationTest {
         String token = loginWithoutProductPermission("sem-permissao", "sem-permissao@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(get("/api/produtos").cookie(cookie))
+        mockMvc.perform(get("/api/products").cookie(cookie))
                 .andExpect(status().isForbidden());
     }
 }

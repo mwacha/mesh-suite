@@ -64,15 +64,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.ProdutoNaoEncontradoException.class)
-    public ResponseEntity<Map<String, String>> handleProdutoNaoEncontrado(
-            com.meshsuite.produto.exception.ProdutoNaoEncontradoException e) {
+    @ExceptionHandler(com.meshsuite.product.exception.ProductNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleProductNotFound(
+            com.meshsuite.product.exception.ProductNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.SkuDuplicadoException.class)
-    public ResponseEntity<Map<String, String>> handleSkuDuplicado(
-            com.meshsuite.produto.exception.SkuDuplicadoException e) {
+    @ExceptionHandler(com.meshsuite.product.exception.DuplicateSkuException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateSku(
+            com.meshsuite.product.exception.DuplicateSkuException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
 

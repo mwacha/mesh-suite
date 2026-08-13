@@ -1,9 +1,9 @@
-package com.meshsuite.produto.controller;
+package com.meshsuite.product.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
-import com.meshsuite.produto.domain.enums.StatusProduto;
-import com.meshsuite.produto.dto.*;
-import com.meshsuite.produto.service.ProdutoService;
+import com.meshsuite.product.domain.enums.ProductStatus;
+import com.meshsuite.product.dto.*;
+import com.meshsuite.product.service.ProductService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -14,47 +14,47 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/produtos")
-public class ProdutoController {
+@RequestMapping("/api/products")
+public class ProductController {
 
-    private final ProdutoService produtoService;
+    private final ProductService produtoService;
 
-    public ProdutoController(ProdutoService produtoService) {
+    public ProductController(ProductService produtoService) {
         this.produtoService = produtoService;
     }
 
     @GetMapping
-    public Page<ProdutoSummaryResponse> listar(
+    public Page<ProductListItemResponse> listar(
             @RequestParam(required = false) String busca,
-            @RequestParam(required = false) StatusProduto status,
-            @PageableDefault(size = 10, sort = "nome") Pageable pageable) {
+            @RequestParam(required = false) ProductStatus status,
+            @PageableDefault(size = 10, sort = "name") Pageable pageable) {
         return produtoService.listar(busca, status, pageable);
     }
 
     @GetMapping("/resumo")
-    public ProdutoResumoResponse resumo() {
+    public ProductSummaryResponse resumo() {
         return produtoService.resumo();
     }
 
     @GetMapping("/{id}")
-    public ProdutoResponse buscarPorId(@PathVariable UUID id) {
+    public ProductResponse buscarPorId(@PathVariable UUID id) {
         return produtoService.buscarPorId(id);
     }
 
     @PostMapping
-    public ResponseEntity<ProdutoResponse> criar(@AuthenticationPrincipal AuthContextService.Context principal,
-                                                  @Valid @RequestBody ProdutoRequest request) {
-        ProdutoResponse response = produtoService.criar(principal.tenantId(), request);
+    public ResponseEntity<ProductResponse> criar(@AuthenticationPrincipal AuthContextService.Context principal,
+                                                  @Valid @RequestBody ProductRequest request) {
+        ProductResponse response = produtoService.criar(principal.tenantId(), request);
         return ResponseEntity.status(201).body(response);
     }
 
     @PutMapping("/{id}")
-    public ProdutoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody ProdutoRequest request) {
+    public ProductResponse atualizar(@PathVariable UUID id, @Valid @RequestBody ProductRequest request) {
         return produtoService.atualizar(id, request);
     }
 
     @PatchMapping("/{id}/status")
-    public ProdutoResponse atualizarStatus(@PathVariable UUID id, @Valid @RequestBody ProdutoStatusRequest request) {
+    public ProductResponse atualizarStatus(@PathVariable UUID id, @Valid @RequestBody ProductStatusRequest request) {
         return produtoService.atualizarStatus(id, request.status());
     }
 
