@@ -11,7 +11,7 @@ import com.meshsuite.colorway.exception.ColorwayNotFoundException;
 import com.meshsuite.colorway.exception.DuplicateColorwayNameException;
 import com.meshsuite.colorway.repository.ColorwayRepository;
 import com.meshsuite.colorway.repository.specification.ColorwaySpecifications;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.repository.ProductRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,9 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class ColorwayService {
 
     private final ColorwayRepository colorwayRepository;
-    private final ProdutoRepository produtoRepository;
+    private final ProductRepository produtoRepository;
 
-    public ColorwayService(ColorwayRepository colorwayRepository, ProdutoRepository produtoRepository) {
+    public ColorwayService(ColorwayRepository colorwayRepository, ProductRepository produtoRepository) {
         this.colorwayRepository = colorwayRepository;
         this.produtoRepository = produtoRepository;
     }
@@ -44,10 +44,10 @@ public class ColorwayService {
         List<UUID> ids = page.getContent().stream().map(Colorway::getId).toList();
         Map<UUID, Long> counts = ids.isEmpty()
                 ? Map.of()
-                : produtoRepository.countByCorEstampaIdIn(ids).stream()
+                : produtoRepository.countByColorwayIdIn(ids).stream()
                         .collect(Collectors.toMap(
-                                ProdutoRepository.CorEstampaProdutoCount::getCorEstampaId,
-                                ProdutoRepository.CorEstampaProdutoCount::getTotal));
+                                ProductRepository.ColorwayProductCount::getColorwayId,
+                                ProductRepository.ColorwayProductCount::getTotal));
 
         return page.map(colorway -> toResponse(colorway, counts.getOrDefault(colorway.getId(), 0L)));
     }
@@ -83,7 +83,7 @@ public class ColorwayService {
     @RequiresPermission(module = Module.PRODUCT, action = Action.DELETE)
     public void delete(UUID id) {
         Colorway colorway = findEntityById(id);
-        long linked = produtoRepository.countByCorEstampaId(id);
+        long linked = produtoRepository.countByColorwayId(id);
         if (linked > 0) {
             throw new ColorwayInUseException(linked);
         }
@@ -111,7 +111,7 @@ public class ColorwayService {
     }
 
     private ColorwayResponse toResponse(Colorway colorway) {
-        return toResponse(colorway, produtoRepository.countByCorEstampaId(colorway.getId()));
+        return toResponse(colorway, produtoRepository.countByColorwayId(colorway.getId()));
     }
 
     private ColorwayResponse toResponse(Colorway colorway, long linkedProducts) {

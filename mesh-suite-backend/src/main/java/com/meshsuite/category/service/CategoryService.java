@@ -11,7 +11,7 @@ import com.meshsuite.category.exception.CategoryNotFoundException;
 import com.meshsuite.category.exception.DuplicateCategoryNameException;
 import com.meshsuite.category.repository.CategoryRepository;
 import com.meshsuite.category.repository.specification.CategorySpecifications;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.repository.ProductRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,9 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final ProdutoRepository produtoRepository;
+    private final ProductRepository produtoRepository;
 
-    public CategoryService(CategoryRepository categoryRepository, ProdutoRepository produtoRepository) {
+    public CategoryService(CategoryRepository categoryRepository, ProductRepository produtoRepository) {
         this.categoryRepository = categoryRepository;
         this.produtoRepository = produtoRepository;
     }
@@ -44,10 +44,10 @@ public class CategoryService {
         List<UUID> ids = page.getContent().stream().map(Category::getId).toList();
         Map<UUID, Long> counts = ids.isEmpty()
                 ? Map.of()
-                : produtoRepository.countByCategoriaIdIn(ids).stream()
+                : produtoRepository.countByCategoryIdIn(ids).stream()
                         .collect(Collectors.toMap(
-                                ProdutoRepository.CategoriaProdutoCount::getCategoriaId,
-                                ProdutoRepository.CategoriaProdutoCount::getTotal));
+                                ProductRepository.CategoryProductCount::getCategoryId,
+                                ProductRepository.CategoryProductCount::getTotal));
 
         return page.map(category -> toResponse(category, counts.getOrDefault(category.getId(), 0L)));
     }
@@ -83,7 +83,7 @@ public class CategoryService {
     @RequiresPermission(module = Module.PRODUCT, action = Action.DELETE)
     public void delete(UUID id) {
         Category category = findEntityById(id);
-        long linked = produtoRepository.countByCategoriaId(id);
+        long linked = produtoRepository.countByCategoryId(id);
         if (linked > 0) {
             throw new CategoryInUseException(linked);
         }
@@ -110,7 +110,7 @@ public class CategoryService {
     }
 
     private CategoryResponse toResponse(Category category) {
-        return toResponse(category, produtoRepository.countByCategoriaId(category.getId()));
+        return toResponse(category, produtoRepository.countByCategoryId(category.getId()));
     }
 
     private CategoryResponse toResponse(Category category, long linkedProducts) {
