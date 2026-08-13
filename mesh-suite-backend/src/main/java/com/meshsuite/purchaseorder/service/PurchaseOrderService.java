@@ -8,8 +8,8 @@ import com.meshsuite.auth.service.AuthContextService;
 import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.partner.domain.enums.PartnerRole;
 import com.meshsuite.partner.repository.PartnerRepository;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.purchaseorder.domain.PurchaseOrder;
 import com.meshsuite.purchaseorder.domain.PurchaseOrderItem;
 import com.meshsuite.purchaseorder.domain.enums.PurchaseOrderStatus;
@@ -40,11 +40,11 @@ public class PurchaseOrderService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PartnerRepository parceiroRepository;
     private final UserRepository userRepository;
-    private final ProdutoRepository produtoRepository;
+    private final ProductRepository produtoRepository;
     private final EntityManager entityManager;
 
     public PurchaseOrderService(PurchaseOrderRepository purchaseOrderRepository, PartnerRepository parceiroRepository,
-                                 UserRepository userRepository, ProdutoRepository produtoRepository,
+                                 UserRepository userRepository, ProductRepository produtoRepository,
                                  EntityManager entityManager) {
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.parceiroRepository = parceiroRepository;
@@ -193,7 +193,7 @@ public class PurchaseOrderService {
         order.getItems().clear();
         BigDecimal subtotal = BigDecimal.ZERO;
         for (PurchaseOrderItemRequest dto : request.items()) {
-            Produto product = produtoRepository.findById(dto.productId())
+            Product product = produtoRepository.findById(dto.productId())
                     .orElseThrow(() -> new PurchaseOrderValidationException("Produto não encontrado"));
             PurchaseOrderItem item = new PurchaseOrderItem();
             item.setPurchaseOrder(order);
@@ -220,7 +220,7 @@ public class PurchaseOrderService {
 
     private PurchaseOrderResponse toResponse(PurchaseOrder o) {
         List<PurchaseOrderItemResponse> items = o.getItems().stream()
-                .map(i -> new PurchaseOrderItemResponse(i.getProduct().getId(), i.getProduct().getNome(),
+                .map(i -> new PurchaseOrderItemResponse(i.getProduct().getId(), i.getProduct().getName(),
                         i.getQuantity(), i.getUnitPrice(), i.getTotalValue()))
                 .toList();
         return new PurchaseOrderResponse(o.getId(), o.getNumber(), o.getSupplier().getId(), o.getSupplier().getTradeName(),

@@ -10,8 +10,8 @@ import com.meshsuite.partner.domain.enums.PartnerRole;
 import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.partner.domain.enums.PersonType;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import com.meshsuite.user.domain.enums.Profile;
@@ -41,7 +41,7 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
     @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired PartnerRepository partnerRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
 
@@ -83,11 +83,11 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
         supplier.getRoles().add(PartnerRole.SUPPLIER);
         partnerRepository.saveAndFlush(supplier);
 
-        Produto produto = new Produto();
+        Product produto = new Product();
         produto.setTenantId(tenant.getId());
-        produto.setNome("Tecido Algodão");
+        produto.setName("Tecido Algodão");
         produto.setSku("P0001-" + codigo);
-        produto.setPrecoVenda(new BigDecimal("25.00"));
+        produto.setSalePrice(new BigDecimal("25.00"));
         produtoRepository.saveAndFlush(produto);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
