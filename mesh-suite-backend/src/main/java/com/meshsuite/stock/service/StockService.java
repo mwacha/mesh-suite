@@ -3,9 +3,9 @@ package com.meshsuite.stock.service;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.exception.ProdutoNaoEncontradoException;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.exception.ProductNotFoundException;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.stock.domain.StockMovement;
 import com.meshsuite.stock.domain.enums.StockMovementOrigin;
 import com.meshsuite.stock.domain.enums.StockMovementType;
@@ -27,11 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class StockService {
 
     private final StockMovementRepository stockMovementRepository;
-    private final ProdutoRepository produtoRepository;
+    private final ProductRepository produtoRepository;
     private final UserRepository userRepository;
     private final EntityManager entityManager;
 
-    public StockService(StockMovementRepository stockMovementRepository, ProdutoRepository produtoRepository,
+    public StockService(StockMovementRepository stockMovementRepository, ProductRepository produtoRepository,
                          UserRepository userRepository, EntityManager entityManager) {
         this.stockMovementRepository = stockMovementRepository;
         this.produtoRepository = produtoRepository;
@@ -47,8 +47,8 @@ public class StockService {
             throw new StockValidationException("A quantidade deve ser maior que zero");
         }
 
-        Produto product = produtoRepository.findById(productId)
-                .orElseThrow(ProdutoNaoEncontradoException::new);
+        Product product = produtoRepository.findById(productId)
+                .orElseThrow(ProductNotFoundException::new);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new StockValidationException("Usuário responsável não encontrado"));
 
@@ -88,10 +88,10 @@ public class StockService {
     // reopen the exact race condition this pattern exists to avoid.
     private BigDecimal applyAtomicAdjustment(UUID productId, StockMovementType type, BigDecimal quantity) {
         String sql = type == StockMovementType.INBOUND
-                ? "UPDATE produto SET quantidade_estoque = quantidade_estoque + :quantity " +
-                        "WHERE id = :productId RETURNING quantidade_estoque"
-                : "UPDATE produto SET quantidade_estoque = quantidade_estoque - :quantity " +
-                        "WHERE id = :productId AND quantidade_estoque >= :quantity RETURNING quantidade_estoque";
+                ? "UPDATE product SET stock_quantity = stock_quantity + :quantity " +
+                        "WHERE id = :productId RETURNING stock_quantity"
+                : "UPDATE product SET stock_quantity = stock_quantity - :quantity " +
+                        "WHERE id = :productId AND stock_quantity >= :quantity RETURNING stock_quantity";
 
         List<?> result = entityManager.createNativeQuery(sql)
                 .setParameter("quantity", quantity)
@@ -105,7 +105,7 @@ public class StockService {
     }
 
     private StockMovementResponse toResponse(StockMovement m) {
-        return new StockMovementResponse(m.getId(), m.getProduct().getId(), m.getProduct().getNome(), m.getType(),
+        return new StockMovementResponse(m.getId(), m.getProduct().getId(), m.getProduct().getName(), m.getType(),
                 m.getQuantity(), m.getOrigin(), m.getReferenceId(), m.getBalanceAfter(),
                 m.getUser().getId(), m.getUser().getName(), m.getNote(), m.getCreatedAt());
     }

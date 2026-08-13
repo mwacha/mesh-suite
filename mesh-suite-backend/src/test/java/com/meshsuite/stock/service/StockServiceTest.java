@@ -6,9 +6,9 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.service.AuthContextService;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.exception.ProdutoNaoEncontradoException;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.exception.ProductNotFoundException;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.stock.domain.enums.StockMovementOrigin;
 import com.meshsuite.stock.domain.enums.StockMovementType;
@@ -38,7 +38,7 @@ class StockServiceTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired StockService stockService;
     @Autowired EntityManager entityManager;
 
@@ -74,12 +74,12 @@ class StockServiceTest extends AbstractIntegrationTest {
     }
 
     private UUID criarProduto(UUID tenantId, String sku, BigDecimal quantidadeInicial) {
-        Produto p = new Produto();
+        Product p = new Product();
         p.setTenantId(tenantId);
-        p.setNome("Tecido Algodão");
+        p.setName("Tecido Algodão");
         p.setSku(sku);
-        p.setPrecoVenda(new BigDecimal("25.00"));
-        p.setQuantidadeEstoque(quantidadeInicial);
+        p.setSalePrice(new BigDecimal("25.00"));
+        p.setStockQuantity(quantidadeInicial);
         return produtoRepository.saveAndFlush(p).getId();
     }
 
@@ -103,8 +103,8 @@ class StockServiceTest extends AbstractIntegrationTest {
                 new BigDecimal("5.000"), StockMovementOrigin.MANUAL, null, userId, "Ajuste teste");
 
         assertThat(movement.balanceAfter()).isEqualByComparingTo("15.000");
-        Produto reloaded = produtoRepository.findById(productId).orElseThrow();
-        assertThat(reloaded.getQuantidadeEstoque()).isEqualByComparingTo("15.000");
+        Product reloaded = produtoRepository.findById(productId).orElseThrow();
+        assertThat(reloaded.getStockQuantity()).isEqualByComparingTo("15.000");
     }
 
     @Test
@@ -129,8 +129,8 @@ class StockServiceTest extends AbstractIntegrationTest {
                 () -> stockService.adjustBalance(tenantId, productId, StockMovementType.OUTBOUND,
                         new BigDecimal("5.000"), StockMovementOrigin.MANUAL, null, userId, null));
 
-        Produto reloaded = produtoRepository.findById(productId).orElseThrow();
-        assertThat(reloaded.getQuantidadeEstoque()).isEqualByComparingTo("3.000");
+        Product reloaded = produtoRepository.findById(productId).orElseThrow();
+        assertThat(reloaded.getStockQuantity()).isEqualByComparingTo("3.000");
     }
 
     @Test
@@ -152,7 +152,7 @@ class StockServiceTest extends AbstractIntegrationTest {
         UUID tenantId = setUpTenant("aurora");
         UUID userId = criarUsuarioResponsavel(tenantId, "carlos@aurora.com.br");
 
-        assertThrows(ProdutoNaoEncontradoException.class,
+        assertThrows(ProductNotFoundException.class,
                 () -> stockService.adjustBalance(tenantId, UUID.randomUUID(), StockMovementType.INBOUND,
                         BigDecimal.ONE, StockMovementOrigin.MANUAL, null, userId, null));
     }

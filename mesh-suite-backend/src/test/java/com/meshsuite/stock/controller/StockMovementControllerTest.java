@@ -8,8 +8,8 @@ import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
 import com.meshsuite.company.domain.Company;
 import com.meshsuite.company.repository.CompanyRepository;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.stock.domain.enums.StockMovementOrigin;
 import com.meshsuite.stock.domain.enums.StockMovementType;
 import com.meshsuite.stock.service.StockService;
@@ -38,7 +38,7 @@ class StockMovementControllerTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired StockService stockService;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
@@ -70,11 +70,11 @@ class StockMovementControllerTest extends AbstractIntegrationTest {
         userLogin.getPermissions().add(new UserPermissionGrant(Module.STOCK, Action.VIEW));
         User savedUser = userRepository.saveAndFlush(userLogin);
 
-        Produto produto = new Produto();
+        Product produto = new Product();
         produto.setTenantId(tenant.getId());
-        produto.setNome("Tecido Algodão");
+        produto.setName("Tecido Algodão");
         produto.setSku("P0001-" + codigo);
-        produto.setPrecoVenda(new BigDecimal("25.00"));
+        produto.setSalePrice(new BigDecimal("25.00"));
         produtoRepository.saveAndFlush(produto);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();

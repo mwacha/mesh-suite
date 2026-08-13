@@ -2,8 +2,8 @@ package com.meshsuite.stock.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.stock.domain.StockMovement;
 import com.meshsuite.stock.domain.enums.StockMovementOrigin;
 import com.meshsuite.stock.domain.enums.StockMovementType;
@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 class StockMovementRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired UserRepository userRepository;
     @Autowired StockMovementRepository stockMovementRepository;
     @Autowired EntityManager entityManager;
@@ -45,11 +45,11 @@ class StockMovementRepositoryTest extends AbstractIntegrationTest {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());
 
-        Produto produto = new Produto();
+        Product produto = new Product();
         produto.setTenantId(tenant.getId());
-        produto.setNome("Tecido Algodão");
+        produto.setName("Tecido Algodão");
         produto.setSku("P0001");
-        produto.setPrecoVenda(new BigDecimal("25.00"));
+        produto.setSalePrice(new BigDecimal("25.00"));
         produto = produtoRepository.saveAndFlush(produto);
 
         User user = new User();

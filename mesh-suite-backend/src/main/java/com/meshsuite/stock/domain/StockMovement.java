@@ -1,6 +1,6 @@
 package com.meshsuite.stock.domain;
 
-import com.meshsuite.produto.domain.Produto;
+import com.meshsuite.product.domain.Product;
 import com.meshsuite.stock.domain.enums.StockMovementOrigin;
 import com.meshsuite.stock.domain.enums.StockMovementType;
 import com.meshsuite.user.domain.User;
@@ -28,7 +28,7 @@ public class StockMovement {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    private Produto product;
+    private Product product;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
