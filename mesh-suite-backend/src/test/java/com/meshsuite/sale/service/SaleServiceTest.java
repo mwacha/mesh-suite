@@ -19,8 +19,8 @@ import com.meshsuite.pedido.dto.ItemPedidoDto;
 import com.meshsuite.pedido.dto.PedidoRequest;
 import com.meshsuite.pedido.repository.PedidoRepository;
 import com.meshsuite.pedido.service.PedidoService;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.sale.dto.SaleResponse;
 import com.meshsuite.sale.dto.SaleSummaryResponse;
 import com.meshsuite.sale.exception.SaleValidationException;
@@ -51,7 +51,7 @@ class SaleServiceTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired PartnerRepository partnerRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired FiscalRegistrationRepository fiscalRegistrationRepository;
     @Autowired PedidoRepository pedidoRepository;
     @Autowired PedidoService pedidoService;
@@ -131,21 +131,21 @@ class SaleServiceTest extends AbstractIntegrationTest {
     }
 
     private UUID createProductWithFiscalRegistration(UUID tenantId, String sku, BigDecimal salePrice) {
-        Produto p = new Produto();
+        Product p = new Product();
         p.setTenantId(tenantId);
-        p.setNome("Camiseta Polo");
+        p.setName("Camiseta Polo");
         p.setSku(sku);
-        p.setPrecoVenda(salePrice);
+        p.setSalePrice(salePrice);
         p.setFiscalRegistration(createFiscalRegistration(tenantId));
         return produtoRepository.saveAndFlush(p).getId();
     }
 
     private UUID createProductWithoutFiscalRegistration(UUID tenantId, String sku, BigDecimal salePrice) {
-        Produto p = new Produto();
+        Product p = new Product();
         p.setTenantId(tenantId);
-        p.setNome("Camiseta Sem Fiscal");
+        p.setName("Camiseta Sem Fiscal");
         p.setSku(sku);
-        p.setPrecoVenda(salePrice);
+        p.setSalePrice(salePrice);
         return produtoRepository.saveAndFlush(p).getId();
     }
 

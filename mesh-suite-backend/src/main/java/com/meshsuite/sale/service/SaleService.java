@@ -10,7 +10,7 @@ import com.meshsuite.pedido.domain.Pedido;
 import com.meshsuite.pedido.domain.enums.StatusPedido;
 import com.meshsuite.pedido.exception.PedidoNaoEncontradoException;
 import com.meshsuite.pedido.repository.PedidoRepository;
-import com.meshsuite.produto.domain.Produto;
+import com.meshsuite.product.domain.Product;
 import com.meshsuite.sale.domain.Sale;
 import com.meshsuite.sale.domain.SaleItem;
 import com.meshsuite.sale.dto.SaleItemResponse;
@@ -102,10 +102,10 @@ public class SaleService {
         BigDecimal totalCofins = BigDecimal.ZERO;
 
         for (ItemPedido orderItem : order.getItens()) {
-            Produto product = orderItem.getProduto();
+            Product product = orderItem.getProduto();
             if (product.getFiscalRegistration() == null) {
                 throw new SaleValidationException(
-                        "O produto " + product.getNome() + " não possui cadastro fiscal aplicado");
+                        "O produto " + product.getName() + " não possui cadastro fiscal aplicado");
             }
             FiscalCalculationResult calculation = fiscalCalculationService.calculate(
                     product.getFiscalRegistration(), orderItem.getQuantidade(), orderItem.getValorUnitario());
@@ -167,7 +167,7 @@ public class SaleService {
 
     private SaleResponse toResponse(Sale s) {
         List<SaleItemResponse> items = s.getItems().stream()
-                .map(i -> new SaleItemResponse(i.getProduct().getId(), i.getProduct().getNome(),
+                .map(i -> new SaleItemResponse(i.getProduct().getId(), i.getProduct().getName(),
                         i.getQuantity(), i.getUnitPrice(), i.getTotalAmount(),
                         i.getIcmsAmount(), i.getIpiAmount(), i.getPisAmount(), i.getCofinsAmount()))
                 .toList();
