@@ -1536,47 +1536,11 @@ class ProductControllerTest extends AbstractIntegrationTest {
 git rm mesh-suite-backend/src/test/java/com/meshsuite/produto/controller/ProdutoControllerTest.java
 ```
 
-- [ ] **Step 5: Run the new controller test in isolation**
+**Correction found during Task 4's review:** `ProductControllerTest` cannot pass with `shared/handler/GlobalExceptionHandler.java` left untouched — 4 of its 6 tests exercise HTTP status codes (404/409/403) that only `GlobalExceptionHandler` maps, and it still points at the Portuguese `ProdutoNaoEncontradoException`/`SkuDuplicadoException` classes Task 3 already deleted. This is the same shape of plan gap the Category/Colorway sub-project hit at its own controller task (its plan also originally missed this shared file) — the fix is pulled forward into this task instead of waiting for what was originally planned as Task 5, since Task 4's own test can't go green without it. Task 5 (below) has been trimmed accordingly — do not repeat this edit there.
 
-Use relocate-test-restore to verify:
+- [ ] **Step 5: Bridge `GlobalExceptionHandler.java`'s 2 Product handlers (pulled forward from the original Task 5)**
 
-Run: `cd mesh-suite-backend && mvn -q test -Dtest=ProductControllerTest`
-
-Expected: `BUILD SUCCESS`, 6 tests run, 0 failures, 0 errors. Restore all moved files.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add mesh-suite-backend/src/main/java/com/meshsuite/product/ \
-        mesh-suite-backend/src/test/java/com/meshsuite/product/
-git commit -m "refactor(product): rename Produto controller and exception handler to English, route produtos->products"
-```
-
----
-
-## Task 5: Bridge — Category/Colorway services, GlobalExceptionHandler
-
-**Files:**
-- Modify: `mesh-suite-backend/src/main/java/com/meshsuite/category/service/CategoryService.java`
-- Modify: `mesh-suite-backend/src/main/java/com/meshsuite/colorway/service/ColorwayService.java`
-- Modify: `mesh-suite-backend/src/main/java/com/meshsuite/shared/handler/GlobalExceptionHandler.java`
-- Modify: `mesh-suite-backend/src/test/java/com/meshsuite/category/service/CategoryServiceTest.java`
-- Modify: `mesh-suite-backend/src/test/java/com/meshsuite/colorway/service/ColorwayServiceTest.java`
-
-**Interfaces:**
-- Consumes: `ProductRepository`, `ProductRepository.CategoryProductCount`, `ProductRepository.ColorwayProductCount` (Task 2); `ProductService`, `ProductRequest`, `ProductStatus`, `MeasurementUnit` (Task 3); `ProductNotFoundException`, `DuplicateSkuException` (Task 3).
-
-- [ ] **Step 1: Bridge `CategoryService.java`**
-
-Change the import `com.meshsuite.produto.repository.ProdutoRepository` to `com.meshsuite.product.repository.ProductRepository`. Change the field/parameter type `ProdutoRepository` to `ProductRepository` (keep the field name `produtoRepository` unchanged — matches this initiative's established minimal-bridge convention). Change `produtoRepository.countByCategoriaIdIn(ids)` to `produtoRepository.countByCategoryIdIn(ids)`. Change `ProdutoRepository.CategoriaProdutoCount::getCategoriaId` to `ProductRepository.CategoryProductCount::getCategoryId` and `ProdutoRepository.CategoriaProdutoCount::getTotal` to `ProductRepository.CategoryProductCount::getTotal`. Change `produtoRepository.countByCategoriaId(id)` (2 call sites: `delete()` and the private `toResponse(Category)` overload) to `produtoRepository.countByCategoryId(id)`. No other line in this file changes.
-
-- [ ] **Step 2: Bridge `ColorwayService.java`**
-
-Same pattern: import `ProdutoRepository`→`ProductRepository`; field/param type only; `countByCorEstampaIdIn`→`countByColorwayIdIn`; `ProdutoRepository.CorEstampaProdutoCount::getCorEstampaId`→`ProductRepository.ColorwayProductCount::getColorwayId`; `ProdutoRepository.CorEstampaProdutoCount::getTotal`→`ProductRepository.ColorwayProductCount::getTotal`; `countByCorEstampaId(id)`→`countByColorwayId(id)` (2 call sites: `delete()` and `toResponse(Colorway)`).
-
-- [ ] **Step 3: Bridge `GlobalExceptionHandler.java`**
-
-Update exactly these 2 handlers (the 3 `TabelaPreco*` handlers immediately below them, and every other handler in the file, stay untouched):
+This file is NOT part of `com.meshsuite.product` — it's a shared cross-cutting handler at `mesh-suite-backend/src/main/java/com/meshsuite/shared/handler/GlobalExceptionHandler.java`. Update ONLY these 2 handlers (every other handler in the file, including the 3 `TabelaPreco*` ones immediately below them, stays untouched):
 
 Change:
 ```java
@@ -1592,7 +1556,6 @@ Change:
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
 ```
-
 to:
 ```java
     @ExceptionHandler(com.meshsuite.product.exception.ProductNotFoundException.class)
@@ -1608,15 +1571,55 @@ to:
     }
 ```
 
-- [ ] **Step 4: Bridge `CategoryServiceTest.java` fixtures**
+- [ ] **Step 6: Run the new controller test in isolation**
+
+Use relocate-test-restore to verify (this file is no longer part of the relocation set, since it's now fixed in place):
+
+Run: `cd mesh-suite-backend && mvn -q test -Dtest=ProductControllerTest`
+
+Expected: `BUILD SUCCESS`, 6 tests run, 0 failures, 0 errors. Restore all moved files (except `GlobalExceptionHandler.java`, which keeps this task's fix).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add mesh-suite-backend/src/main/java/com/meshsuite/product/ \
+        mesh-suite-backend/src/test/java/com/meshsuite/product/ \
+        mesh-suite-backend/src/main/java/com/meshsuite/shared/handler/GlobalExceptionHandler.java
+git commit -m "refactor(product): rename Produto controller and exception handler to English, route produtos->products"
+```
+
+---
+
+## Task 5: Bridge — Category/Colorway services
+
+**Note:** this task's original scope also included bridging `shared/handler/GlobalExceptionHandler.java`'s 2 Product-related handlers — that step was pulled forward into Task 4 (see the correction note there) because `ProductControllerTest` couldn't pass without it. Do NOT repeat that edit here; `GlobalExceptionHandler.java` is not touched by this task at all.
+
+**Files:**
+- Modify: `mesh-suite-backend/src/main/java/com/meshsuite/category/service/CategoryService.java`
+- Modify: `mesh-suite-backend/src/main/java/com/meshsuite/colorway/service/ColorwayService.java`
+- Modify: `mesh-suite-backend/src/test/java/com/meshsuite/category/service/CategoryServiceTest.java`
+- Modify: `mesh-suite-backend/src/test/java/com/meshsuite/colorway/service/ColorwayServiceTest.java`
+
+**Interfaces:**
+- Consumes: `ProductRepository`, `ProductRepository.CategoryProductCount`, `ProductRepository.ColorwayProductCount` (Task 2); `ProductService`, `ProductRequest`, `ProductStatus`, `MeasurementUnit` (Task 3).
+
+- [ ] **Step 1: Bridge `CategoryService.java`**
+
+Change the import `com.meshsuite.produto.repository.ProdutoRepository` to `com.meshsuite.product.repository.ProductRepository`. Change the field/parameter type `ProdutoRepository` to `ProductRepository` (keep the field name `produtoRepository` unchanged — matches this initiative's established minimal-bridge convention). Change `produtoRepository.countByCategoriaIdIn(ids)` to `produtoRepository.countByCategoryIdIn(ids)`. Change `ProdutoRepository.CategoriaProdutoCount::getCategoriaId` to `ProductRepository.CategoryProductCount::getCategoryId` and `ProdutoRepository.CategoriaProdutoCount::getTotal` to `ProductRepository.CategoryProductCount::getTotal`. Change `produtoRepository.countByCategoriaId(id)` (2 call sites: `delete()` and the private `toResponse(Category)` overload) to `produtoRepository.countByCategoryId(id)`. No other line in this file changes.
+
+- [ ] **Step 2: Bridge `ColorwayService.java`**
+
+Same pattern: import `ProdutoRepository`→`ProductRepository`; field/param type only; `countByCorEstampaIdIn`→`countByColorwayIdIn`; `ProdutoRepository.CorEstampaProdutoCount::getCorEstampaId`→`ProductRepository.ColorwayProductCount::getColorwayId`; `ProdutoRepository.CorEstampaProdutoCount::getTotal`→`ProductRepository.ColorwayProductCount::getTotal`; `countByCorEstampaId(id)`→`countByColorwayId(id)` (2 call sites: `delete()` and `toResponse(Colorway)`).
+
+- [ ] **Step 3: Bridge `CategoryServiceTest.java` fixtures**
 
 Change imports `com.meshsuite.produto.domain.enums.StatusProduto`→`com.meshsuite.product.domain.enums.ProductStatus`, `com.meshsuite.produto.domain.enums.UnidadeMedida`→`com.meshsuite.product.domain.enums.MeasurementUnit`, `com.meshsuite.produto.service.ProdutoService`→`com.meshsuite.product.service.ProductService` (keep the field name `produtoService` unchanged). In every inline `new com.meshsuite.produto.dto.ProdutoRequest(...)` call, change the fully-qualified type to `com.meshsuite.product.dto.ProductRequest`, and change every `StatusProduto.ATIVO` to `ProductStatus.ACTIVE`, every `UnidadeMedida.UN` to `MeasurementUnit.UN` — the positional argument order and every other literal value in the constructor call stays exactly the same. There are 4 such call sites in this file (in `rejectsDeletingACategoryInUseByAProduct`, `listAggregatesLinkedProductsPerCategoryInASingleBatch`, and 2 more further down the file with the same shape — apply the same substitution to all of them).
 
-- [ ] **Step 5: Bridge `ColorwayServiceTest.java` fixtures**
+- [ ] **Step 4: Bridge `ColorwayServiceTest.java` fixtures**
 
-Same substitutions as Step 4, applied to this file's 4 analogous `new com.meshsuite.produto.dto.ProdutoRequest(...)` call sites.
+Same substitutions as Step 3, applied to this file's 4 analogous `new com.meshsuite.produto.dto.ProdutoRequest(...)` call sites.
 
-- [ ] **Step 6: Run cross-module tests in isolation**
+- [ ] **Step 5: Run cross-module tests in isolation**
 
 Use relocate-test-restore for the remaining not-yet-bridged modules (`pedido`, `purchaseorder`, `sale`, `stock`, `produto`'s TabelaPreco files) to verify:
 
@@ -1624,15 +1627,14 @@ Run: `cd mesh-suite-backend && mvn -q test -Dtest=CategoryServiceTest,ColorwaySe
 
 Expected: `BUILD SUCCESS`, all tests pass (whatever the current total is for these 2 files — no test was added or removed, only fixtures translated), 0 failures, 0 errors. Restore all moved files.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add mesh-suite-backend/src/main/java/com/meshsuite/category/service/CategoryService.java \
         mesh-suite-backend/src/main/java/com/meshsuite/colorway/service/ColorwayService.java \
-        mesh-suite-backend/src/main/java/com/meshsuite/shared/handler/GlobalExceptionHandler.java \
         mesh-suite-backend/src/test/java/com/meshsuite/category/service/CategoryServiceTest.java \
         mesh-suite-backend/src/test/java/com/meshsuite/colorway/service/ColorwayServiceTest.java
-git commit -m "refactor(product): bridge CategoryService/ColorwayService/GlobalExceptionHandler to consume renamed Product types"
+git commit -m "refactor(product): bridge CategoryService/ColorwayService to consume renamed Product types"
 ```
 
 ---
