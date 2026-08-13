@@ -1945,12 +1945,84 @@ Run: `cd mesh-suite-backend && mvn -q clean test`
 
 Expected: 0 failures. Errors should match the documented pre-existing flake exactly — 15 errors (12 `com.meshsuite.payable.*` + 3 `CompanyRepositoryTest`), confirmed identical after every prior sub-project's merge. If the error count or the specific failing classes differ from this signature, investigate before proceeding — do not assume it's the same flake without checking `target/surefire-reports/*.txt` for the exact class names.
 
+**Correction found during Task 10's review:** the full suite also surfaces 2 FAILURES (not the documented flake's errors) not accounted for above: `CategoryControllerTest.rejectsDeletingACategoryInUseWithBadRequest` and `ColorwayControllerTest.rejectsDeletingAColorwayInUseWithBadRequest`, both `expected:<201> but was:<404>`. Root cause: both tests (written in the earlier, already-merged Category/Colorway sub-project) POST a fixture-product-creation request to the literal path `/api/produtos` with a JSON body using the old Portuguese field names — a hardcoded dependency on Produto's pre-rename REST contract that this sub-project's Task 4 broke by moving the endpoint to `/api/products` with English field names. This is the same "dangling property string literal" bug class the initiative has hit before, just manifesting as a REST path + JSON body instead of a JPA property path. Fix both call sites:
+
+In `mesh-suite-backend/src/test/java/com/meshsuite/category/controller/CategoryControllerTest.java`, change:
+```java
+        mockMvc.perform(post("/api/produtos").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nome": "Camiseta Polo",
+                                  "sku": "P0001",
+                                  "categoriaId": "%s",
+                                  "precoVenda": 59.90,
+                                  "quantidadeEstoque": 10,
+                                  "unidadeMedida": "UN"
+                                }
+                                """.formatted(categoryId)))
+                .andExpect(status().isCreated());
+```
+to:
+```java
+        mockMvc.perform(post("/api/products").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Camiseta Polo",
+                                  "sku": "P0001",
+                                  "categoryId": "%s",
+                                  "salePrice": 59.90,
+                                  "stockQuantity": 10,
+                                  "measurementUnit": "UN"
+                                }
+                                """.formatted(categoryId)))
+                .andExpect(status().isCreated());
+```
+
+In `mesh-suite-backend/src/test/java/com/meshsuite/colorway/controller/ColorwayControllerTest.java`, change:
+```java
+        mockMvc.perform(post("/api/produtos").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nome": "Camiseta Polo",
+                                  "sku": "P0001",
+                                  "corEstampaId": "%s",
+                                  "precoVenda": 59.90,
+                                  "quantidadeEstoque": 10,
+                                  "unidadeMedida": "UN"
+                                }
+                                """.formatted(colorwayId)))
+                .andExpect(status().isCreated());
+```
+to:
+```java
+        mockMvc.perform(post("/api/products").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Camiseta Polo",
+                                  "sku": "P0001",
+                                  "colorwayId": "%s",
+                                  "salePrice": 59.90,
+                                  "stockQuantity": 10,
+                                  "measurementUnit": "UN"
+                                }
+                                """.formatted(colorwayId)))
+                .andExpect(status().isCreated());
+```
+
+Re-run the full suite after this fix; the 2 failures should disappear, leaving exactly the documented 15-error flake signature.
+
 - [ ] **Step 6: Commit**
 
 ```bash
 git add mesh-suite-backend/src/main/java/com/meshsuite/produto/domain/TabelaPrecoItem.java \
         mesh-suite-backend/src/main/java/com/meshsuite/produto/service/TabelaPrecoService.java \
-        mesh-suite-backend/src/test/java/com/meshsuite/produto/
+        mesh-suite-backend/src/test/java/com/meshsuite/produto/ \
+        mesh-suite-backend/src/test/java/com/meshsuite/category/controller/CategoryControllerTest.java \
+        mesh-suite-backend/src/test/java/com/meshsuite/colorway/controller/ColorwayControllerTest.java
 git commit -m "refactor(product): bridge TabelaPreco (domain+service) to consume the renamed Product type"
 ```
 
