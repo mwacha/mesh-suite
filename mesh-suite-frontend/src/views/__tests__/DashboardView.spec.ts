@@ -6,11 +6,11 @@ import DashboardView from '@/views/DashboardView.vue'
 import { useAuthStore } from '@/stores/auth'
 import * as pedidosApi from '@/api/pedidos'
 import * as partnersApi from '@/api/partners'
-import * as produtosApi from '@/api/produtos'
+import * as produtosApi from '@/api/products'
 
 vi.mock('@/api/pedidos')
 vi.mock('@/api/partners')
-vi.mock('@/api/produtos')
+vi.mock('@/api/products')
 
 function mountWithRouter() {
   const router = createRouter({
@@ -49,8 +49,8 @@ describe('DashboardView', () => {
     vi.mocked(partnersApi.getPartnerSummary).mockResolvedValue({
       total: 1500, active: 1240, atRisk: 30, blocked: 5,
     })
-    vi.mocked(produtosApi.buscarResumoProdutos).mockResolvedValue({
-      total: 900, ativos: 856, inativos: 44,
+    vi.mocked(produtosApi.getProductSummary).mockResolvedValue({
+      total: 900, active: 856, inactive: 44,
     })
   })
 
@@ -96,7 +96,7 @@ describe('DashboardView', () => {
   })
 
   it('falls back to a dash for a section the caller lacks permission to view', async () => {
-    vi.mocked(produtosApi.buscarResumoProdutos).mockRejectedValue({ response: { status: 403 } })
+    vi.mocked(produtosApi.getProductSummary).mockRejectedValue({ response: { status: 403 } })
 
     const { wrapper } = await mountWithRouter()
     await flushPromises()

@@ -51,7 +51,7 @@
               @input="buscarProdutos"
             />
             <ul v-if="resultadosProdutos.length" class="dropdown-busca" data-test="produto-resultados">
-              <li v-for="p in resultadosProdutos" :key="p.id" @click="selecionarProduto(p)">{{ p.nome }} ({{ p.sku }})</li>
+              <li v-for="p in resultadosProdutos" :key="p.id" @click="selecionarProduto(p)">{{ p.name }} ({{ p.sku }})</li>
             </ul>
           </div>
           <input
@@ -122,7 +122,7 @@ import AppShell from '@/components/AppShell.vue'
 import { buscarPedido, criarPedido, atualizarPedido, type PedidoRequest, type ItemPedidoRequest } from '@/api/pedidos'
 import { listPartners, type PartnerListItem } from '@/api/partners'
 import { listSalesReps, type SalesRep } from '@/api/users'
-import { listarProdutos, type ProdutoSummary } from '@/api/produtos'
+import { listProducts, type ProductListItem } from '@/api/products'
 
 const route = useRoute()
 const router = useRouter()
@@ -163,7 +163,7 @@ const resultadosClientes = ref<PartnerListItem[]>([])
 const representantes = ref<SalesRep[]>([])
 
 const produtoBusca = ref('')
-const resultadosProdutos = ref<ProdutoSummary[]>([])
+const resultadosProdutos = ref<ProductListItem[]>([])
 const itemForm = reactive({ produtoId: '', produtoNome: '', quantidade: 1, valorUnitario: 0 })
 
 const subtotal = computed(() => form.itens.reduce((soma, item) => soma + item.quantidade * item.valorUnitario, 0))
@@ -198,18 +198,18 @@ async function buscarProdutos() {
     return
   }
   try {
-    const pagina = await listarProdutos({ busca: produtoBusca.value, size: 5 })
+    const pagina = await listProducts({ busca: produtoBusca.value, size: 5 })
     resultadosProdutos.value = pagina.content
   } catch {
     resultadosProdutos.value = []
   }
 }
 
-function selecionarProduto(produto: ProdutoSummary) {
+function selecionarProduto(produto: ProductListItem) {
   itemForm.produtoId = produto.id
-  itemForm.produtoNome = produto.nome
-  itemForm.valorUnitario = produto.precoVenda
-  produtoBusca.value = produto.nome
+  itemForm.produtoNome = produto.name
+  itemForm.valorUnitario = produto.salePrice
+  produtoBusca.value = produto.name
   resultadosProdutos.value = []
 }
 

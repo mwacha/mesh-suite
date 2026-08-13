@@ -4,10 +4,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import TabelaPrecoFormView from '@/views/TabelaPrecoFormView.vue'
 import * as tabelasPrecoApi from '@/api/tabelasPreco'
-import * as produtosApi from '@/api/produtos'
+import * as produtosApi from '@/api/products'
 
 vi.mock('@/api/tabelasPreco')
-vi.mock('@/api/produtos')
+vi.mock('@/api/products')
 
 function mountWithRouter(path = '/tabelas-preco/novo') {
   const router = createRouter({
@@ -25,7 +25,7 @@ function mountWithRouter(path = '/tabelas-preco/novo') {
   }))
 }
 
-const produtoAtivo = { id: 'prod-1', nome: 'Camiseta Polo', sku: 'P0001', marca: '', precoVenda: 100, quantidadeEstoque: 10, status: 'ATIVO' as const }
+const produtoAtivo = { id: 'prod-1', name: 'Camiseta Polo', sku: 'P0001', brand: '', salePrice: 100, stockQuantity: 10, status: 'ACTIVE' as const }
 
 describe('TabelaPrecoFormView', () => {
   beforeEach(() => {
@@ -34,7 +34,7 @@ describe('TabelaPrecoFormView', () => {
   })
 
   it('shows required-field errors when nome/inicioVigencia are blank on submit', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -50,7 +50,7 @@ describe('TabelaPrecoFormView', () => {
   })
 
   it('populates items from all active produtos in TODOS_PRODUTOS mode, with live-calculated prices', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -66,7 +66,7 @@ describe('TabelaPrecoFormView', () => {
     // Per spec §5 ("recalcula sempre que a regra muda"): TODOS_PRODUTOS items stay
     // fully rule-driven, so a manually typed price is overwritten the next time a
     // rule field changes -- this is deliberate, not a bug.
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -77,11 +77,11 @@ describe('TabelaPrecoFormView', () => {
     await flushPromises()
 
     const precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
-    expect(Number(precoInput.value)).toBeCloseTo(150, 2) // produtoAtivo.precoVenda=100, SOMAR+REAL+50
+    expect(Number(precoInput.value)).toBeCloseTo(150, 2) // produtoAtivo.salePrice=100, SOMAR+REAL+50
   })
 
   it('starts empty in SELECIONAR_PRODUTOS mode and adds an item via search', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -91,7 +91,7 @@ describe('TabelaPrecoFormView', () => {
     await flushPromises()
     expect(wrapper.find('.tabela-itens').exists()).toBe(false)
 
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
     await wrapper.find('[data-test="produto-busca"]').setValue('Camiseta')
@@ -103,7 +103,7 @@ describe('TabelaPrecoFormView', () => {
   })
 
   it('does not auto-recalculate SELECIONAR_PRODUTOS items when the rule changes, but the reset button does', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -112,7 +112,7 @@ describe('TabelaPrecoFormView', () => {
     await wrapper.find('[data-test="modo-selecao"]').setValue('SELECIONAR_PRODUTOS')
     await flushPromises()
 
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
     await wrapper.find('[data-test="produto-busca"]').setValue('Camiseta')
@@ -131,12 +131,12 @@ describe('TabelaPrecoFormView', () => {
     await flushPromises()
 
     precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
-    expect(Number(precoInput.value)).toBeCloseTo(120, 2) // produtoAtivo.precoVenda=100, SOMAR+REAL+20
+    expect(Number(precoInput.value)).toBeCloseTo(120, 2) // produtoAtivo.salePrice=100, SOMAR+REAL+20
   })
 
   it('filters the item list by Preenchido/Pendente', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
-      content: [produtoAtivo, { ...produtoAtivo, id: 'prod-2', nome: 'Bermuda', sku: 'P0002' }],
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+      content: [produtoAtivo, { ...produtoAtivo, id: 'prod-2', name: 'Bermuda', sku: 'P0002' }],
       totalElements: 2, totalPages: 1, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -162,7 +162,7 @@ describe('TabelaPrecoFormView', () => {
   })
 
   it('submits the form and navigates to the list on success', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     vi.mocked(tabelasPrecoApi.criarTabelaPreco).mockResolvedValue({} as any)
@@ -181,7 +181,7 @@ describe('TabelaPrecoFormView', () => {
   })
 
   it('shows a conflict message on duplicate nome (409)', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     vi.mocked(tabelasPrecoApi.criarTabelaPreco).mockRejectedValue({ response: { status: 409 } })
@@ -197,7 +197,7 @@ describe('TabelaPrecoFormView', () => {
   })
 
   it('loads existing tabela data in edit mode', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     vi.mocked(tabelasPrecoApi.buscarTabelaPreco).mockResolvedValue({

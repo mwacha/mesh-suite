@@ -7,8 +7,8 @@ import DashboardView from '@/views/DashboardView.vue'
 import ClienteFormView from '@/views/ClienteFormView.vue'
 import ClientesListView from '@/views/ClientesListView.vue'
 import ClienteDetailView from '@/views/ClienteDetailView.vue'
-import ProdutoFormView from '@/views/ProdutoFormView.vue'
-import ProdutosListView from '@/views/ProdutosListView.vue'
+import ProductFormView from '@/views/ProductFormView.vue'
+import ProductsListView from '@/views/ProductsListView.vue'
 import CategoriesListView from '@/views/CategoriesListView.vue'
 import CategoryFormView from '@/views/CategoryFormView.vue'
 import ColorwaysListView from '@/views/ColorwaysListView.vue'
@@ -35,9 +35,9 @@ const router = createRouter({
     { path: '/clientes/novo', name: 'clientes-novo', component: ClienteFormView },
     { path: '/clientes/:id/editar', name: 'clientes-editar', component: ClienteFormView },
     { path: '/clientes/:id', name: 'clientes-detalhe', component: ClienteDetailView },
-    { path: '/produtos', name: 'produtos', component: ProdutosListView },
-    { path: '/produtos/novo', name: 'produtos-novo', component: ProdutoFormView },
-    { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoFormView },
+    { path: '/produtos', name: 'produtos', component: ProductsListView },
+    { path: '/produtos/novo', name: 'produtos-novo', component: ProductFormView },
+    { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProductFormView },
     { path: '/categorias', name: 'categorias', component: CategoriesListView },
     { path: '/categorias/novo', name: 'categorias-novo', component: CategoryFormView },
     { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoryFormView },

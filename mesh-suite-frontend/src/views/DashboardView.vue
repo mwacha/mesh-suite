@@ -97,7 +97,7 @@ import {
   type StatusPedido,
 } from '@/api/pedidos'
 import { getPartnerSummary, type PartnerSummary } from '@/api/partners'
-import { buscarResumoProdutos, type ProdutoResumo } from '@/api/produtos'
+import { getProductSummary, type ProductSummary } from '@/api/products'
 
 const router = useRouter()
 
@@ -113,14 +113,14 @@ interface Stat {
 // state instead of blocking the whole page.
 const pedidoResumo = ref<PedidoResumo | null>(null)
 const parceiroResumo = ref<PartnerSummary | null>(null)
-const produtoResumo = ref<ProdutoResumo | null>(null)
+const produtoResumo = ref<ProductSummary | null>(null)
 const pedidosRecentes = ref<PedidoSummary[]>([])
 
 const stats = computed<Stat[]>(() => [
   { icon: '📋', label: 'Total de Pedidos', value: pedidoResumo.value ? String(pedidoResumo.value.total) : '—' },
   { icon: '👥', label: 'Clientes Ativos', value: parceiroResumo.value ? String(parceiroResumo.value.active) : '—' },
   { icon: '🧾', label: 'Pedidos Faturados', value: pedidoResumo.value ? String(pedidoResumo.value.faturados) : '—' },
-  { icon: '📦', label: 'Produtos Ativos', value: produtoResumo.value ? String(produtoResumo.value.ativos) : '—' },
+  { icon: '📦', label: 'Produtos Ativos', value: produtoResumo.value ? String(produtoResumo.value.active) : '—' },
 ])
 
 const STATUS_LABEL: Record<StatusPedido, string> = {
@@ -156,7 +156,7 @@ onMounted(async () => {
   const [pedidoR, parceiroR, produtoR, pedidosR] = await Promise.allSettled([
     buscarResumoPedidos(),
     getPartnerSummary(),
-    buscarResumoProdutos(),
+    getProductSummary(),
     listarPedidos({ page: 0, size: 5 }),
   ])
   if (pedidoR.status === 'fulfilled') pedidoResumo.value = pedidoR.value

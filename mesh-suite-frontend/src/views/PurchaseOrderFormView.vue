@@ -51,7 +51,7 @@
               @input="buscarProdutos"
             />
             <ul v-if="resultadosProdutos.length" class="dropdown-busca" data-test="produto-resultados">
-              <li v-for="p in resultadosProdutos" :key="p.id" @click="selecionarProduto(p)">{{ p.nome }} ({{ p.sku }})</li>
+              <li v-for="p in resultadosProdutos" :key="p.id" @click="selecionarProduto(p)">{{ p.name }} ({{ p.sku }})</li>
             </ul>
           </div>
           <input
@@ -128,7 +128,7 @@ import {
 } from '@/api/purchaseOrders'
 import { listPartners, type PartnerListItem } from '@/api/partners'
 import { listBuyers, type Buyer } from '@/api/users'
-import { listarProdutos, type ProdutoSummary } from '@/api/produtos'
+import { listProducts, type ProductListItem } from '@/api/products'
 
 const route = useRoute()
 const router = useRouter()
@@ -169,7 +169,7 @@ const resultadosFornecedores = ref<PartnerListItem[]>([])
 const compradores = ref<Buyer[]>([])
 
 const produtoBusca = ref('')
-const resultadosProdutos = ref<ProdutoSummary[]>([])
+const resultadosProdutos = ref<ProductListItem[]>([])
 const itemForm = reactive({ productId: '', productName: '', quantity: 1, unitPrice: 0 })
 
 const subtotal = computed(() => form.items.reduce((soma, item) => soma + item.quantity * item.unitPrice, 0))
@@ -204,18 +204,18 @@ async function buscarProdutos() {
     return
   }
   try {
-    const pagina = await listarProdutos({ busca: produtoBusca.value, size: 5 })
+    const pagina = await listProducts({ busca: produtoBusca.value, size: 5 })
     resultadosProdutos.value = pagina.content
   } catch {
     resultadosProdutos.value = []
   }
 }
 
-function selecionarProduto(produto: ProdutoSummary) {
+function selecionarProduto(produto: ProductListItem) {
   itemForm.productId = produto.id
-  itemForm.productName = produto.nome
-  itemForm.unitPrice = produto.precoVenda
-  produtoBusca.value = produto.nome
+  itemForm.productName = produto.name
+  itemForm.unitPrice = produto.salePrice
+  produtoBusca.value = produto.name
   resultadosProdutos.value = []
 }
 

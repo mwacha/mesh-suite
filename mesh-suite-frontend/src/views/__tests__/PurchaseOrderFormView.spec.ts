@@ -6,12 +6,12 @@ import PurchaseOrderFormView from '@/views/PurchaseOrderFormView.vue'
 import * as purchaseOrdersApi from '@/api/purchaseOrders'
 import * as partnersApi from '@/api/partners'
 import * as usersApi from '@/api/users'
-import * as produtosApi from '@/api/produtos'
+import * as produtosApi from '@/api/products'
 
 vi.mock('@/api/purchaseOrders')
 vi.mock('@/api/partners')
 vi.mock('@/api/users')
-vi.mock('@/api/produtos')
+vi.mock('@/api/products')
 
 function mountWithRouter(path = '/compras/novo') {
   const router = createRouter({
@@ -38,8 +38,8 @@ const fornecedorBase = {
 const compradorBase = { id: 'b1', name: 'Carlos Comprador' }
 
 const produtoBase = {
-  id: 'p1', nome: 'Tecido Algodão', sku: 'P0001', marca: 'Marca Alpha',
-  precoVenda: 25.0, quantidadeEstoque: 100, status: 'ATIVO' as const,
+  id: 'p1', name: 'Tecido Algodão', sku: 'P0001', brand: 'Marca Alpha',
+  salePrice: 25.0, stockQuantity: 100, status: 'ACTIVE' as const,
 }
 
 describe('PurchaseOrderFormView', () => {
@@ -50,7 +50,7 @@ describe('PurchaseOrderFormView', () => {
     vi.mocked(partnersApi.listPartners).mockResolvedValue({
       content: [fornecedorBase], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [produtoBase], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
   })

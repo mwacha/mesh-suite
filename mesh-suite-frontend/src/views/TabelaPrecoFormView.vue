@@ -85,7 +85,7 @@
             @input="buscarProdutos"
           />
           <ul v-if="resultadosProdutos.length" class="dropdown-busca" data-test="produto-resultados">
-            <li v-for="p in resultadosProdutos" :key="p.id" @click="adicionarProduto(p)">{{ p.nome }} ({{ p.sku }})</li>
+            <li v-for="p in resultadosProdutos" :key="p.id" @click="adicionarProduto(p)">{{ p.name }} ({{ p.sku }})</li>
           </ul>
         </div>
 
@@ -156,7 +156,7 @@ import {
   type TabelaPrecoRequest,
   type TabelaPrecoItemInput,
 } from '@/api/tabelasPreco'
-import { listarProdutos, type ProdutoSummary } from '@/api/produtos'
+import { listProducts, type ProductListItem } from '@/api/products'
 import { calcularPrecoAjustado, type RegraAjuste } from '@/utils/calculoTabelaPreco'
 
 const route = useRoute()
@@ -195,7 +195,7 @@ const erroGeral = ref('')
 const salvando = ref(false)
 
 const produtoBusca = ref('')
-const resultadosProdutos = ref<ProdutoSummary[]>([])
+const resultadosProdutos = ref<ProductListItem[]>([])
 
 const filtroPreenchimento = ref<'TODOS' | 'PREENCHIDO' | 'PENDENTE'>('TODOS')
 
@@ -253,13 +253,13 @@ watch(
 
 async function popularTodosOsProdutos() {
   try {
-    const pagina = await listarProdutos({ status: 'ATIVO', size: 1000 })
+    const pagina = await listProducts({ status: 'ACTIVE', size: 1000 })
     itens.value = pagina.content.map((p) => ({
       produtoId: p.id,
-      produtoNome: p.nome,
+      produtoNome: p.name,
       produtoSku: p.sku,
-      precoCadastrado: p.precoVenda,
-      precoNestaTabela: precoParaNovoItem(p.precoVenda),
+      precoCadastrado: p.salePrice,
+      precoNestaTabela: precoParaNovoItem(p.salePrice),
       percentualComissao: form.percentualComissaoPadrao,
     }))
   } catch {
@@ -281,20 +281,20 @@ async function buscarProdutos() {
     return
   }
   try {
-    const pagina = await listarProdutos({ busca: produtoBusca.value, status: 'ATIVO', size: 5 })
+    const pagina = await listProducts({ busca: produtoBusca.value, status: 'ACTIVE', size: 5 })
     resultadosProdutos.value = pagina.content.filter((p) => !itens.value.some((i) => i.produtoId === p.id))
   } catch {
     resultadosProdutos.value = []
   }
 }
 
-function adicionarProduto(produto: ProdutoSummary) {
+function adicionarProduto(produto: ProductListItem) {
   itens.value.push({
     produtoId: produto.id,
-    produtoNome: produto.nome,
+    produtoNome: produto.name,
     produtoSku: produto.sku,
-    precoCadastrado: produto.precoVenda,
-    precoNestaTabela: precoParaNovoItem(produto.precoVenda),
+    precoCadastrado: produto.salePrice,
+    precoNestaTabela: precoParaNovoItem(produto.salePrice),
     percentualComissao: form.percentualComissaoPadrao,
   })
   produtoBusca.value = ''
