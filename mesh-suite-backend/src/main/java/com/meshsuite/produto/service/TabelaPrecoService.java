@@ -3,15 +3,15 @@ package com.meshsuite.produto.service;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
-import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.produto.domain.TabelaPreco;
 import com.meshsuite.produto.domain.TabelaPrecoItem;
 import com.meshsuite.produto.dto.*;
 import com.meshsuite.produto.exception.TabelaPrecoNaoEncontradaException;
 import com.meshsuite.produto.exception.TabelaPrecoNomeDuplicadoException;
 import com.meshsuite.produto.exception.TabelaPrecoValidationException;
-import com.meshsuite.produto.repository.ProdutoRepository;
 import com.meshsuite.produto.repository.TabelaPrecoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.produto.repository.specification.TabelaPrecoSpecifications;
 import java.util.List;
 import java.util.UUID;
@@ -25,9 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class TabelaPrecoService {
 
     private final TabelaPrecoRepository tabelaPrecoRepository;
-    private final ProdutoRepository produtoRepository;
+    private final ProductRepository produtoRepository;
 
-    public TabelaPrecoService(TabelaPrecoRepository tabelaPrecoRepository, ProdutoRepository produtoRepository) {
+    public TabelaPrecoService(TabelaPrecoRepository tabelaPrecoRepository, ProductRepository produtoRepository) {
         this.tabelaPrecoRepository = tabelaPrecoRepository;
         this.produtoRepository = produtoRepository;
     }
@@ -107,7 +107,7 @@ public class TabelaPrecoService {
 
         tabelaPreco.getItens().clear();
         for (TabelaPrecoItemInput itemInput : request.itens()) {
-            Produto produto = produtoRepository.findById(itemInput.produtoId())
+            Product produto = produtoRepository.findById(itemInput.produtoId())
                     .orElseThrow(() -> new TabelaPrecoValidationException("Produto não encontrado"));
             TabelaPrecoItem item = new TabelaPrecoItem();
             item.setTabelaPreco(tabelaPreco);
@@ -125,8 +125,8 @@ public class TabelaPrecoService {
 
     private TabelaPrecoResponse toResponse(TabelaPreco t) {
         List<TabelaPrecoItemResponse> itens = t.getItens().stream()
-                .map(i -> new TabelaPrecoItemResponse(i.getProduto().getId(), i.getProduto().getNome(),
-                        i.getProduto().getSku(), i.getProduto().getPrecoVenda(), i.getPrecoNestaTabela(),
+                .map(i -> new TabelaPrecoItemResponse(i.getProduto().getId(), i.getProduto().getName(),
+                        i.getProduto().getSku(), i.getProduto().getSalePrice(), i.getPrecoNestaTabela(),
                         i.getPercentualComissao()))
                 .toList();
         return new TabelaPrecoResponse(t.getId(), t.getNome(), t.getModoSelecaoProdutos(), t.getMetodoAjuste(),

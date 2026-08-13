@@ -174,16 +174,16 @@ class CategoryControllerTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String categoryId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(post("/api/produtos").cookie(cookie)
+        mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "nome": "Camiseta Polo",
+                                  "name": "Camiseta Polo",
                                   "sku": "P0001",
-                                  "categoriaId": "%s",
-                                  "precoVenda": 59.90,
-                                  "quantidadeEstoque": 10,
-                                  "unidadeMedida": "UN"
+                                  "categoryId": "%s",
+                                  "salePrice": 59.90,
+                                  "stockQuantity": 10,
+                                  "measurementUnit": "UN"
                                 }
                                 """.formatted(categoryId)))
                 .andExpect(status().isCreated());

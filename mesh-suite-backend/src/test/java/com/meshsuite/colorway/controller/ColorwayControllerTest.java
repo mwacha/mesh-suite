@@ -190,16 +190,16 @@ class ColorwayControllerTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String colorwayId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(post("/api/produtos").cookie(cookie)
+        mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "nome": "Camiseta Polo",
+                                  "name": "Camiseta Polo",
                                   "sku": "P0001",
-                                  "corEstampaId": "%s",
-                                  "precoVenda": 59.90,
-                                  "quantidadeEstoque": 10,
-                                  "unidadeMedida": "UN"
+                                  "colorwayId": "%s",
+                                  "salePrice": 59.90,
+                                  "stockQuantity": 10,
+                                  "measurementUnit": "UN"
                                 }
                                 """.formatted(colorwayId)))
                 .andExpect(status().isCreated());

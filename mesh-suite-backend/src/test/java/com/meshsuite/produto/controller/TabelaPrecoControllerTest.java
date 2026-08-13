@@ -8,8 +8,8 @@ import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
 import com.meshsuite.company.domain.Company;
 import com.meshsuite.company.repository.CompanyRepository;
-import com.meshsuite.produto.domain.Produto;
-import com.meshsuite.produto.repository.ProdutoRepository;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import com.meshsuite.user.domain.User;
@@ -34,7 +34,7 @@ class TabelaPrecoControllerTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
 
@@ -68,11 +68,11 @@ class TabelaPrecoControllerTest extends AbstractIntegrationTest {
         user.getPermissions().add(new UserPermissionGrant(Module.PRODUCT, Action.DELETE));
         userRepository.saveAndFlush(user);
 
-        Produto produto = new Produto();
+        Product produto = new Product();
         produto.setTenantId(tenant.getId());
-        produto.setNome("Camiseta Polo");
+        produto.setName("Camiseta Polo");
         produto.setSku("P0001");
-        produto.setPrecoVenda(new BigDecimal("59.90"));
+        produto.setSalePrice(new BigDecimal("59.90"));
         produtoRepository.saveAndFlush(produto);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();

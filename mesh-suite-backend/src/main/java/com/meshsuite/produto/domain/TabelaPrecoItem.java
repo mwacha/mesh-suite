@@ -1,5 +1,6 @@
 package com.meshsuite.produto.domain;
 
+import com.meshsuite.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +26,7 @@ public class TabelaPrecoItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produto_id", nullable = false)
-    private Produto produto;
+    private Product produto;
 
     @Column(name = "preco_nesta_tabela", precision = 12, scale = 2)
     private BigDecimal precoNestaTabela;

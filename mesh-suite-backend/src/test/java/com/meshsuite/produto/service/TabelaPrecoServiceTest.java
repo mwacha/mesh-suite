@@ -6,7 +6,6 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.service.AuthContextService;
-import com.meshsuite.produto.domain.Produto;
 import com.meshsuite.produto.domain.enums.Arredondamento;
 import com.meshsuite.produto.domain.enums.MetodoAjuste;
 import com.meshsuite.produto.domain.enums.ModoSelecaoProdutos;
@@ -15,8 +14,9 @@ import com.meshsuite.produto.dto.TabelaPrecoRequest;
 import com.meshsuite.produto.exception.TabelaPrecoNaoEncontradaException;
 import com.meshsuite.produto.exception.TabelaPrecoNomeDuplicadoException;
 import com.meshsuite.produto.exception.TabelaPrecoValidationException;
-import com.meshsuite.produto.repository.ProdutoRepository;
 import com.meshsuite.produto.service.TabelaPrecoService;
+import com.meshsuite.product.domain.Product;
+import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 class TabelaPrecoServiceTest extends AbstractIntegrationTest {
 
     @Autowired TabelaPrecoService tabelaPrecoService;
-    @Autowired ProdutoRepository produtoRepository;
+    @Autowired ProductRepository produtoRepository;
     @Autowired TenantRepository tenantRepository;
     @Autowired UserRepository userRepository;
     @Autowired EntityManager entityManager;
@@ -70,12 +70,12 @@ class TabelaPrecoServiceTest extends AbstractIntegrationTest {
         return tenant.getId();
     }
 
-    private Produto novoProduto(UUID tenantId, String sku, BigDecimal precoVenda) {
-        Produto p = new Produto();
+    private Product novoProduto(UUID tenantId, String sku, BigDecimal precoVenda) {
+        Product p = new Product();
         p.setTenantId(tenantId);
-        p.setNome("Produto " + sku);
+        p.setName("Produto " + sku);
         p.setSku(sku);
-        p.setPrecoVenda(precoVenda);
+        p.setSalePrice(precoVenda);
         return produtoRepository.saveAndFlush(p);
     }
 
@@ -88,7 +88,7 @@ class TabelaPrecoServiceTest extends AbstractIntegrationTest {
     @Transactional
     void criaERecuperaTabelaPrecoComItens() {
         UUID tenantId = setUpTenant("aurora-tp");
-        Produto produto = novoProduto(tenantId, "P0001", new BigDecimal("59.90"));
+        Product produto = novoProduto(tenantId, "P0001", new BigDecimal("59.90"));
 
         var criada = tabelaPrecoService.criar(TenantContext.get(),
                 request("Varejo", List.of(new TabelaPrecoItemInput(produto.getId(), new BigDecimal("69.90"), new BigDecimal("5.00")))));
@@ -108,7 +108,7 @@ class TabelaPrecoServiceTest extends AbstractIntegrationTest {
         // even a price wildly different from produto.precoVenda -- there is no
         // server-side formula to disagree with the client.
         UUID tenantId = setUpTenant("aurora-tp");
-        Produto produto = novoProduto(tenantId, "P0001", new BigDecimal("10.00"));
+        Product produto = novoProduto(tenantId, "P0001", new BigDecimal("10.00"));
 
         var criada = tabelaPrecoService.criar(TenantContext.get(),
                 request("Promo", List.of(new TabelaPrecoItemInput(produto.getId(), new BigDecimal("999.99"), null))));
@@ -130,8 +130,8 @@ class TabelaPrecoServiceTest extends AbstractIntegrationTest {
     @Transactional
     void updateReplacesTheWholeItemList() {
         UUID tenantId = setUpTenant("aurora-tp");
-        Produto produtoA = novoProduto(tenantId, "P0001", new BigDecimal("10.00"));
-        Produto produtoB = novoProduto(tenantId, "P0002", new BigDecimal("20.00"));
+        Product produtoA = novoProduto(tenantId, "P0001", new BigDecimal("10.00"));
+        Product produtoB = novoProduto(tenantId, "P0002", new BigDecimal("20.00"));
 
         var criada = tabelaPrecoService.criar(TenantContext.get(),
                 request("Varejo", List.of(new TabelaPrecoItemInput(produtoA.getId(), new BigDecimal("15.00"), null))));
@@ -158,7 +158,7 @@ class TabelaPrecoServiceTest extends AbstractIntegrationTest {
     @Transactional
     void deletesTabelaPrecoAndCascadesItems() {
         UUID tenantId = setUpTenant("aurora-tp");
-        Produto produto = novoProduto(tenantId, "P0001", new BigDecimal("10.00"));
+        Product produto = novoProduto(tenantId, "P0001", new BigDecimal("10.00"));
         var criada = tabelaPrecoService.criar(TenantContext.get(),
                 request("Varejo", List.of(new TabelaPrecoItemInput(produto.getId(), new BigDecimal("15.00"), null))));
 
