@@ -16,8 +16,8 @@
       />
       <select v-model="filtros.status" @change="carregar(0)">
         <option value="">Status</option>
-        <option value="ATIVO">Ativo</option>
-        <option value="INATIVO">Inativo</option>
+        <option value="ACTIVE">Ativo</option>
+        <option value="INACTIVE">Inativo</option>
       </select>
     </div>
 
@@ -26,22 +26,22 @@
         <span class="table-card-title">Lista de Produtos</span>
         <div v-if="resumo" class="table-card-stats">
           <StatPill :value="resumo.total" label="Total" color="dark" />
-          <StatPill :value="resumo.ativos" label="Ativos" color="green" />
-          <StatPill :value="resumo.inativos" label="Inativos" color="red" />
+          <StatPill :value="resumo.active" label="Ativos" color="green" />
+          <StatPill :value="resumo.inactive" label="Inativos" color="red" />
         </div>
       </div>
 
       <div class="table-grid">
         <div class="table-grid-header">
           <div class="table-grid-col">Código</div>
-          <div class="table-grid-col table-grid-col-sortable" data-test="col-nome" @click="toggleSort('nome')">
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-nome" @click="toggleSort('name')">
             Produto
-            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'nome' }">{{ sortIcon('nome') }}</span>
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'name' }">{{ sortIcon('name') }}</span>
           </div>
           <div class="table-grid-col">Marca</div>
-          <div class="table-grid-col table-grid-col-sortable" data-test="col-preco" @click="toggleSort('precoVenda')">
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-preco" @click="toggleSort('salePrice')">
             Preço de Venda
-            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'precoVenda' }">{{ sortIcon('precoVenda') }}</span>
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'salePrice' }">{{ sortIcon('salePrice') }}</span>
           </div>
           <div class="table-grid-col">Estoque</div>
           <div class="table-grid-col table-grid-col-sortable" data-test="col-status" @click="toggleSort('status')">
@@ -59,12 +59,12 @@
           @click="editarProduto(produto.id)"
         >
           <div class="table-grid-cell">{{ produto.sku }}</div>
-          <div class="table-grid-cell table-grid-cell-nome">{{ produto.nome }}</div>
-          <div class="table-grid-cell">{{ produto.marca }}</div>
-          <div class="table-grid-cell">{{ formatarPreco(produto.precoVenda) }}</div>
-          <div class="table-grid-cell">{{ produto.quantidadeEstoque }}</div>
+          <div class="table-grid-cell table-grid-cell-nome">{{ produto.name }}</div>
+          <div class="table-grid-cell">{{ produto.brand }}</div>
+          <div class="table-grid-cell">{{ formatarPreco(produto.salePrice) }}</div>
+          <div class="table-grid-cell">{{ produto.stockQuantity }}</div>
           <div class="table-grid-cell">
-            <StatusBadge :label="statusLabel(produto.status)" :color="produto.status === 'ATIVO' ? 'green' : 'red'" />
+            <StatusBadge :label="statusLabel(produto.status)" :color="produto.status === 'ACTIVE' ? 'green' : 'red'" />
           </div>
           <div class="table-grid-cell" @click.stop>
             <ActionsMenu :items="acoesPara(produto)" :test-id="`btn-acoes-${produto.id}`" />
@@ -94,43 +94,43 @@ import StatPill from '@/components/StatPill.vue'
 import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
 import Pagination from '@/components/Pagination.vue'
 import {
-  listarProdutos,
-  buscarResumoProdutos,
-  atualizarStatusProduto,
-  excluirProduto,
-  type ProdutoSummary,
-  type ProdutoResumo,
+  listProducts,
+  getProductSummary,
+  updateProductStatus,
+  deleteProduct,
+  type ProductListItem,
+  type ProductSummary,
   type Page as ApiPage,
-  type StatusProduto,
-} from '@/api/produtos'
+  type ProductStatus,
+} from '@/api/products'
 
 const router = useRouter()
 
 const filtros = reactive({ busca: '', status: '' })
-const pagina = ref<ApiPage<ProdutoSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
-const resumo = ref<ProdutoResumo | null>(null)
-const sortField = ref<'nome' | 'precoVenda' | 'status' | null>(null)
+const pagina = ref<ApiPage<ProductListItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+const resumo = ref<ProductSummary | null>(null)
+const sortField = ref<'name' | 'salePrice' | 'status' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 const erro = ref('')
 
 const countLabel = computed(() => (resumo.value ? `${resumo.value.total} produtos cadastrados` : undefined))
 
-function statusLabel(status: StatusProduto) {
-  return { ATIVO: 'Ativo', INATIVO: 'Inativo' }[status]
+function statusLabel(status: ProductStatus) {
+  return { ACTIVE: 'Ativo', INACTIVE: 'Inativo' }[status]
 }
 
 function formatarPreco(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function sortIcon(field: 'nome' | 'precoVenda' | 'status') {
+function sortIcon(field: 'name' | 'salePrice' | 'status') {
   if (sortField.value !== field) {
     return '⇅'
   }
   return sortDir.value === 'asc' ? '▲' : '▼'
 }
 
-function toggleSort(field: 'nome' | 'precoVenda' | 'status') {
+function toggleSort(field: 'name' | 'salePrice' | 'status') {
   if (sortField.value === field) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   } else {
@@ -143,9 +143,9 @@ function toggleSort(field: 'nome' | 'precoVenda' | 'status') {
 async function carregar(page: number) {
   erro.value = ''
   try {
-    pagina.value = await listarProdutos({
+    pagina.value = await listProducts({
       busca: filtros.busca || undefined,
-      status: (filtros.status || undefined) as StatusProduto | undefined,
+      status: (filtros.status || undefined) as ProductStatus | undefined,
       sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,
       size: pagina.value.size,
@@ -158,7 +158,7 @@ async function carregar(page: number) {
 async function carregarResumo() {
   erro.value = ''
   try {
-    resumo.value = await buscarResumoProdutos()
+    resumo.value = await getProductSummary()
   } catch {
     erro.value = 'Não foi possível carregar o resumo de produtos.'
   }
@@ -177,35 +177,35 @@ function editarProduto(id: string) {
   router.push({ name: 'produtos-editar', params: { id } })
 }
 
-async function alternarStatus(produto: ProdutoSummary) {
+async function alternarStatus(produto: ProductListItem) {
   erro.value = ''
-  const novoStatus = produto.status === 'INATIVO' ? 'ATIVO' : 'INATIVO'
+  const novoStatus = produto.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE'
   try {
-    await atualizarStatusProduto(produto.id, novoStatus)
+    await updateProductStatus(produto.id, novoStatus)
     await Promise.all([carregar(pagina.value.number), carregarResumo()])
   } catch {
     erro.value = 'Não foi possível atualizar o status.'
   }
 }
 
-async function excluir(produto: ProdutoSummary) {
-  if (!confirm(`Excluir o produto "${produto.nome}"?`)) {
+async function excluir(produto: ProductListItem) {
+  if (!confirm(`Excluir o produto "${produto.name}"?`)) {
     return
   }
   erro.value = ''
   try {
-    await excluirProduto(produto.id)
+    await deleteProduct(produto.id)
     await Promise.all([carregar(pagina.value.number), carregarResumo()])
   } catch {
     erro.value = 'Não foi possível excluir o produto.'
   }
 }
 
-function acoesPara(produto: ProdutoSummary): ActionsMenuItem[] {
+function acoesPara(produto: ProductListItem): ActionsMenuItem[] {
   return [
     { label: 'Editar', action: () => editarProduto(produto.id), testId: 'acao-editar' },
     {
-      label: produto.status === 'INATIVO' ? 'Ativar' : 'Inativar',
+      label: produto.status === 'INACTIVE' ? 'Ativar' : 'Inativar',
       action: () => alternarStatus(produto),
       testId: 'acao-status',
     },

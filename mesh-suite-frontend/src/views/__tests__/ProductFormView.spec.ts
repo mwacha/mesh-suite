@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
-import ProdutoFormView from '@/views/ProdutoFormView.vue'
-import * as produtosApi from '@/api/produtos'
+import ProductFormView from '@/views/ProductFormView.vue'
+import * as produtosApi from '@/api/products'
 
-vi.mock('@/api/produtos')
+vi.mock('@/api/products')
 vi.mock('@/api/categories')
 vi.mock('@/api/colorways')
 
@@ -14,18 +14,18 @@ function mountWithRouter(path = '/produtos/novo') {
     history: createWebHistory(),
     routes: [
       { path: '/produtos', name: 'produtos', component: { template: '<div />' } },
-      { path: '/produtos/novo', name: 'produtos-novo', component: ProdutoFormView },
-      { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoFormView },
+      { path: '/produtos/novo', name: 'produtos-novo', component: ProductFormView },
+      { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProductFormView },
     ],
   })
   router.push(path)
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(ProdutoFormView, { global: { plugins: [router] } }),
+    wrapper: mount(ProductFormView, { global: { plugins: [router] } }),
   }))
 }
 
-describe('ProdutoFormView', () => {
+describe('ProductFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     // Mocks otherwise persist mock.calls across tests in this file, so a later
@@ -41,7 +41,7 @@ describe('ProdutoFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Campo obrigatório')
-    expect(produtosApi.criarProduto).not.toHaveBeenCalled()
+    expect(produtosApi.createProduct).not.toHaveBeenCalled()
   })
 
   it('requires a preço de venda greater than zero', async () => {
@@ -56,7 +56,7 @@ describe('ProdutoFormView', () => {
   })
 
   it('submits the form and navigates to the list on success', async () => {
-    vi.mocked(produtosApi.criarProduto).mockResolvedValue({} as any)
+    vi.mocked(produtosApi.createProduct).mockResolvedValue({} as any)
     const { router, wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
@@ -65,12 +65,12 @@ describe('ProdutoFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(produtosApi.criarProduto).toHaveBeenCalled()
+    expect(produtosApi.createProduct).toHaveBeenCalled()
     expect(router.currentRoute.value.name).toBe('produtos')
   })
 
   it('sends null (not empty string) for blank optional numeric fields', async () => {
-    vi.mocked(produtosApi.criarProduto).mockResolvedValue({} as any)
+    vi.mocked(produtosApi.createProduct).mockResolvedValue({} as any)
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
@@ -86,14 +86,14 @@ describe('ProdutoFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    const payload = vi.mocked(produtosApi.criarProduto).mock.calls[0][0]
-    expect(payload.precoCusto).toBeNull()
-    expect(payload.estoqueMinimo).toBeNull()
-    expect(payload.peso).toBeNull()
+    const payload = vi.mocked(produtosApi.createProduct).mock.calls[0][0]
+    expect(payload.costPrice).toBeNull()
+    expect(payload.minStock).toBeNull()
+    expect(payload.weight).toBeNull()
   })
 
   it('shows a conflict message on duplicate SKU (409)', async () => {
-    vi.mocked(produtosApi.criarProduto).mockRejectedValue({ response: { status: 409 } })
+    vi.mocked(produtosApi.createProduct).mockRejectedValue({ response: { status: 409 } })
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
@@ -106,7 +106,7 @@ describe('ProdutoFormView', () => {
   })
 
   it('shows a permission-denied message on 403', async () => {
-    vi.mocked(produtosApi.criarProduto).mockRejectedValue({ response: { status: 403 } })
+    vi.mocked(produtosApi.createProduct).mockRejectedValue({ response: { status: 403 } })
     const { wrapper } = await mountWithRouter()
 
     await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
@@ -119,22 +119,22 @@ describe('ProdutoFormView', () => {
   })
 
   it('loads existing produto data in edit mode', async () => {
-    vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
-      id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '', categoriaId: null,
-      categoriaNome: null, corEstampaId: null, corEstampaNome: null, precoVenda: 59.9, precoCusto: null,
-      status: 'ATIVO', descricao: '', quantidadeEstoque: 10, unidadeMedida: 'UN', estoqueMinimo: null,
-      estoqueMaximo: null, peso: null, comprimento: null, largura: null, altura: null,
+    vi.mocked(produtosApi.getProduct).mockResolvedValue({
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brand: '', categoryId: null,
+      categoryName: null, colorwayId: null, colorwayName: null, salePrice: 59.9, costPrice: null,
+      status: 'ACTIVE', description: '', stockQuantity: 10, measurementUnit: 'UN', minStock: null,
+      maxStock: null, weight: null, length: null, width: null, height: null,
     } as any)
 
     const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')
     await flushPromises()
 
-    expect(produtosApi.buscarProduto).toHaveBeenCalledWith('abc-123')
+    expect(produtosApi.getProduct).toHaveBeenCalledWith('abc-123')
     expect((wrapper.find('[data-test="nome"]').element as HTMLInputElement).value).toBe('Camiseta Polo')
   })
 
   it('shows an error message when loading produto data fails in edit mode', async () => {
-    vi.mocked(produtosApi.buscarProduto).mockRejectedValue(new Error('network error'))
+    vi.mocked(produtosApi.getProduct).mockRejectedValue(new Error('network error'))
 
     const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')
     await flushPromises()
@@ -150,7 +150,7 @@ describe('ProdutoFormView', () => {
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
-    vi.mocked(produtosApi.criarProduto).mockResolvedValue({} as any)
+    vi.mocked(produtosApi.createProduct).mockResolvedValue({} as any)
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -161,8 +161,8 @@ describe('ProdutoFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    const payload = vi.mocked(produtosApi.criarProduto).mock.calls[0][0]
-    expect(payload.categoriaId).toBe('cat-1')
+    const payload = vi.mocked(produtosApi.createProduct).mock.calls[0][0]
+    expect(payload.categoryId).toBe('cat-1')
   })
 
   it('keeps an inactive-but-linked categoria selected in the dropdown when editing', async () => {
@@ -175,12 +175,12 @@ describe('ProdutoFormView', () => {
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
-    vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
-      id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '',
-      categoriaId: 'cat-inactive', categoriaNome: 'Descontinuados', corEstampaId: null, corEstampaNome: null,
-      precoVenda: 59.9, precoCusto: null, status: 'ATIVO', descricao: '', quantidadeEstoque: 10,
-      unidadeMedida: 'UN', estoqueMinimo: null, estoqueMaximo: null, peso: null, comprimento: null,
-      largura: null, altura: null,
+    vi.mocked(produtosApi.getProduct).mockResolvedValue({
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brand: '',
+      categoryId: 'cat-inactive', categoryName: 'Descontinuados', colorwayId: null, colorwayName: null,
+      salePrice: 59.9, costPrice: null, status: 'ACTIVE', description: '', stockQuantity: 10,
+      measurementUnit: 'UN', minStock: null, maxStock: null, weight: null, length: null,
+      width: null, height: null,
     } as any)
 
     const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')
@@ -199,7 +199,7 @@ describe('ProdutoFormView', () => {
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
-    vi.mocked(produtosApi.criarProduto).mockResolvedValue({} as any)
+    vi.mocked(produtosApi.createProduct).mockResolvedValue({} as any)
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -210,8 +210,8 @@ describe('ProdutoFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    const payload = vi.mocked(produtosApi.criarProduto).mock.calls[0][0]
-    expect(payload.corEstampaId).toBe('ce-1')
+    const payload = vi.mocked(produtosApi.createProduct).mock.calls[0][0]
+    expect(payload.colorwayId).toBe('ce-1')
   })
 
   it('keeps an inactive-but-linked cor/estampa selected in the dropdown when editing', async () => {
@@ -224,13 +224,13 @@ describe('ProdutoFormView', () => {
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
-    vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
-      id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '',
-      categoriaId: null, categoriaNome: null,
-      corEstampaId: 'ce-inactive', corEstampaNome: 'Floral Descontinuado',
-      precoVenda: 59.9, precoCusto: null, status: 'ATIVO', descricao: '', quantidadeEstoque: 10,
-      unidadeMedida: 'UN', estoqueMinimo: null, estoqueMaximo: null, peso: null, comprimento: null,
-      largura: null, altura: null,
+    vi.mocked(produtosApi.getProduct).mockResolvedValue({
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brand: '',
+      categoryId: null, categoryName: null,
+      colorwayId: 'ce-inactive', colorwayName: 'Floral Descontinuado',
+      salePrice: 59.9, costPrice: null, status: 'ACTIVE', description: '', stockQuantity: 10,
+      measurementUnit: 'UN', minStock: null, maxStock: null, weight: null, length: null,
+      width: null, height: null,
     } as any)
 
     const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')

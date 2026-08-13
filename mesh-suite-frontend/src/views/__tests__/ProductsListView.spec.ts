@@ -2,16 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
-import ProdutosListView from '@/views/ProdutosListView.vue'
-import * as produtosApi from '@/api/produtos'
+import ProductsListView from '@/views/ProductsListView.vue'
+import * as produtosApi from '@/api/products'
 
-vi.mock('@/api/produtos')
+vi.mock('@/api/products')
 
 function mountWithRouter() {
   const router = createRouter({
     history: createWebHistory(),
     routes: [
-      { path: '/produtos', name: 'produtos', component: ProdutosListView },
+      { path: '/produtos', name: 'produtos', component: ProductsListView },
       { path: '/produtos/novo', name: 'produtos-novo', component: { template: '<div />' } },
       { path: '/produtos/:id/editar', name: 'produtos-editar', component: { template: '<div />' } },
     ],
@@ -22,22 +22,22 @@ function mountWithRouter() {
     // The Ações dropdown is Teleported to <body> so it isn't clipped by the
     // table card's `overflow: hidden` -- stub it here so it renders in
     // place instead, keeping the existing wrapper.find() queries working.
-    wrapper: mount(ProdutosListView, { global: { plugins: [router], stubs: { teleport: true } } }),
+    wrapper: mount(ProductsListView, { global: { plugins: [router], stubs: { teleport: true } } }),
   }))
 }
 
 const produtoBase = {
-  id: 'p1', nome: 'Camiseta Polo', sku: 'P0001', marca: 'Marca Alpha',
-  precoVenda: 59.9, quantidadeEstoque: 10, status: 'ATIVO' as const,
+  id: 'p1', name: 'Camiseta Polo', sku: 'P0001', brand: 'Marca Alpha',
+  salePrice: 59.9, stockQuantity: 10, status: 'ACTIVE' as const,
 }
 
-describe('ProdutosListView', () => {
+describe('ProductsListView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(produtosApi.listarProdutos).mockResolvedValue({
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [produtoBase], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
-    vi.mocked(produtosApi.buscarResumoProdutos).mockResolvedValue({ total: 1, ativos: 1, inativos: 0 })
+    vi.mocked(produtosApi.getProductSummary).mockResolvedValue({ total: 1, active: 1, inactive: 0 })
   })
 
   it('loads and displays the product list on mount', async () => {
@@ -55,7 +55,7 @@ describe('ProdutosListView', () => {
     await wrapper.find('[data-test="busca"]').setValue('camiseta')
     await flushPromises()
 
-    expect(produtosApi.listarProdutos).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'camiseta' }))
+    expect(produtosApi.listProducts).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'camiseta' }))
   })
 
   it('navigates to the create form when "+ Novo Produto" is clicked', async () => {
@@ -92,7 +92,7 @@ describe('ProdutosListView', () => {
   })
 
   it('toggles a product status via the Ações menu', async () => {
-    vi.mocked(produtosApi.atualizarStatusProduto).mockResolvedValue()
+    vi.mocked(produtosApi.updateProductStatus).mockResolvedValue()
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -100,7 +100,7 @@ describe('ProdutosListView', () => {
     await wrapper.find('[data-test="acao-status"]').trigger('click')
     await flushPromises()
 
-    expect(produtosApi.atualizarStatusProduto).toHaveBeenCalledWith('p1', 'INATIVO')
+    expect(produtosApi.updateProductStatus).toHaveBeenCalledWith('p1', 'INACTIVE')
   })
 
   it('re-fetches with the sort param when a sortable column header is clicked', async () => {
@@ -110,11 +110,11 @@ describe('ProdutosListView', () => {
     await wrapper.find('[data-test="col-nome"]').trigger('click')
     await flushPromises()
 
-    expect(produtosApi.listarProdutos).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'nome,asc' }))
+    expect(produtosApi.listProducts).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'name,asc' }))
   })
 
   it('shows an error message when loading the product list fails', async () => {
-    vi.mocked(produtosApi.listarProdutos).mockRejectedValue(new Error('network error'))
+    vi.mocked(produtosApi.listProducts).mockRejectedValue(new Error('network error'))
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 

@@ -5,8 +5,8 @@
         <h2>Informações Gerais</h2>
         <div class="field-full">
           <label class="field-label">Nome do Produto *</label>
-          <input v-model="form.nome" data-test="nome" />
-          <p v-if="erros.nome" class="field-error">{{ erros.nome }}</p>
+          <input v-model="form.name" data-test="nome" />
+          <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
         </div>
         <div class="grid grid-2">
           <div>
@@ -16,17 +16,17 @@
           </div>
           <div>
             <label class="field-label">Código de Barra (EAN/GTIN)</label>
-            <input v-model="form.codigoBarras" placeholder="7891234567890" />
+            <input v-model="form.barcode" placeholder="7891234567890" />
           </div>
         </div>
         <div class="grid grid-2">
           <div>
             <label class="field-label">Marca</label>
-            <input v-model="form.marca" />
+            <input v-model="form.brand" />
           </div>
           <div>
             <label class="field-label">Categoria</label>
-            <select v-model="form.categoriaId" data-test="categoria">
+            <select v-model="form.categoryId" data-test="categoria">
               <option :value="null">Sem categoria</option>
               <option v-for="categoria in categorias" :key="categoria.id" :value="categoria.id">
                 {{ categoria.name }}
@@ -37,7 +37,7 @@
         <div class="grid grid-2">
           <div>
             <label class="field-label">Cor / Estampa</label>
-            <select v-model="form.corEstampaId" data-test="cor-estampa">
+            <select v-model="form.colorwayId" data-test="cor-estampa">
               <option :value="null">Sem cor/estampa</option>
               <option v-for="corEstampa in coresEstampas" :key="corEstampa.id" :value="corEstampa.id">
                 {{ corEstampa.name }}
@@ -48,12 +48,12 @@
         <div class="grid grid-2">
           <div>
             <label class="field-label">Preço de Venda *</label>
-            <input v-model.number="form.precoVenda" type="number" step="0.01" min="0" data-test="preco-venda" />
-            <p v-if="erros.precoVenda" class="field-error">{{ erros.precoVenda }}</p>
+            <input v-model.number="form.salePrice" type="number" step="0.01" min="0" data-test="preco-venda" />
+            <p v-if="erros.salePrice" class="field-error">{{ erros.salePrice }}</p>
           </div>
           <div>
             <label class="field-label">Preço de Custo</label>
-            <input v-model.number="form.precoCusto" type="number" step="0.01" min="0" data-test="preco-custo" />
+            <input v-model.number="form.costPrice" type="number" step="0.01" min="0" data-test="preco-custo" />
           </div>
         </div>
         <div class="field-full">
@@ -65,8 +65,8 @@
               type="button"
               class="status-pill"
               :class="{
-                'status-pill--ativo': form.status === opt.value && opt.value === 'ATIVO',
-                'status-pill--inativo': form.status === opt.value && opt.value === 'INATIVO',
+                'status-pill--ativo': form.status === opt.value && opt.value === 'ACTIVE',
+                'status-pill--inativo': form.status === opt.value && opt.value === 'INACTIVE',
               }"
               @click="form.status = opt.value"
             >
@@ -77,7 +77,7 @@
         </div>
         <div class="field-full">
           <label class="field-label">Descrição</label>
-          <textarea v-model="form.descricao" rows="3" placeholder="Descreva o produto..."></textarea>
+          <textarea v-model="form.description" rows="3" placeholder="Descreva o produto..."></textarea>
         </div>
       </section>
 
@@ -87,21 +87,21 @@
           <div class="grid grid-2">
             <div>
               <label class="field-label">Qtd. em Estoque</label>
-              <input v-model.number="form.quantidadeEstoque" type="number" step="1" min="0" />
+              <input v-model.number="form.stockQuantity" type="number" step="1" min="0" />
             </div>
             <div>
               <label class="field-label">Unidade de Medida</label>
-              <select v-model="form.unidadeMedida">
+              <select v-model="form.measurementUnit">
                 <option v-for="unidade in UNIDADES" :key="unidade" :value="unidade">{{ unidade }}</option>
               </select>
             </div>
             <div>
               <label class="field-label">Estoque Mínimo</label>
-              <input v-model.number="form.estoqueMinimo" type="number" step="1" min="0" />
+              <input v-model.number="form.minStock" type="number" step="1" min="0" />
             </div>
             <div>
               <label class="field-label">Estoque Máximo</label>
-              <input v-model.number="form.estoqueMaximo" type="number" step="1" min="0" />
+              <input v-model.number="form.maxStock" type="number" step="1" min="0" />
             </div>
           </div>
         </section>
@@ -111,19 +111,19 @@
           <div class="grid grid-2">
             <div>
               <label class="field-label">Peso (kg)</label>
-              <input v-model.number="form.peso" type="number" step="0.001" min="0" />
+              <input v-model.number="form.weight" type="number" step="0.001" min="0" />
             </div>
             <div>
               <label class="field-label">Comprimento (cm)</label>
-              <input v-model.number="form.comprimento" type="number" step="0.01" min="0" />
+              <input v-model.number="form.length" type="number" step="0.01" min="0" />
             </div>
             <div>
               <label class="field-label">Largura (cm)</label>
-              <input v-model.number="form.largura" type="number" step="0.01" min="0" />
+              <input v-model.number="form.width" type="number" step="0.01" min="0" />
             </div>
             <div>
               <label class="field-label">Altura (cm)</label>
-              <input v-model.number="form.altura" type="number" step="0.01" min="0" />
+              <input v-model.number="form.height" type="number" step="0.01" min="0" />
             </div>
           </div>
         </section>
@@ -144,20 +144,20 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
-  buscarProduto,
-  criarProduto,
-  atualizarProduto,
-  type ProdutoRequest,
-  type StatusProduto,
-  type UnidadeMedida,
-} from '@/api/produtos'
+  getProduct,
+  createProduct,
+  updateProduct,
+  type ProductRequest,
+  type ProductStatus,
+  type MeasurementUnit,
+} from '@/api/products'
 import { listCategories, type CategoryResponse } from '@/api/categories'
 import { listColorways, type ColorwayResponse } from '@/api/colorways'
 
-const UNIDADES: UnidadeMedida[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
-const STATUS_OPCOES: { value: StatusProduto; label: string }[] = [
-  { value: 'ATIVO', label: 'Ativo' },
-  { value: 'INATIVO', label: 'Inativo' },
+const UNIDADES: MeasurementUnit[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
+const STATUS_OPCOES: { value: ProductStatus; label: string }[] = [
+  { value: 'ACTIVE', label: 'Ativo' },
+  { value: 'INACTIVE', label: 'Inativo' },
 ]
 
 const route = useRoute()
@@ -165,31 +165,31 @@ const router = useRouter()
 
 const modoEdicao = computed(() => typeof route.params.id === 'string')
 
-function novoFormulario(): ProdutoRequest {
+function novoFormulario(): ProductRequest {
   return {
-    nome: '',
+    name: '',
     sku: '',
-    codigoBarras: '',
-    marca: '',
-    categoriaId: null,
-    corEstampaId: null,
-    precoVenda: 0,
-    precoCusto: null,
-    status: 'ATIVO',
-    descricao: '',
-    quantidadeEstoque: 0,
-    unidadeMedida: 'UN',
-    estoqueMinimo: null,
-    estoqueMaximo: null,
-    peso: null,
-    comprimento: null,
-    largura: null,
-    altura: null,
+    barcode: '',
+    brand: '',
+    categoryId: null,
+    colorwayId: null,
+    salePrice: 0,
+    costPrice: null,
+    status: 'ACTIVE',
+    description: '',
+    stockQuantity: 0,
+    measurementUnit: 'UN',
+    minStock: null,
+    maxStock: null,
+    weight: null,
+    length: null,
+    width: null,
+    height: null,
   }
 }
 
-const form = reactive<ProdutoRequest>(novoFormulario())
-const erros = reactive<{ nome?: string; sku?: string; precoVenda?: string }>({})
+const form = reactive<ProductRequest>(novoFormulario())
+const erros = reactive<{ name?: string; sku?: string; salePrice?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
 const categorias = ref<CategoryResponse[]>([])
@@ -215,7 +215,7 @@ onMounted(async () => {
   const id = route.params.id
   if (typeof id === 'string') {
     try {
-      const produto = await buscarProduto(id)
+      const produto = await getProduct(id)
       Object.assign(form, produto)
 
       // An inactive categoria is filtered out of the `ativo: true` list above,
@@ -226,28 +226,28 @@ onMounted(async () => {
       // <option> to bind to -- a full CategoryResponse isn't needed since
       // the template only reads `id`/`name`.
       if (
-        produto.categoriaId &&
-        !categorias.value.some((categoria) => categoria.id === produto.categoriaId)
+        produto.categoryId &&
+        !categorias.value.some((categoria) => categoria.id === produto.categoryId)
       ) {
         categorias.value = [
           ...categorias.value,
           {
-            id: produto.categoriaId,
-            name: produto.categoriaNome ?? '',
+            id: produto.categoryId,
+            name: produto.categoryName ?? '',
           } as CategoryResponse,
         ]
       }
 
       // Same reasoning as the categoria splice above, mirrored for corEstampa.
       if (
-        produto.corEstampaId &&
-        !coresEstampas.value.some((corEstampa) => corEstampa.id === produto.corEstampaId)
+        produto.colorwayId &&
+        !coresEstampas.value.some((corEstampa) => corEstampa.id === produto.colorwayId)
       ) {
         coresEstampas.value = [
           ...coresEstampas.value,
           {
-            id: produto.corEstampaId,
-            name: produto.corEstampaNome ?? '',
+            id: produto.colorwayId,
+            name: produto.colorwayName ?? '',
           } as ColorwayResponse,
         ]
       }
@@ -258,28 +258,28 @@ onMounted(async () => {
 })
 
 function validar(): boolean {
-  erros.nome = form.nome.trim() ? undefined : 'Campo obrigatório'
+  erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
   erros.sku = form.sku.trim() ? undefined : 'Campo obrigatório'
-  erros.precoVenda = Number(form.precoVenda) > 0 ? undefined : 'Informe um preço maior que zero'
-  return !erros.nome && !erros.sku && !erros.precoVenda
+  erros.salePrice = Number(form.salePrice) > 0 ? undefined : 'Informe um preço maior que zero'
+  return !erros.name && !erros.sku && !erros.salePrice
 }
 
 function numeroOuNull(valor: unknown): number | null {
   return valor === '' || valor === null || valor === undefined ? null : Number(valor)
 }
 
-function paraPayload(): ProdutoRequest {
+function paraPayload(): ProductRequest {
   return {
     ...form,
-    precoVenda: Number(form.precoVenda) || 0,
-    precoCusto: numeroOuNull(form.precoCusto),
-    quantidadeEstoque: Number(form.quantidadeEstoque) || 0,
-    estoqueMinimo: numeroOuNull(form.estoqueMinimo),
-    estoqueMaximo: numeroOuNull(form.estoqueMaximo),
-    peso: numeroOuNull(form.peso),
-    comprimento: numeroOuNull(form.comprimento),
-    largura: numeroOuNull(form.largura),
-    altura: numeroOuNull(form.altura),
+    salePrice: Number(form.salePrice) || 0,
+    costPrice: numeroOuNull(form.costPrice),
+    stockQuantity: Number(form.stockQuantity) || 0,
+    minStock: numeroOuNull(form.minStock),
+    maxStock: numeroOuNull(form.maxStock),
+    weight: numeroOuNull(form.weight),
+    length: numeroOuNull(form.length),
+    width: numeroOuNull(form.width),
+    height: numeroOuNull(form.height),
   }
 }
 
@@ -293,9 +293,9 @@ async function salvar() {
     const id = route.params.id
     const payload = paraPayload()
     if (typeof id === 'string') {
-      await atualizarProduto(id, payload)
+      await updateProduct(id, payload)
     } else {
-      await criarProduto(payload)
+      await createProduct(payload)
     }
     router.push({ name: 'produtos' })
   } catch (err: any) {
