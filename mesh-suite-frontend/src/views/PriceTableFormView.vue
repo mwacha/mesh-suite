@@ -6,14 +6,14 @@
         <div class="grid grid-2">
           <div>
             <label class="field-label">Nome da tabela de preços *</label>
-            <input v-model="form.nome" data-test="nome" />
-            <p v-if="erros.nome" class="field-error">{{ erros.nome }}</p>
+            <input v-model="form.name" data-test="nome" />
+            <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
           </div>
           <div>
             <label class="field-label">Como quer escolher os produtos desta tabela? *</label>
-            <select v-model="form.modoSelecaoProdutos" data-test="modo-selecao" @change="aoMudarModoSelecao">
-              <option value="TODOS_PRODUTOS">Todos os Produtos</option>
-              <option value="SELECIONAR_PRODUTOS">Selecionar os Produtos</option>
+            <select v-model="form.productSelectionMode" data-test="modo-selecao" @change="aoMudarModoSelecao">
+              <option value="ALL_PRODUCTS">Todos os Produtos</option>
+              <option value="SELECT_PRODUCTS">Selecionar os Produtos</option>
             </select>
           </div>
         </div>
@@ -21,54 +21,54 @@
           <div>
             <label class="field-label">Método de ajuste *</label>
             <div class="toggle-pair">
-              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.metodoAjuste === 'AUTOMATICO' }" data-test="metodo-automatico" @click="form.metodoAjuste = 'AUTOMATICO'">Automático</button>
-              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.metodoAjuste === 'MANUAL' }" data-test="metodo-manual" @click="form.metodoAjuste = 'MANUAL'">Manual</button>
+              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.adjustmentMethod === 'AUTOMATIC' }" data-test="metodo-automatico" @click="form.adjustmentMethod = 'AUTOMATIC'">Automático</button>
+              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.adjustmentMethod === 'MANUAL' }" data-test="metodo-manual" @click="form.adjustmentMethod = 'MANUAL'">Manual</button>
             </div>
           </div>
-          <div v-if="form.metodoAjuste === 'AUTOMATICO'">
+          <div v-if="form.adjustmentMethod === 'AUTOMATIC'">
             <label class="field-label">Operação</label>
             <div class="toggle-pair">
-              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.operacaoAjuste === 'SOMAR' }" data-test="operacao-somar" @click="form.operacaoAjuste = 'SOMAR'">Somar</button>
-              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.operacaoAjuste === 'SUBTRAIR' }" data-test="operacao-subtrair" @click="form.operacaoAjuste = 'SUBTRAIR'">Subtrair</button>
+              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.adjustmentOperation === 'ADD' }" data-test="operacao-somar" @click="form.adjustmentOperation = 'ADD'">Somar</button>
+              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.adjustmentOperation === 'SUBTRACT' }" data-test="operacao-subtrair" @click="form.adjustmentOperation = 'SUBTRACT'">Subtrair</button>
             </div>
             <div class="toggle-pair" style="margin-top: 6px">
-              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.tipoValorAjuste === 'REAL' }" data-test="tipo-real" @click="form.tipoValorAjuste = 'REAL'">R$</button>
-              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.tipoValorAjuste === 'PERCENTUAL' }" data-test="tipo-percentual" @click="form.tipoValorAjuste = 'PERCENTUAL'">%</button>
-              <input v-model.number="form.valorAjuste" type="number" step="0.01" min="0" data-test="valor-ajuste" />
+              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.adjustmentValueType === 'FIXED' }" data-test="tipo-real" @click="form.adjustmentValueType = 'FIXED'">R$</button>
+              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.adjustmentValueType === 'PERCENTAGE' }" data-test="tipo-percentual" @click="form.adjustmentValueType = 'PERCENTAGE'">%</button>
+              <input v-model.number="form.adjustmentValue" type="number" step="0.01" min="0" data-test="valor-ajuste" />
             </div>
           </div>
         </div>
         <div class="grid grid-2">
           <div>
             <label class="field-label">Arredondamento *</label>
-            <select v-model="form.arredondamento" data-test="arredondamento">
-              <option value="NAO_ARREDONDAR">Não arredondar</option>
-              <option value="TERMINAR_EM_0">Terminar em 0</option>
-              <option value="TERMINAR_EM_9">Terminar em 9</option>
-              <option value="TERMINAR_EM_90">Terminar em ,90</option>
-              <option value="TERMINAR_EM_99">Terminar em ,99</option>
+            <select v-model="form.rounding" data-test="arredondamento">
+              <option value="NO_ROUNDING">Não arredondar</option>
+              <option value="END_IN_0">Terminar em 0</option>
+              <option value="END_IN_9">Terminar em 9</option>
+              <option value="END_IN_90">Terminar em ,90</option>
+              <option value="END_IN_99">Terminar em ,99</option>
             </select>
           </div>
           <div class="grid grid-2">
             <div>
               <label class="field-label">Início de vigência *</label>
-              <input v-model="form.inicioVigencia" type="date" data-test="inicio-vigencia" />
-              <p v-if="erros.inicioVigencia" class="field-error">{{ erros.inicioVigencia }}</p>
+              <input v-model="form.effectiveStartDate" type="date" data-test="inicio-vigencia" />
+              <p v-if="erros.effectiveStartDate" class="field-error">{{ erros.effectiveStartDate }}</p>
             </div>
             <div>
               <label class="field-label">Término de vigência</label>
-              <input v-model="form.terminoVigencia" type="date" data-test="termino-vigencia" />
+              <input v-model="form.effectiveEndDate" type="date" data-test="termino-vigencia" />
             </div>
           </div>
         </div>
         <div class="grid grid-2">
           <div>
             <label class="field-label">Valor mínimo para venda (R$)</label>
-            <input v-model.number="form.valorMinimoVenda" type="number" step="0.01" min="0" />
+            <input v-model.number="form.minSalePrice" type="number" step="0.01" min="0" />
           </div>
           <div>
             <label class="field-label">% de Comissão (padrão dos itens)</label>
-            <input v-model.number="form.percentualComissaoPadrao" type="number" step="0.01" min="0" />
+            <input v-model.number="form.defaultCommissionPercentage" type="number" step="0.01" min="0" />
           </div>
         </div>
       </section>
@@ -76,7 +76,7 @@
       <section class="card">
         <h2>Itens na Tabela</h2>
 
-        <div v-if="form.modoSelecaoProdutos === 'SELECIONAR_PRODUTOS'" class="busca-wrapper">
+        <div v-if="form.productSelectionMode === 'SELECT_PRODUCTS'" class="busca-wrapper">
           <input
             v-model="produtoBusca"
             placeholder="Buscar produto por nome ou SKU..."
@@ -111,13 +111,13 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="{ item, indexReal } in itensExibidos" :key="item.produtoId">
-              <td>{{ item.produtoNome }}</td>
-              <td>{{ item.produtoSku }}</td>
-              <td>{{ formatarPreco(item.precoCadastrado) }}</td>
+            <tr v-for="{ item, indexReal } in itensExibidos" :key="item.productId">
+              <td>{{ item.productName }}</td>
+              <td>{{ item.productSku }}</td>
+              <td>{{ formatarPreco(item.registeredPrice) }}</td>
               <td>
                 <input
-                  v-model.number="item.precoNestaTabela"
+                  v-model.number="item.tablePrice"
                   type="number"
                   step="0.01"
                   min="0"
@@ -127,7 +127,7 @@
               </td>
               <td>{{ margem(item) }}</td>
               <td>
-                <input v-model.number="item.percentualComissao" type="number" step="0.01" min="0" :data-test="`item-comissao-${indexReal}`" />
+                <input v-model.number="item.commissionPercentage" type="number" step="0.01" min="0" :data-test="`item-comissao-${indexReal}`" />
               </td>
               <td><button type="button" class="btn-remover" :data-test="`item-remover-${indexReal}`" @click="removerItem(indexReal)">✕</button></td>
             </tr>
@@ -150,47 +150,47 @@ import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
-  buscarTabelaPreco,
-  criarTabelaPreco,
-  atualizarTabelaPreco,
-  type TabelaPrecoRequest,
-  type TabelaPrecoItemInput,
-} from '@/api/tabelasPreco'
+  getPriceTable,
+  createPriceTable,
+  updatePriceTable,
+  type PriceTableRequest,
+  type PriceTableItemInput,
+} from '@/api/priceTables'
 import { listProducts, type ProductListItem } from '@/api/products'
-import { calcularPrecoAjustado, type RegraAjuste } from '@/utils/calculoTabelaPreco'
+import { calculateAdjustedPrice, type AdjustmentRule } from '@/utils/priceCalculation'
 
 const route = useRoute()
 const router = useRouter()
 
 const modoEdicao = computed(() => typeof route.params.id === 'string')
 
-interface ItemForm extends TabelaPrecoItemInput {
-  produtoNome: string
-  produtoSku: string
-  precoCadastrado: number
+interface ItemForm extends PriceTableItemInput {
+  productName: string
+  productSku: string
+  registeredPrice: number
 }
 
-function novoFormulario(): TabelaPrecoRequest {
+function novoFormulario(): PriceTableRequest {
   return {
-    nome: '',
-    modoSelecaoProdutos: 'TODOS_PRODUTOS',
-    metodoAjuste: 'AUTOMATICO',
-    operacaoAjuste: 'SOMAR',
-    tipoValorAjuste: 'REAL',
-    valorAjuste: 0,
-    arredondamento: 'NAO_ARREDONDAR',
-    inicioVigencia: new Date().toISOString().slice(0, 10),
-    terminoVigencia: null,
-    valorMinimoVenda: null,
-    percentualComissaoPadrao: null,
-    ativo: true,
-    itens: [],
+    name: '',
+    productSelectionMode: 'ALL_PRODUCTS',
+    adjustmentMethod: 'AUTOMATIC',
+    adjustmentOperation: 'ADD',
+    adjustmentValueType: 'FIXED',
+    adjustmentValue: 0,
+    rounding: 'NO_ROUNDING',
+    effectiveStartDate: new Date().toISOString().slice(0, 10),
+    effectiveEndDate: null,
+    minSalePrice: null,
+    defaultCommissionPercentage: null,
+    active: true,
+    items: [],
   }
 }
 
-const form = reactive<TabelaPrecoRequest>(novoFormulario())
+const form = reactive<PriceTableRequest>(novoFormulario())
 const itens = ref<ItemForm[]>([])
-const erros = reactive<{ nome?: string; inicioVigencia?: string }>({})
+const erros = reactive<{ name?: string; effectiveStartDate?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
 
@@ -203,8 +203,8 @@ const itensExibidos = computed(() =>
   itens.value
     .map((item, indexReal) => ({ item, indexReal }))
     .filter(({ item }) => {
-      if (filtroPreenchimento.value === 'PREENCHIDO') return item.precoNestaTabela !== null
-      if (filtroPreenchimento.value === 'PENDENTE') return item.precoNestaTabela === null
+      if (filtroPreenchimento.value === 'PREENCHIDO') return item.tablePrice !== null
+      if (filtroPreenchimento.value === 'PENDENTE') return item.tablePrice === null
       return true
     }),
 )
@@ -214,24 +214,24 @@ function formatarPreco(valor: number) {
 }
 
 function margem(item: ItemForm) {
-  if (!item.precoCadastrado || item.precoNestaTabela === null) {
+  if (!item.registeredPrice || item.tablePrice === null) {
     return '0%'
   }
-  const pct = ((item.precoNestaTabela - item.precoCadastrado) / item.precoCadastrado) * 100
+  const pct = ((item.tablePrice - item.registeredPrice) / item.registeredPrice) * 100
   return `${pct.toFixed(0)}%`
 }
 
-function regraAtual(): RegraAjuste {
+function regraAtual(): AdjustmentRule {
   return {
-    operacaoAjuste: form.operacaoAjuste ?? 'SOMAR',
-    tipoValorAjuste: form.tipoValorAjuste ?? 'REAL',
-    valorAjuste: form.valorAjuste ?? 0,
-    arredondamento: form.arredondamento,
+    adjustmentOperation: form.adjustmentOperation ?? 'ADD',
+    adjustmentValueType: form.adjustmentValueType ?? 'FIXED',
+    adjustmentValue: form.adjustmentValue ?? 0,
+    rounding: form.rounding,
   }
 }
 
 function precoParaNovoItem(precoBase: number): number | null {
-  return form.metodoAjuste === 'AUTOMATICO' ? calcularPrecoAjustado(precoBase, regraAtual()) : null
+  return form.adjustmentMethod === 'AUTOMATIC' ? calculateAdjustedPrice(precoBase, regraAtual()) : null
 }
 
 // Spec §5: "recalcula sempre que a regra muda" -- in TODOS_PRODUTOS mode, every
@@ -239,14 +239,14 @@ function precoParaNovoItem(precoBase: number): number | null {
 // changes. Scoped to TODOS_PRODUTOS only: SELECIONAR_PRODUTOS items are only
 // touched by a direct edit or their own reset button.
 watch(
-  () => [form.metodoAjuste, form.operacaoAjuste, form.tipoValorAjuste, form.valorAjuste, form.arredondamento],
+  () => [form.adjustmentMethod, form.adjustmentOperation, form.adjustmentValueType, form.adjustmentValue, form.rounding],
   () => {
-    if (form.modoSelecaoProdutos !== 'TODOS_PRODUTOS') {
+    if (form.productSelectionMode !== 'ALL_PRODUCTS') {
       return
     }
     itens.value = itens.value.map((item) => ({
       ...item,
-      precoNestaTabela: precoParaNovoItem(item.precoCadastrado),
+      tablePrice: precoParaNovoItem(item.registeredPrice),
     }))
   },
 )
@@ -255,12 +255,12 @@ async function popularTodosOsProdutos() {
   try {
     const pagina = await listProducts({ status: 'ACTIVE', size: 1000 })
     itens.value = pagina.content.map((p) => ({
-      produtoId: p.id,
-      produtoNome: p.name,
-      produtoSku: p.sku,
-      precoCadastrado: p.salePrice,
-      precoNestaTabela: precoParaNovoItem(p.salePrice),
-      percentualComissao: form.percentualComissaoPadrao,
+      productId: p.id,
+      productName: p.name,
+      productSku: p.sku,
+      registeredPrice: p.salePrice,
+      tablePrice: precoParaNovoItem(p.salePrice),
+      commissionPercentage: form.defaultCommissionPercentage,
     }))
   } catch {
     erroGeral.value = 'Não foi possível carregar a lista de produtos.'
@@ -268,7 +268,7 @@ async function popularTodosOsProdutos() {
 }
 
 function aoMudarModoSelecao() {
-  if (form.modoSelecaoProdutos === 'TODOS_PRODUTOS') {
+  if (form.productSelectionMode === 'ALL_PRODUCTS') {
     popularTodosOsProdutos()
   } else {
     itens.value = []
@@ -282,7 +282,7 @@ async function buscarProdutos() {
   }
   try {
     const pagina = await listProducts({ busca: produtoBusca.value, status: 'ACTIVE', size: 5 })
-    resultadosProdutos.value = pagina.content.filter((p) => !itens.value.some((i) => i.produtoId === p.id))
+    resultadosProdutos.value = pagina.content.filter((p) => !itens.value.some((i) => i.productId === p.id))
   } catch {
     resultadosProdutos.value = []
   }
@@ -290,12 +290,12 @@ async function buscarProdutos() {
 
 function adicionarProduto(produto: ProductListItem) {
   itens.value.push({
-    produtoId: produto.id,
-    produtoNome: produto.name,
-    produtoSku: produto.sku,
-    precoCadastrado: produto.salePrice,
-    precoNestaTabela: precoParaNovoItem(produto.salePrice),
-    percentualComissao: form.percentualComissaoPadrao,
+    productId: produto.id,
+    productName: produto.name,
+    productSku: produto.sku,
+    registeredPrice: produto.salePrice,
+    tablePrice: precoParaNovoItem(produto.salePrice),
+    commissionPercentage: form.defaultCommissionPercentage,
   })
   produtoBusca.value = ''
   resultadosProdutos.value = []
@@ -307,56 +307,56 @@ function removerItem(index: number) {
 
 function resetarItem(index: number) {
   const item = itens.value[index]
-  item.precoNestaTabela = precoParaNovoItem(item.precoCadastrado)
+  item.tablePrice = precoParaNovoItem(item.registeredPrice)
 }
 
 onMounted(async () => {
   const id = route.params.id
   if (typeof id === 'string') {
     try {
-      const tabela = await buscarTabelaPreco(id)
-      form.nome = tabela.nome
-      form.modoSelecaoProdutos = tabela.modoSelecaoProdutos
-      form.metodoAjuste = tabela.metodoAjuste
-      form.operacaoAjuste = tabela.operacaoAjuste
-      form.tipoValorAjuste = tabela.tipoValorAjuste
-      form.valorAjuste = tabela.valorAjuste
-      form.arredondamento = tabela.arredondamento
-      form.inicioVigencia = tabela.inicioVigencia
-      form.terminoVigencia = tabela.terminoVigencia
-      form.valorMinimoVenda = tabela.valorMinimoVenda
-      form.percentualComissaoPadrao = tabela.percentualComissaoPadrao
-      form.ativo = tabela.ativo
-      itens.value = tabela.itens.map((i) => ({
-        produtoId: i.produtoId,
-        produtoNome: i.produtoNome,
-        produtoSku: i.produtoSku,
-        precoCadastrado: i.precoCadastrado,
-        precoNestaTabela: i.precoNestaTabela,
-        percentualComissao: i.percentualComissao,
+      const tabela = await getPriceTable(id)
+      form.name = tabela.name
+      form.productSelectionMode = tabela.productSelectionMode
+      form.adjustmentMethod = tabela.adjustmentMethod
+      form.adjustmentOperation = tabela.adjustmentOperation
+      form.adjustmentValueType = tabela.adjustmentValueType
+      form.adjustmentValue = tabela.adjustmentValue
+      form.rounding = tabela.rounding
+      form.effectiveStartDate = tabela.effectiveStartDate
+      form.effectiveEndDate = tabela.effectiveEndDate
+      form.minSalePrice = tabela.minSalePrice
+      form.defaultCommissionPercentage = tabela.defaultCommissionPercentage
+      form.active = tabela.active
+      itens.value = tabela.items.map((i) => ({
+        productId: i.productId,
+        productName: i.productName,
+        productSku: i.productSku,
+        registeredPrice: i.registeredPrice,
+        tablePrice: i.tablePrice,
+        commissionPercentage: i.commissionPercentage,
       }))
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados da tabela de preço.'
     }
-  } else if (form.modoSelecaoProdutos === 'TODOS_PRODUTOS') {
+  } else if (form.productSelectionMode === 'ALL_PRODUCTS') {
     await popularTodosOsProdutos()
   }
 })
 
 function validar(): boolean {
-  erros.nome = form.nome.trim() ? undefined : 'Campo obrigatório'
-  erros.inicioVigencia = form.inicioVigencia ? undefined : 'Campo obrigatório'
-  return !erros.nome && !erros.inicioVigencia
+  erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
+  erros.effectiveStartDate = form.effectiveStartDate ? undefined : 'Campo obrigatório'
+  return !erros.name && !erros.effectiveStartDate
 }
 
-function paraPayload(): TabelaPrecoRequest {
+function paraPayload(): PriceTableRequest {
   return {
     ...form,
-    valorAjuste: form.metodoAjuste === 'AUTOMATICO' ? Number(form.valorAjuste) || 0 : null,
-    itens: itens.value.map(({ produtoId, precoNestaTabela, percentualComissao }) => ({
-      produtoId,
-      precoNestaTabela,
-      percentualComissao,
+    adjustmentValue: form.adjustmentMethod === 'AUTOMATIC' ? Number(form.adjustmentValue) || 0 : null,
+    items: itens.value.map(({ productId, tablePrice, commissionPercentage }) => ({
+      productId,
+      tablePrice,
+      commissionPercentage,
     })),
   }
 }
@@ -371,9 +371,9 @@ async function salvar() {
     const id = route.params.id
     const payload = paraPayload()
     if (typeof id === 'string') {
-      await atualizarTabelaPreco(id, payload)
+      await updatePriceTable(id, payload)
     } else {
-      await criarTabelaPreco(payload)
+      await createPriceTable(payload)
     }
     router.push({ name: 'tabelas-preco' })
   } catch (err: any) {

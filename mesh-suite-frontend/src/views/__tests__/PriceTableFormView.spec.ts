@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
-import TabelaPrecoFormView from '@/views/TabelaPrecoFormView.vue'
-import * as tabelasPrecoApi from '@/api/tabelasPreco'
+import PriceTableFormView from '@/views/PriceTableFormView.vue'
+import * as tabelasPrecoApi from '@/api/priceTables'
 import * as produtosApi from '@/api/products'
 
-vi.mock('@/api/tabelasPreco')
+vi.mock('@/api/priceTables')
 vi.mock('@/api/products')
 
 function mountWithRouter(path = '/tabelas-preco/novo') {
@@ -14,14 +14,14 @@ function mountWithRouter(path = '/tabelas-preco/novo') {
     history: createWebHistory(),
     routes: [
       { path: '/tabelas-preco', name: 'tabelas-preco', component: { template: '<div />' } },
-      { path: '/tabelas-preco/novo', name: 'tabelas-preco-novo', component: TabelaPrecoFormView },
-      { path: '/tabelas-preco/:id/editar', name: 'tabelas-preco-editar', component: TabelaPrecoFormView },
+      { path: '/tabelas-preco/novo', name: 'tabelas-preco-novo', component: PriceTableFormView },
+      { path: '/tabelas-preco/:id/editar', name: 'tabelas-preco-editar', component: PriceTableFormView },
     ],
   })
   router.push(path)
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(TabelaPrecoFormView, { global: { plugins: [router] } }),
+    wrapper: mount(PriceTableFormView, { global: { plugins: [router] } }),
   }))
 }
 
@@ -46,7 +46,7 @@ describe('TabelaPrecoFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Campo obrigatório')
-    expect(tabelasPrecoApi.criarTabelaPreco).not.toHaveBeenCalled()
+    expect(tabelasPrecoApi.createPriceTable).not.toHaveBeenCalled()
   })
 
   it('populates items from all active produtos in TODOS_PRODUTOS mode, with live-calculated prices', async () => {
@@ -87,7 +87,7 @@ describe('TabelaPrecoFormView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECIONAR_PRODUTOS')
+    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
     await flushPromises()
     expect(wrapper.find('.tabela-itens').exists()).toBe(false)
 
@@ -109,7 +109,7 @@ describe('TabelaPrecoFormView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECIONAR_PRODUTOS')
+    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
     await flushPromises()
 
     vi.mocked(produtosApi.listProducts).mockResolvedValue({
@@ -165,7 +165,7 @@ describe('TabelaPrecoFormView', () => {
     vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
-    vi.mocked(tabelasPrecoApi.criarTabelaPreco).mockResolvedValue({} as any)
+    vi.mocked(tabelasPrecoApi.createPriceTable).mockResolvedValue({} as any)
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -174,8 +174,8 @@ describe('TabelaPrecoFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(tabelasPrecoApi.criarTabelaPreco).toHaveBeenCalledWith(
-      expect.objectContaining({ nome: 'Varejo', inicioVigencia: '2026-01-01' }),
+    expect(tabelasPrecoApi.createPriceTable).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Varejo', effectiveStartDate: '2026-01-01' }),
     )
     expect(router.currentRoute.value.name).toBe('tabelas-preco')
   })
@@ -184,7 +184,7 @@ describe('TabelaPrecoFormView', () => {
     vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
-    vi.mocked(tabelasPrecoApi.criarTabelaPreco).mockRejectedValue({ response: { status: 409 } })
+    vi.mocked(tabelasPrecoApi.createPriceTable).mockRejectedValue({ response: { status: 409 } })
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -200,24 +200,24 @@ describe('TabelaPrecoFormView', () => {
     vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
-    vi.mocked(tabelasPrecoApi.buscarTabelaPreco).mockResolvedValue({
-      id: 'tp-1', nome: 'Varejo', modoSelecaoProdutos: 'SELECIONAR_PRODUTOS', metodoAjuste: 'MANUAL',
-      operacaoAjuste: null, tipoValorAjuste: null, valorAjuste: null, arredondamento: 'NAO_ARREDONDAR',
-      inicioVigencia: '2026-01-01', terminoVigencia: null, valorMinimoVenda: null, percentualComissaoPadrao: null,
-      ativo: true, criadoEm: '2026-01-01T00:00:00Z',
-      itens: [{ produtoId: 'prod-1', produtoNome: 'Camiseta Polo', produtoSku: 'P0001', precoCadastrado: 100, precoNestaTabela: 120, percentualComissao: 5 }],
+    vi.mocked(tabelasPrecoApi.getPriceTable).mockResolvedValue({
+      id: 'tp-1', name: 'Varejo', productSelectionMode: 'SELECT_PRODUCTS', adjustmentMethod: 'MANUAL',
+      adjustmentOperation: null, adjustmentValueType: null, adjustmentValue: null, rounding: 'NO_ROUNDING',
+      effectiveStartDate: '2026-01-01', effectiveEndDate: null, minSalePrice: null, defaultCommissionPercentage: null,
+      active: true, createdAt: '2026-01-01T00:00:00Z',
+      items: [{ productId: 'prod-1', productName: 'Camiseta Polo', productSku: 'P0001', registeredPrice: 100, tablePrice: 120, commissionPercentage: 5 }],
     })
 
     const { wrapper } = await mountWithRouter('/tabelas-preco/tp-1/editar')
     await flushPromises()
 
-    expect(tabelasPrecoApi.buscarTabelaPreco).toHaveBeenCalledWith('tp-1')
+    expect(tabelasPrecoApi.getPriceTable).toHaveBeenCalledWith('tp-1')
     expect((wrapper.find('[data-test="nome"]').element as HTMLInputElement).value).toBe('Varejo')
     expect(wrapper.text()).toContain('Camiseta Polo')
   })
 
   it('shows an error message when loading tabela data fails in edit mode', async () => {
-    vi.mocked(tabelasPrecoApi.buscarTabelaPreco).mockRejectedValue(new Error('network error'))
+    vi.mocked(tabelasPrecoApi.getPriceTable).mockRejectedValue(new Error('network error'))
 
     const { wrapper } = await mountWithRouter('/tabelas-preco/tp-1/editar')
     await flushPromises()
