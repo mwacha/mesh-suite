@@ -1,4 +1,4 @@
-package com.meshsuite.produto.controller;
+package com.meshsuite.pricetable.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -28,7 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-class TabelaPrecoControllerTest extends AbstractIntegrationTest {
+class PriceTableControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
@@ -124,91 +124,91 @@ class TabelaPrecoControllerTest extends AbstractIntegrationTest {
     private String tabelaPrecoPayload(String nome, String produtoId) {
         return """
                 {
-                  "nome": "%s",
-                  "modoSelecaoProdutos": "SELECIONAR_PRODUTOS",
-                  "metodoAjuste": "MANUAL",
-                  "arredondamento": "NAO_ARREDONDAR",
-                  "inicioVigencia": "2026-01-01",
-                  "itens": [
-                    { "produtoId": "%s", "precoNestaTabela": 69.90, "percentualComissao": 5.00 }
+                  "name": "%s",
+                  "productSelectionMode": "SELECT_PRODUCTS",
+                  "adjustmentMethod": "MANUAL",
+                  "rounding": "NO_ROUNDING",
+                  "effectiveStartDate": "2026-01-01",
+                  "items": [
+                    { "productId": "%s", "tablePrice": 69.90, "commissionPercentage": 5.00 }
                   ]
                 }
                 """.formatted(nome, produtoId);
     }
 
     @Test
-    void createsListsUpdatesAndDeletesTabelaPreco() throws Exception {
+    void createsListsUpdatesAndDeletesPriceTable() throws Exception {
         Contexto ctx = loginAndSetUp("aurora-tp", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
-        String created = mockMvc.perform(post("/api/tabelas-preco").cookie(cookie)
+        String created = mockMvc.perform(post("/api/price-tables").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(tabelaPrecoPayload("Varejo", ctx.produtoId())))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.nome").value("Varejo"))
-                .andExpect(jsonPath("$.itens[0].precoNestaTabela").value(69.90))
+                .andExpect(jsonPath("$.name").value("Varejo"))
+                .andExpect(jsonPath("$.items[0].tablePrice").value(69.90))
                 .andReturn().getResponse().getContentAsString();
 
         String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(get("/api/tabelas-preco").cookie(cookie))
+        mockMvc.perform(get("/api/price-tables").cookie(cookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].nome").value("Varejo"));
+                .andExpect(jsonPath("$.content[0].name").value("Varejo"));
 
-        mockMvc.perform(put("/api/tabelas-preco/" + id).cookie(cookie)
+        mockMvc.perform(put("/api/price-tables/" + id).cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(tabelaPrecoPayload("Varejo Atualizado", ctx.produtoId())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Varejo Atualizado"));
+                .andExpect(jsonPath("$.name").value("Varejo Atualizado"));
 
-        mockMvc.perform(delete("/api/tabelas-preco/" + id).cookie(cookie))
+        mockMvc.perform(delete("/api/price-tables/" + id).cookie(cookie))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/tabelas-preco/" + id).cookie(cookie))
+        mockMvc.perform(get("/api/price-tables/" + id).cookie(cookie))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void rejectsDuplicateNomeWithConflict() throws Exception {
+    void rejectsDuplicateNameWithConflict() throws Exception {
         Contexto ctx = loginAndSetUp("aurora-tp", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
-        mockMvc.perform(post("/api/tabelas-preco").cookie(cookie)
+        mockMvc.perform(post("/api/price-tables").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(tabelaPrecoPayload("Varejo", ctx.produtoId())))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/tabelas-preco").cookie(cookie)
+        mockMvc.perform(post("/api/price-tables").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(tabelaPrecoPayload("Varejo", ctx.produtoId())))
                 .andExpect(status().isConflict());
     }
 
     @Test
-    void rejectsMissingInicioVigenciaWithBadRequest() throws Exception {
+    void rejectsMissingEffectiveStartDateWithBadRequest() throws Exception {
         Contexto ctx = loginAndSetUp("aurora-tp", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
-        mockMvc.perform(post("/api/tabelas-preco").cookie(cookie)
+        mockMvc.perform(post("/api/price-tables").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "nome": "Sem Vigência",
-                                  "modoSelecaoProdutos": "SELECIONAR_PRODUTOS",
-                                  "metodoAjuste": "MANUAL",
-                                  "arredondamento": "NAO_ARREDONDAR",
-                                  "itens": []
+                                  "name": "Sem Vigência",
+                                  "productSelectionMode": "SELECT_PRODUCTS",
+                                  "adjustmentMethod": "MANUAL",
+                                  "rounding": "NO_ROUNDING",
+                                  "items": []
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void tenantACannotAccessTenantBsTabelaPreco() throws Exception {
+    void tenantACannotAccessTenantBsPriceTable() throws Exception {
         Contexto ctxA = loginAndSetUp("aurora-tp", "marina@aurora.com.br", "11222333000144");
         Cookie cookieA = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctxA.cookie());
 
-        String body = mockMvc.perform(post("/api/tabelas-preco").cookie(cookieA)
+        String body = mockMvc.perform(post("/api/price-tables").cookie(cookieA)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(tabelaPrecoPayload("Varejo", ctxA.produtoId())))
                 .andExpect(status().isCreated())
@@ -224,13 +224,13 @@ class TabelaPrecoControllerTest extends AbstractIntegrationTest {
         // 200 instead of the expected 404.
         entityManager.clear();
 
-        mockMvc.perform(get("/api/tabelas-preco/" + id).cookie(cookieB))
+        mockMvc.perform(get("/api/price-tables/" + id).cookie(cookieB))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void unauthenticatedRequestIsRejected() throws Exception {
-        mockMvc.perform(get("/api/tabelas-preco"))
+        mockMvc.perform(get("/api/price-tables"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -239,7 +239,7 @@ class TabelaPrecoControllerTest extends AbstractIntegrationTest {
         String token = loginWithoutProductPermission("sem-permissao-tp", "sem-permissao@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(get("/api/tabelas-preco").cookie(cookie))
+        mockMvc.perform(get("/api/price-tables").cookie(cookie))
                 .andExpect(status().isForbidden());
     }
 }

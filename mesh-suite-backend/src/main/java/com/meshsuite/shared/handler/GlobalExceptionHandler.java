@@ -154,21 +154,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.TabelaPrecoNaoEncontradaException.class)
-    public ResponseEntity<Map<String, String>> handleTabelaPrecoNaoEncontrada(
-            com.meshsuite.produto.exception.TabelaPrecoNaoEncontradaException e) {
+    @ExceptionHandler(com.meshsuite.pricetable.exception.PriceTableNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePriceTableNotFound(
+            com.meshsuite.pricetable.exception.PriceTableNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.TabelaPrecoNomeDuplicadoException.class)
-    public ResponseEntity<Map<String, String>> handleTabelaPrecoNomeDuplicado(
-            com.meshsuite.produto.exception.TabelaPrecoNomeDuplicadoException e) {
+    @ExceptionHandler(com.meshsuite.pricetable.exception.DuplicatePriceTableNameException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicatePriceTableName(
+            com.meshsuite.pricetable.exception.DuplicatePriceTableNameException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.produto.exception.TabelaPrecoValidationException.class)
-    public ResponseEntity<Map<String, String>> handleTabelaPrecoValidation(
-            com.meshsuite.produto.exception.TabelaPrecoValidationException e) {
+    @ExceptionHandler(com.meshsuite.pricetable.exception.PriceTableValidationException.class)
+    public ResponseEntity<Map<String, String>> handlePriceTableValidation(
+            com.meshsuite.pricetable.exception.PriceTableValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 

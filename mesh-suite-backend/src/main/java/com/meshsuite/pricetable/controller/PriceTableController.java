@@ -1,10 +1,10 @@
-package com.meshsuite.produto.controller;
+package com.meshsuite.pricetable.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
-import com.meshsuite.produto.dto.TabelaPrecoRequest;
-import com.meshsuite.produto.dto.TabelaPrecoResponse;
-import com.meshsuite.produto.dto.TabelaPrecoSummaryResponse;
-import com.meshsuite.produto.service.TabelaPrecoService;
+import com.meshsuite.pricetable.dto.PriceTableRequest;
+import com.meshsuite.pricetable.dto.PriceTableResponse;
+import com.meshsuite.pricetable.dto.PriceTableSummaryResponse;
+import com.meshsuite.pricetable.service.PriceTableService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -15,37 +15,37 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/tabelas-preco")
-public class TabelaPrecoController {
+@RequestMapping("/api/price-tables")
+public class PriceTableController {
 
-    private final TabelaPrecoService tabelaPrecoService;
+    private final PriceTableService tabelaPrecoService;
 
-    public TabelaPrecoController(TabelaPrecoService tabelaPrecoService) {
+    public PriceTableController(PriceTableService tabelaPrecoService) {
         this.tabelaPrecoService = tabelaPrecoService;
     }
 
     @GetMapping
-    public Page<TabelaPrecoSummaryResponse> listar(
+    public Page<PriceTableSummaryResponse> listar(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) Boolean ativo,
-            @PageableDefault(size = 10, sort = "nome") Pageable pageable) {
+            @PageableDefault(size = 10, sort = "name") Pageable pageable) {
         return tabelaPrecoService.listar(busca, ativo, pageable);
     }
 
     @GetMapping("/{id}")
-    public TabelaPrecoResponse buscarPorId(@PathVariable UUID id) {
+    public PriceTableResponse buscarPorId(@PathVariable UUID id) {
         return tabelaPrecoService.buscarPorId(id);
     }
 
     @PostMapping
-    public ResponseEntity<TabelaPrecoResponse> criar(@AuthenticationPrincipal AuthContextService.Context principal,
-                                                        @Valid @RequestBody TabelaPrecoRequest request) {
-        TabelaPrecoResponse response = tabelaPrecoService.criar(principal.tenantId(), request);
+    public ResponseEntity<PriceTableResponse> criar(@AuthenticationPrincipal AuthContextService.Context principal,
+                                                        @Valid @RequestBody PriceTableRequest request) {
+        PriceTableResponse response = tabelaPrecoService.criar(principal.tenantId(), request);
         return ResponseEntity.status(201).body(response);
     }
 
     @PutMapping("/{id}")
-    public TabelaPrecoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody TabelaPrecoRequest request) {
+    public PriceTableResponse atualizar(@PathVariable UUID id, @Valid @RequestBody PriceTableRequest request) {
         return tabelaPrecoService.atualizar(id, request);
     }
 
