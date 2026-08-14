@@ -1,12 +1,11 @@
-package com.meshsuite.produto.repository;
+package com.meshsuite.pricetable.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.meshsuite.AbstractIntegrationTest;
-import com.meshsuite.produto.domain.TabelaPreco;
-import com.meshsuite.produto.domain.enums.Arredondamento;
-import com.meshsuite.produto.domain.enums.MetodoAjuste;
-import com.meshsuite.produto.domain.enums.ModoSelecaoProdutos;
-import com.meshsuite.produto.repository.TabelaPrecoRepository;
+import com.meshsuite.pricetable.domain.PriceTable;
+import com.meshsuite.pricetable.domain.enums.Rounding;
+import com.meshsuite.pricetable.domain.enums.AdjustmentMethod;
+import com.meshsuite.pricetable.domain.enums.ProductSelectionMode;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import jakarta.persistence.EntityManager;
@@ -16,10 +15,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-class TabelaPrecoRepositoryTest extends AbstractIntegrationTest {
+class PriceTableRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired TenantRepository tenantRepository;
-    @Autowired TabelaPrecoRepository tabelaPrecoRepository;
+    @Autowired PriceTableRepository priceTableRepository;
     @Autowired EntityManager entityManager;
 
     private Tenant createTenant(String codigo) {
@@ -33,55 +32,55 @@ class TabelaPrecoRepositoryTest extends AbstractIntegrationTest {
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenantId + "'").executeUpdate();
     }
 
-    private TabelaPreco novaTabelaPreco(UUID tenantId, String nome) {
-        TabelaPreco t = new TabelaPreco();
+    private PriceTable newPriceTable(UUID tenantId, String name) {
+        PriceTable t = new PriceTable();
         t.setTenantId(tenantId);
-        t.setNome(nome);
-        t.setModoSelecaoProdutos(ModoSelecaoProdutos.TODOS_PRODUTOS);
-        t.setMetodoAjuste(MetodoAjuste.MANUAL);
-        t.setArredondamento(Arredondamento.NAO_ARREDONDAR);
-        t.setInicioVigencia(LocalDate.of(2026, 1, 1));
+        t.setName(name);
+        t.setProductSelectionMode(ProductSelectionMode.ALL_PRODUCTS);
+        t.setAdjustmentMethod(AdjustmentMethod.MANUAL);
+        t.setRounding(Rounding.NO_ROUNDING);
+        t.setEffectiveStartDate(LocalDate.of(2026, 1, 1));
         return t;
     }
 
     @Test
     @Transactional
-    void savesTabelaPrecoWithDefaults() {
+    void savesPriceTableWithDefaults() {
         Tenant tenant = createTenant("aurora-tp");
         setTenantContext(tenant.getId());
 
-        TabelaPreco saved = tabelaPrecoRepository.saveAndFlush(novaTabelaPreco(tenant.getId(), "Varejo"));
+        PriceTable saved = priceTableRepository.saveAndFlush(newPriceTable(tenant.getId(), "Varejo"));
         entityManager.clear();
 
-        TabelaPreco reloaded = tabelaPrecoRepository.findById(saved.getId()).orElseThrow();
-        assertThat(reloaded.getAtivo()).isTrue();
-        assertThat(reloaded.getInicioVigencia()).isEqualTo(LocalDate.of(2026, 1, 1));
+        PriceTable reloaded = priceTableRepository.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getActive()).isTrue();
+        assertThat(reloaded.getEffectiveStartDate()).isEqualTo(LocalDate.of(2026, 1, 1));
     }
 
     @Test
     @Transactional
-    void nomeMustBeUniquePerTenant() {
+    void nameMustBeUniquePerTenant() {
         Tenant tenant = createTenant("aurora-tp");
         setTenantContext(tenant.getId());
 
-        tabelaPrecoRepository.saveAndFlush(novaTabelaPreco(tenant.getId(), "Varejo"));
+        priceTableRepository.saveAndFlush(newPriceTable(tenant.getId(), "Varejo"));
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 org.springframework.dao.DataIntegrityViolationException.class,
-                () -> tabelaPrecoRepository.saveAndFlush(novaTabelaPreco(tenant.getId(), "Varejo")));
+                () -> priceTableRepository.saveAndFlush(newPriceTable(tenant.getId(), "Varejo")));
     }
 
     @Test
     @Transactional
-    void sameNomeAllowedAcrossDifferentTenants() {
+    void sameNameAllowedAcrossDifferentTenants() {
         Tenant tenantA = createTenant("aurora-tp");
         Tenant tenantB = createTenant("boreal-tp");
 
         setTenantContext(tenantA.getId());
-        tabelaPrecoRepository.saveAndFlush(novaTabelaPreco(tenantA.getId(), "Varejo"));
+        priceTableRepository.saveAndFlush(newPriceTable(tenantA.getId(), "Varejo"));
 
         setTenantContext(tenantB.getId());
-        TabelaPreco saved = tabelaPrecoRepository.saveAndFlush(novaTabelaPreco(tenantB.getId(), "Varejo"));
+        PriceTable saved = priceTableRepository.saveAndFlush(newPriceTable(tenantB.getId(), "Varejo"));
 
         assertThat(saved.getId()).isNotNull();
     }
@@ -91,13 +90,13 @@ class TabelaPrecoRepositoryTest extends AbstractIntegrationTest {
     void rlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora-tp");
         setTenantContext(tenant.getId());
-        tabelaPrecoRepository.saveAndFlush(novaTabelaPreco(tenant.getId(), "Varejo"));
+        priceTableRepository.saveAndFlush(newPriceTable(tenant.getId(), "Varejo"));
         entityManager.clear();
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
         Long count = ((Number) entityManager
-                .createNativeQuery("SELECT count(*) FROM tabela_preco")
+                .createNativeQuery("SELECT count(*) FROM price_table")
                 .getSingleResult()).longValue();
 
         assertThat(count).isZero();
