@@ -1,4 +1,4 @@
-package com.meshsuite.pedido.domain;
+package com.meshsuite.salesorder.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,15 +10,15 @@ import lombok.Setter;
 import java.util.UUID;
 
 @Entity
-@Table(name = "pedido_contador")
+@Table(name = "sales_order_counter")
 @Getter
 @Setter
-public class PedidoContador {
+public class SalesOrderCounter {
 
     @Id
     @Column(name = "tenant_id")
     private UUID tenantId;
 
-    @Column(name = "proximo_numero", nullable = false)
-    private Integer proximoNumero = 1;
+    @Column(name = "next_number", nullable = false)
+    private Integer nextNumber = 1;
 }
