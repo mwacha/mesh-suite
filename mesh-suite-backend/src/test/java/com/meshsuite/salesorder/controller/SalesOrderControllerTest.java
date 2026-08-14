@@ -1,4 +1,4 @@
-package com.meshsuite.pedido.controller;
+package com.meshsuite.salesorder.controller;
 
 import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
@@ -34,21 +34,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Transactional
-class PedidoControllerTest extends AbstractIntegrationTest {
+class SalesOrderControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
     @Autowired CompanyRepository companyRepository;
     @Autowired UserRepository userRepository;
     @Autowired PartnerRepository partnerRepository;
-    @Autowired ProductRepository produtoRepository;
+    @Autowired ProductRepository productRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
 
-    private record Contexto(String cookie, String clienteId, String vendedorId, String produtoId) {
+    private record Context(String cookie, String customerId, String salespersonId, String productId) {
     }
 
-    private Contexto loginAndSetUp(String codigo, String email, String companyCnpj) throws Exception {
+    private Context loginAndSetUp(String codigo, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
         tenant.setCodigo(codigo);
         tenant.setNome(codigo);
@@ -75,29 +75,29 @@ class PedidoControllerTest extends AbstractIntegrationTest {
         userLogin.getPermissions().add(new UserPermissionGrant(Module.ORDER, Action.DELETE));
         userRepository.saveAndFlush(userLogin);
 
-        User vendedor = new User();
-        vendedor.setTenantId(tenant.getId());
-        vendedor.setName("Carla Vendedora");
-        vendedor.setEmail("carla-" + codigo + "@" + codigo + ".com.br");
-        vendedor.setPasswordHash("hash");
-        vendedor.setRole(Role.SALES_REP);
-        vendedor.setProfile(Profile.SALES);
-        userRepository.saveAndFlush(vendedor);
+        User salesperson = new User();
+        salesperson.setTenantId(tenant.getId());
+        salesperson.setName("Carla Vendedora");
+        salesperson.setEmail("carla-" + codigo + "@" + codigo + ".com.br");
+        salesperson.setPasswordHash("hash");
+        salesperson.setRole(Role.SALES_REP);
+        salesperson.setProfile(Profile.SALES);
+        userRepository.saveAndFlush(salesperson);
 
-        Partner cliente = new Partner();
-        cliente.setTenantId(tenant.getId());
-        cliente.setPersonType(PersonType.LEGAL_ENTITY);
-        cliente.setDocument(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
-        cliente.setTradeName("Mercado Silva");
-        cliente.getRoles().add(PartnerRole.CUSTOMER);
-        partnerRepository.saveAndFlush(cliente);
+        Partner customer = new Partner();
+        customer.setTenantId(tenant.getId());
+        customer.setPersonType(PersonType.LEGAL_ENTITY);
+        customer.setDocument(companyCnpj.equals("11222333000144") ? "55666777000155" : "11222333000144");
+        customer.setTradeName("Mercado Silva");
+        customer.getRoles().add(PartnerRole.CUSTOMER);
+        partnerRepository.saveAndFlush(customer);
 
-        Product produto = new Product();
-        produto.setTenantId(tenant.getId());
-        produto.setName("Camiseta Polo");
-        produto.setSku("P0001-" + codigo);
-        produto.setSalePrice(new BigDecimal("59.90"));
-        produtoRepository.saveAndFlush(produto);
+        Product product = new Product();
+        product.setTenantId(tenant.getId());
+        product.setName("Camiseta Polo");
+        product.setSku("P0001-" + codigo);
+        product.setSalePrice(new BigDecimal("59.90"));
+        productRepository.saveAndFlush(product);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
 
@@ -108,124 +108,124 @@ class PedidoControllerTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getHeader("Set-Cookie");
 
         String token = cookieHeader.split("mesh_token=")[1].split(";")[0];
-        return new Contexto(token, cliente.getId().toString(), vendedor.getId().toString(), produto.getId().toString());
+        return new Context(token, customer.getId().toString(), salesperson.getId().toString(), product.getId().toString());
     }
 
-    private String pedidoPayload(Contexto ctx) {
+    private String salesOrderPayload(Context ctx) {
         return """
                 {
-                  "clienteId": "%s",
-                  "vendedorId": "%s",
-                  "desconto": 0,
-                  "itens": [
-                    { "produtoId": "%s", "quantidade": 2, "valorUnitario": 59.90 }
+                  "customerId": "%s",
+                  "salespersonId": "%s",
+                  "discount": 0,
+                  "items": [
+                    { "productId": "%s", "quantity": 2, "unitPrice": 59.90 }
                   ]
                 }
-                """.formatted(ctx.clienteId(), ctx.vendedorId(), ctx.produtoId());
+                """.formatted(ctx.customerId(), ctx.salespersonId(), ctx.productId());
     }
 
     @Test
-    void createsListsUpdatesAdvancesAndDeletesPedido() throws Exception {
-        Contexto ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+    void createsListsUpdatesAdvancesAndDeletesSalesOrder() throws Exception {
+        Context ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
-        String created = mockMvc.perform(post("/api/pedidos").cookie(cookie)
+        String created = mockMvc.perform(post("/api/sales-orders").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(pedidoPayload(ctx)))
+                        .content(salesOrderPayload(ctx)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.numero").value(1))
-                .andExpect(jsonPath("$.status").value("DIGITADO"))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.total").value(119.80))
                 .andReturn().getResponse().getContentAsString();
 
         String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(get("/api/pedidos").cookie(cookie))
+        mockMvc.perform(get("/api/sales-orders").cookie(cookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].numero").value(1));
+                .andExpect(jsonPath("$.content[0].number").value(1));
 
-        mockMvc.perform(put("/api/pedidos/" + id).cookie(cookie)
+        mockMvc.perform(put("/api/sales-orders/" + id).cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "clienteId": "%s",
-                                  "vendedorId": "%s",
-                                  "desconto": 10.00,
-                                  "itens": [
-                                    { "produtoId": "%s", "quantidade": 2, "valorUnitario": 59.90 }
+                                  "customerId": "%s",
+                                  "salespersonId": "%s",
+                                  "discount": 10.00,
+                                  "items": [
+                                    { "productId": "%s", "quantity": 2, "unitPrice": 59.90 }
                                   ]
                                 }
-                                """.formatted(ctx.clienteId(), ctx.vendedorId(), ctx.produtoId())))
+                                """.formatted(ctx.customerId(), ctx.salespersonId(), ctx.productId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(109.80));
 
-        mockMvc.perform(patch("/api/pedidos/" + id + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/sales-orders/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"EM_PREPARO\"}"))
+                        .content("{\"status\":\"IN_PREPARATION\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("EM_PREPARO"));
+                .andExpect(jsonPath("$.status").value("IN_PREPARATION"));
 
-        mockMvc.perform(patch("/api/pedidos/" + id + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/sales-orders/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"DIGITADO\"}"))
+                        .content("{\"status\":\"DRAFT\"}"))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(delete("/api/pedidos/" + id).cookie(cookie))
+        mockMvc.perform(delete("/api/sales-orders/" + id).cookie(cookie))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/pedidos/" + id).cookie(cookie))
+        mockMvc.perform(get("/api/sales-orders/" + id).cookie(cookie))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void rejectsEmptyItensWithBadRequest() throws Exception {
-        Contexto ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+    void rejectsEmptyItemsWithBadRequest() throws Exception {
+        Context ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
-        mockMvc.perform(post("/api/pedidos").cookie(cookie)
+        mockMvc.perform(post("/api/sales-orders").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "clienteId": "%s",
-                                  "vendedorId": "%s",
-                                  "desconto": 0,
-                                  "itens": []
+                                  "customerId": "%s",
+                                  "salespersonId": "%s",
+                                  "discount": 0,
+                                  "items": []
                                 }
-                                """.formatted(ctx.clienteId(), ctx.vendedorId())))
+                                """.formatted(ctx.customerId(), ctx.salespersonId())))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void rejectsClienteWithoutClientePapelWithBadRequest() throws Exception {
-        Contexto ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+    void rejectsCustomerWithoutCustomerRoleWithBadRequest() throws Exception {
+        Context ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
-        mockMvc.perform(post("/api/pedidos").cookie(cookie)
+        mockMvc.perform(post("/api/sales-orders").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "clienteId": "%s",
-                                  "vendedorId": "%s",
-                                  "desconto": 0,
-                                  "itens": [ { "produtoId": "%s", "quantidade": 1, "valorUnitario": 10.00 } ]
+                                  "customerId": "%s",
+                                  "salespersonId": "%s",
+                                  "discount": 0,
+                                  "items": [ { "productId": "%s", "quantity": 1, "unitPrice": 10.00 } ]
                                 }
-                                """.formatted(ctx.vendedorId(), ctx.vendedorId(), ctx.produtoId())))
+                                """.formatted(ctx.salespersonId(), ctx.salespersonId(), ctx.productId())))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void tenantACannotAccessTenantBsPedido() throws Exception {
-        Contexto ctxA = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+    void tenantACannotAccessTenantBsSalesOrder() throws Exception {
+        Context ctxA = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookieA = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctxA.cookie());
 
-        String body = mockMvc.perform(post("/api/pedidos").cookie(cookieA)
+        String body = mockMvc.perform(post("/api/sales-orders").cookie(cookieA)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(pedidoPayload(ctxA)))
+                        .content(salesOrderPayload(ctxA)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String id = com.jayway.jsonpath.JsonPath.read(body, "$.id");
 
-        Contexto ctxB = loginAndSetUp("boreal", "carlos@boreal.com.br", "55666777000155");
+        Context ctxB = loginAndSetUp("boreal", "carlos@boreal.com.br", "55666777000155");
         Cookie cookieB = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctxB.cookie());
 
         // Without this, Hibernate's first-level cache (shared across this whole
@@ -234,13 +234,13 @@ class PedidoControllerTest extends AbstractIntegrationTest {
         // 200 instead of the expected 404 -- see the Global Constraints note.
         entityManager.clear();
 
-        mockMvc.perform(get("/api/pedidos/" + id).cookie(cookieB))
+        mockMvc.perform(get("/api/sales-orders/" + id).cookie(cookieB))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void unauthenticatedRequestIsRejected() throws Exception {
-        mockMvc.perform(get("/api/pedidos"))
+        mockMvc.perform(get("/api/sales-orders"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -283,30 +283,30 @@ class PedidoControllerTest extends AbstractIntegrationTest {
         String token = loginWithoutOrderPermission("sem-permissao", "sem-permissao@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
 
-        mockMvc.perform(get("/api/pedidos").cookie(cookie))
+        mockMvc.perform(get("/api/sales-orders").cookie(cookie))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void advancingToFaturadoViaStatusEndpointIsRejected() throws Exception {
-        Contexto ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+    void advancingToInvoicedViaStatusEndpointIsRejected() throws Exception {
+        Context ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
-        String created = mockMvc.perform(post("/api/pedidos").cookie(cookie)
+        String created = mockMvc.perform(post("/api/sales-orders").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(pedidoPayload(ctx)))
+                        .content(salesOrderPayload(ctx)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(patch("/api/pedidos/" + id + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/sales-orders/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"EM_PREPARO\"}"))
+                        .content("{\"status\":\"IN_PREPARATION\"}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(patch("/api/pedidos/" + id + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/sales-orders/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"FATURADO\"}"))
+                        .content("{\"status\":\"INVOICED\"}"))
                 .andExpect(status().isBadRequest());
     }
 }
