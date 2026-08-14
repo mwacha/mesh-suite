@@ -4,16 +4,16 @@
 -- address-field autocomplete. Global reference data -- no tenant_id/RLS,
 -- same for every tenant. Sourced from the IBGE public API
 -- (servicodados.ibge.gov.br/api/v1/localidades/municipios) on 2026-08-07.
-CREATE TABLE municipio (
+CREATE TABLE municipality (
     id BIGINT PRIMARY KEY,
-    nome VARCHAR(150) NOT NULL,
-    uf VARCHAR(2) NOT NULL
+    name VARCHAR(150) NOT NULL,
+    state VARCHAR(2) NOT NULL
 );
 
-CREATE INDEX idx_municipio_uf ON municipio(uf);
-CREATE INDEX idx_municipio_nome ON municipio(nome);
+CREATE INDEX idx_municipio_uf ON municipality(state);
+CREATE INDEX idx_municipio_nome ON municipality(name);
 
-INSERT INTO municipio (id, nome, uf) VALUES
+INSERT INTO municipality (id, name, state) VALUES
 (1200013, 'Acrelândia', 'AC'),
 (1200054, 'Assis Brasil', 'AC'),
 (1200104, 'Brasiléia', 'AC'),
