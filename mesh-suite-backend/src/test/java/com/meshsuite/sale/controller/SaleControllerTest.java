@@ -127,23 +127,23 @@ class SaleControllerTest extends AbstractIntegrationTest {
     }
 
     private String createOrderInPreparation(Context ctx, Cookie cookie) throws Exception {
-        String created = mockMvc.perform(post("/api/pedidos").cookie(cookie)
+        String created = mockMvc.perform(post("/api/sales-orders").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "clienteId": "%s",
-                                  "vendedorId": "%s",
-                                  "desconto": 0,
-                                  "itens": [ { "produtoId": "%s", "quantidade": 2, "valorUnitario": 59.90 } ]
+                                  "customerId": "%s",
+                                  "salespersonId": "%s",
+                                  "discount": 0,
+                                  "items": [ { "productId": "%s", "quantity": 2, "unitPrice": 59.90 } ]
                                 }
                                 """.formatted(ctx.customerId(), ctx.salespersonId(), ctx.productId())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String orderId = com.jayway.jsonpath.JsonPath.read(created, "$.id");
 
-        mockMvc.perform(patch("/api/pedidos/" + orderId + "/status").cookie(cookie)
+        mockMvc.perform(patch("/api/sales-orders/" + orderId + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"EM_PREPARO\"}"))
+                        .content("{\"status\":\"IN_PREPARATION\"}"))
                 .andExpect(status().isOk());
 
         return orderId;
@@ -171,24 +171,24 @@ class SaleControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.customerName").value("Mercado Silva"));
 
-        mockMvc.perform(get("/api/pedidos/" + orderId).cookie(cookie))
+        mockMvc.perform(get("/api/sales-orders/" + orderId).cookie(cookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("FATURADO"));
+                .andExpect(jsonPath("$.status").value("INVOICED"));
     }
 
     @Test
-    void issuingAnOrderStillInDigitadoIsBadRequest() throws Exception {
+    void issuingAnOrderStillInDraftIsBadRequest() throws Exception {
         Context ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
 
-        String created = mockMvc.perform(post("/api/pedidos").cookie(cookie)
+        String created = mockMvc.perform(post("/api/sales-orders").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "clienteId": "%s",
-                                  "vendedorId": "%s",
-                                  "desconto": 0,
-                                  "itens": [ { "produtoId": "%s", "quantidade": 2, "valorUnitario": 59.90 } ]
+                                  "customerId": "%s",
+                                  "salespersonId": "%s",
+                                  "discount": 0,
+                                  "items": [ { "productId": "%s", "quantity": 2, "unitPrice": 59.90 } ]
                                 }
                                 """.formatted(ctx.customerId(), ctx.salespersonId(), ctx.productId())))
                 .andExpect(status().isCreated())

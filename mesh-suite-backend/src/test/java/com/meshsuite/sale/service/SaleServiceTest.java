@@ -12,13 +12,12 @@ import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.partner.domain.enums.PartnerRole;
 import com.meshsuite.partner.domain.enums.PersonType;
 import com.meshsuite.partner.repository.PartnerRepository;
-import com.meshsuite.pedido.domain.ItemPedido;
-import com.meshsuite.pedido.domain.Pedido;
-import com.meshsuite.pedido.domain.enums.StatusPedido;
-import com.meshsuite.pedido.dto.ItemPedidoDto;
-import com.meshsuite.pedido.dto.PedidoRequest;
-import com.meshsuite.pedido.repository.PedidoRepository;
-import com.meshsuite.pedido.service.PedidoService;
+import com.meshsuite.salesorder.domain.SalesOrder;
+import com.meshsuite.salesorder.domain.enums.SalesOrderStatus;
+import com.meshsuite.salesorder.dto.SalesOrderItemRequest;
+import com.meshsuite.salesorder.dto.SalesOrderRequest;
+import com.meshsuite.salesorder.repository.SalesOrderRepository;
+import com.meshsuite.salesorder.service.SalesOrderService;
 import com.meshsuite.product.domain.Product;
 import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.sale.dto.SaleResponse;
@@ -53,8 +52,8 @@ class SaleServiceTest extends AbstractIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired ProductRepository produtoRepository;
     @Autowired FiscalRegistrationRepository fiscalRegistrationRepository;
-    @Autowired PedidoRepository pedidoRepository;
-    @Autowired PedidoService pedidoService;
+    @Autowired SalesOrderRepository salesOrderRepository;
+    @Autowired SalesOrderService salesOrderService;
     @Autowired SaleService saleService;
     @Autowired EntityManager entityManager;
 
@@ -151,10 +150,10 @@ class SaleServiceTest extends AbstractIntegrationTest {
 
     private UUID createOrderInPreparation(UUID tenantId, UUID customerId, UUID salespersonId, UUID productId,
                                            BigDecimal quantity, BigDecimal unitPrice) {
-        var items = List.of(new ItemPedidoDto(productId, quantity, unitPrice));
-        var request = new PedidoRequest(customerId, salespersonId, null, null, BigDecimal.ZERO, items);
-        var order = pedidoService.criar(tenantId, request);
-        pedidoService.avancarStatus(order.id(), StatusPedido.EM_PREPARO);
+        var items = List.of(new SalesOrderItemRequest(productId, quantity, unitPrice));
+        var request = new SalesOrderRequest(customerId, salespersonId, null, null, BigDecimal.ZERO, items);
+        var order = salesOrderService.create(tenantId, request);
+        salesOrderService.advanceStatus(order.id(), SalesOrderStatus.IN_PREPARATION);
         return order.id();
     }
 
@@ -176,8 +175,8 @@ class SaleServiceTest extends AbstractIntegrationTest {
         assertThat(sale.items().get(0).icmsAmount()).isEqualByComparingTo("90.00");
         assertThat(sale.icmsAmount()).isEqualByComparingTo("90.00");
 
-        Pedido updatedOrder = pedidoRepository.findById(orderId).orElseThrow();
-        assertThat(updatedOrder.getStatus()).isEqualTo(StatusPedido.FATURADO);
+        SalesOrder updatedOrder = salesOrderRepository.findById(orderId).orElseThrow();
+        assertThat(updatedOrder.getStatus()).isEqualTo(SalesOrderStatus.INVOICED);
     }
 
     @Test
@@ -202,9 +201,9 @@ class SaleServiceTest extends AbstractIntegrationTest {
         UUID customerId = createCustomer(tenantId, "11222333000144");
         UUID salespersonId = createSalesperson(tenantId, "marina@aurora.com.br");
         UUID productId = createProductWithFiscalRegistration(tenantId, "P0001", new BigDecimal("50.00"));
-        var items = List.of(new ItemPedidoDto(productId, BigDecimal.ONE, new BigDecimal("50.00")));
-        var order = pedidoService.criar(tenantId,
-                new PedidoRequest(customerId, salespersonId, null, null, BigDecimal.ZERO, items));
+        var items = List.of(new SalesOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("50.00")));
+        var order = salesOrderService.create(tenantId,
+                new SalesOrderRequest(customerId, salespersonId, null, null, BigDecimal.ZERO, items));
 
         assertThrows(SaleValidationException.class, () -> saleService.issue(order.id()));
     }

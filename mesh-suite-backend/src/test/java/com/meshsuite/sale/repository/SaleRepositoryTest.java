@@ -6,8 +6,8 @@ import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.partner.domain.enums.PartnerRole;
 import com.meshsuite.partner.domain.enums.PersonType;
 import com.meshsuite.partner.repository.PartnerRepository;
-import com.meshsuite.pedido.domain.Pedido;
-import com.meshsuite.pedido.repository.PedidoRepository;
+import com.meshsuite.salesorder.domain.SalesOrder;
+import com.meshsuite.salesorder.repository.SalesOrderRepository;
 import com.meshsuite.product.domain.Product;
 import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.sale.domain.Sale;
@@ -31,7 +31,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
     @Autowired PartnerRepository partnerRepository;
     @Autowired UserRepository userRepository;
     @Autowired ProductRepository produtoRepository;
-    @Autowired PedidoRepository pedidoRepository;
+    @Autowired SalesOrderRepository salesOrderRepository;
     @Autowired SaleRepository saleRepository;
     @Autowired SaleCounterRepository saleCounterRepository;
     @Autowired EntityManager entityManager;
@@ -76,16 +76,16 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
         return produtoRepository.saveAndFlush(p);
     }
 
-    private Pedido createOrder(UUID tenantId, Partner customer, User salesperson, int number) {
-        Pedido pedido = new Pedido();
-        pedido.setTenantId(tenantId);
-        pedido.setNumero(number);
-        pedido.setCliente(customer);
-        pedido.setVendedor(salesperson);
-        return pedidoRepository.saveAndFlush(pedido);
+    private SalesOrder createOrder(UUID tenantId, Partner customer, User salesperson, int number) {
+        SalesOrder order = new SalesOrder();
+        order.setTenantId(tenantId);
+        order.setNumber(number);
+        order.setCustomer(customer);
+        order.setSalesperson(salesperson);
+        return salesOrderRepository.saveAndFlush(order);
     }
 
-    private Sale newSale(UUID tenantId, Pedido order, Partner customer, User salesperson, int number) {
+    private Sale newSale(UUID tenantId, SalesOrder order, Partner customer, User salesperson, int number) {
         Sale sale = new Sale();
         sale.setTenantId(tenantId);
         sale.setNumber(number);
@@ -103,7 +103,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
         Partner customer = createCustomer(tenant.getId(), "11222333000144");
         User salesperson = createSalesperson(tenant.getId(), "marina@aurora.com.br");
         Product product = createProduct(tenant.getId(), "P0001");
-        Pedido order = createOrder(tenant.getId(), customer, salesperson, 1);
+        SalesOrder order = createOrder(tenant.getId(), customer, salesperson, 1);
 
         Sale sale = newSale(tenant.getId(), order, customer, salesperson, 1);
         SaleItem item = new SaleItem();
@@ -134,7 +134,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
         setTenantContext(tenant.getId());
         Partner customer = createCustomer(tenant.getId(), "11222333000144");
         User salesperson = createSalesperson(tenant.getId(), "marina@aurora.com.br");
-        Pedido order = createOrder(tenant.getId(), customer, salesperson, 1);
+        SalesOrder order = createOrder(tenant.getId(), customer, salesperson, 1);
 
         saleRepository.saveAndFlush(newSale(tenant.getId(), order, customer, salesperson, 1));
 
@@ -150,7 +150,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
         setTenantContext(tenant.getId());
         Partner customer = createCustomer(tenant.getId(), "11222333000144");
         User salesperson = createSalesperson(tenant.getId(), "marina@aurora.com.br");
-        Pedido order = createOrder(tenant.getId(), customer, salesperson, 1);
+        SalesOrder order = createOrder(tenant.getId(), customer, salesperson, 1);
         saleRepository.saveAndFlush(newSale(tenant.getId(), order, customer, salesperson, 1));
         entityManager.clear();
 
@@ -170,7 +170,7 @@ class SaleRepositoryTest extends AbstractIntegrationTest {
         Partner customer = createCustomer(tenant.getId(), "11222333000144");
         User salesperson = createSalesperson(tenant.getId(), "marina@aurora.com.br");
         Product product = createProduct(tenant.getId(), "P0001");
-        Pedido order = createOrder(tenant.getId(), customer, salesperson, 1);
+        SalesOrder order = createOrder(tenant.getId(), customer, salesperson, 1);
 
         Sale sale = newSale(tenant.getId(), order, customer, salesperson, 1);
         SaleItem item = new SaleItem();
