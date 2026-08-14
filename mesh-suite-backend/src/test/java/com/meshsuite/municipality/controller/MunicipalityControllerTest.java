@@ -1,4 +1,4 @@
-package com.meshsuite.municipio.controller;
+package com.meshsuite.municipality.controller;
 
 import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Transactional
-class MunicipioControllerTest extends AbstractIntegrationTest {
+class MunicipalityControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired TenantRepository tenantRepository;
@@ -67,20 +67,20 @@ class MunicipioControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listsAllMunicipiosWhenNoUfIsGiven() throws Exception {
+    void listsAllMunicipalitiesWhenNoUfIsGiven() throws Exception {
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, loginAndGetCookie());
 
-        mockMvc.perform(get("/api/municipios").cookie(cookie))
+        mockMvc.perform(get("/api/municipalities").cookie(cookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.hasItem("São Paulo")))
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.hasItem("Rio de Janeiro")));
     }
 
     @Test
-    void filtersMunicipiosByUf() throws Exception {
+    void filtersMunicipalitiesByUf() throws Exception {
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, loginAndGetCookie());
 
-        mockMvc.perform(get("/api/municipios").cookie(cookie).param("uf", "AC"))
+        mockMvc.perform(get("/api/municipalities").cookie(cookie).param("uf", "AC"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.hasItem("Rio Branco")))
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("São Paulo"))));
@@ -88,7 +88,7 @@ class MunicipioControllerTest extends AbstractIntegrationTest {
 
     @Test
     void unauthenticatedRequestIsRejected() throws Exception {
-        mockMvc.perform(get("/api/municipios"))
+        mockMvc.perform(get("/api/municipalities"))
                 .andExpect(status().isUnauthorized());
     }
 }

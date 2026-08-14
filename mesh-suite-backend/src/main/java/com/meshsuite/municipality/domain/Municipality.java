@@ -1,4 +1,4 @@
-package com.meshsuite.municipio.domain;
+package com.meshsuite.municipality.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -6,31 +6,31 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Global IBGE municipality reference data (see V19__create_municipio.sql) --
+ * Global IBGE municipality reference data (see V19__create_municipality.sql) --
  * not tenant-scoped, no RLS, same rows for every tenant.
  */
 @Entity
-@Table(name = "municipio")
-public class Municipio {
+@Table(name = "municipality")
+public class Municipality {
 
     @Id
     private Long id;
 
     @Column(nullable = false)
-    private String nome;
+    private String name;
 
     @Column(nullable = false, length = 2)
-    private String uf;
+    private String state;
 
     public Long getId() {
         return id;
     }
 
-    public String getNome() {
-        return nome;
+    public String getName() {
+        return name;
     }
 
-    public String getUf() {
-        return uf;
+    public String getState() {
+        return state;
     }
 }
