@@ -53,7 +53,7 @@ ALTER TABLE purchase_order_item FORCE ROW LEVEL SECURITY;
 
 -- No tenant_id column here -- isolation is enforced through the parent
 -- purchase_order row's own RLS policy, matched by purchase_order_id. Same
--- pattern as item_pedido/partner_contact.
+-- pattern as sales_order_item/partner_contact.
 CREATE POLICY purchase_order_item_tenant_isolation ON purchase_order_item
     USING (EXISTS (
         SELECT 1 FROM purchase_order po
