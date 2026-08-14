@@ -27,7 +27,7 @@ function mountWithRouter(path = '/tabelas-preco/novo') {
 
 const produtoAtivo = { id: 'prod-1', name: 'Camiseta Polo', sku: 'P0001', brand: '', salePrice: 100, stockQuantity: 10, status: 'ACTIVE' as const }
 
-describe('TabelaPrecoFormView', () => {
+describe('PriceTableFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -56,7 +56,7 @@ describe('TabelaPrecoFormView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    // default rule is AUTOMATICO/SOMAR/REAL/valorAjuste=0 -> preço = precoVenda
+    // default rule is AUTOMATIC/ADD/FIXED/adjustmentValue=0 -> preço = precoVenda
     expect(wrapper.text()).toContain('Camiseta Polo')
     const precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
     expect(Number(precoInput.value)).toBeCloseTo(100, 2)
@@ -77,7 +77,7 @@ describe('TabelaPrecoFormView', () => {
     await flushPromises()
 
     const precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
-    expect(Number(precoInput.value)).toBeCloseTo(150, 2) // produtoAtivo.salePrice=100, SOMAR+REAL+50
+    expect(Number(precoInput.value)).toBeCloseTo(150, 2) // produtoAtivo.salePrice=100, ADD+FIXED+50
   })
 
   it('starts empty in SELECIONAR_PRODUTOS mode and adds an item via search', async () => {
@@ -131,7 +131,7 @@ describe('TabelaPrecoFormView', () => {
     await flushPromises()
 
     precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
-    expect(Number(precoInput.value)).toBeCloseTo(120, 2) // produtoAtivo.salePrice=100, SOMAR+REAL+20
+    expect(Number(precoInput.value)).toBeCloseTo(120, 2) // produtoAtivo.salePrice=100, ADD+FIXED+20
   })
 
   it('filters the item list by Preenchido/Pendente', async () => {

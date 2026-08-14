@@ -35,7 +35,7 @@ const tabelaExemplo = {
   active: true,
 }
 
-describe('TabelasPrecoListView', () => {
+describe('PriceTablesListView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()

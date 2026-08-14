@@ -234,9 +234,9 @@ function precoParaNovoItem(precoBase: number): number | null {
   return form.adjustmentMethod === 'AUTOMATIC' ? calculateAdjustedPrice(precoBase, regraAtual()) : null
 }
 
-// Spec §5: "recalcula sempre que a regra muda" -- in TODOS_PRODUTOS mode, every
+// Spec §5: "recalcula sempre que a regra muda" -- in ALL_PRODUCTS mode, every
 // item's price is rule-driven and gets overwritten live whenever the rule
-// changes. Scoped to TODOS_PRODUTOS only: SELECIONAR_PRODUTOS items are only
+// changes. Scoped to ALL_PRODUCTS only: SELECT_PRODUCTS items are only
 // touched by a direct edit or their own reset button.
 watch(
   () => [form.adjustmentMethod, form.adjustmentOperation, form.adjustmentValueType, form.adjustmentValue, form.rounding],
