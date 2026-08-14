@@ -32,11 +32,11 @@
         </thead>
         <tbody>
           <tr v-for="tabela in pagina.content" :key="tabela.id">
-            <td>{{ tabela.nome }}</td>
+            <td>{{ tabela.name }}</td>
             <td>{{ resumoMetodoAjuste(tabela) }}</td>
-            <td>{{ formatarData(tabela.inicioVigencia) }}</td>
-            <td>{{ tabela.terminoVigencia ? formatarData(tabela.terminoVigencia) : '—' }}</td>
-            <td><span class="badge" :class="tabela.ativo ? 'badge-ATIVO' : 'badge-INATIVO'">{{ tabela.ativo ? 'Ativo' : 'Inativo' }}</span></td>
+            <td>{{ formatarData(tabela.effectiveStartDate) }}</td>
+            <td>{{ tabela.effectiveEndDate ? formatarData(tabela.effectiveEndDate) : '—' }}</td>
+            <td><span class="badge" :class="tabela.active ? 'badge-ATIVO' : 'badge-INATIVO'">{{ tabela.active ? 'Ativo' : 'Inativo' }}</span></td>
             <td class="acoes">
               <button
                 type="button"
@@ -76,16 +76,16 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
-  listarTabelasPreco,
-  excluirTabelaPreco,
-  type TabelaPrecoSummary,
+  listPriceTables,
+  deletePriceTable,
+  type PriceTableSummary,
   type Page as ApiPage,
-} from '@/api/tabelasPreco'
+} from '@/api/priceTables'
 
 const router = useRouter()
 
 const filtros = reactive({ busca: '', ativo: '' })
-const pagina = ref<ApiPage<TabelaPrecoSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+const pagina = ref<ApiPage<PriceTableSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const acoesAbertas = ref<string | null>(null)
 const posicaoDropdown = ref({ top: '0px', left: '0px' })
 const erro = ref('')
@@ -99,21 +99,21 @@ function formatarData(data: string) {
   return `${dia}/${mes}/${ano}`
 }
 
-function resumoMetodoAjuste(tabela: TabelaPrecoSummary) {
-  if (tabela.metodoAjuste === 'MANUAL') {
+function resumoMetodoAjuste(tabela: PriceTableSummary) {
+  if (tabela.adjustmentMethod === 'MANUAL') {
     return 'Manual'
   }
-  const operacao = tabela.operacaoAjuste === 'SUBTRAIR' ? 'Subtrair' : 'Somar'
-  const valor = tabela.tipoValorAjuste === 'PERCENTUAL'
-    ? `${tabela.valorAjuste ?? 0}%`
-    : (tabela.valorAjuste ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const operacao = tabela.adjustmentOperation === 'SUBTRACT' ? 'Subtrair' : 'Somar'
+  const valor = tabela.adjustmentValueType === 'PERCENTAGE'
+    ? `${tabela.adjustmentValue ?? 0}%`
+    : (tabela.adjustmentValue ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   return `Automático · ${operacao} ${valor}`
 }
 
 async function carregar(page: number) {
   erro.value = ''
   try {
-    pagina.value = await listarTabelasPreco({
+    pagina.value = await listPriceTables({
       busca: filtros.busca || undefined,
       ativo: filtros.ativo === '' ? undefined : filtros.ativo === 'true',
       page,
@@ -146,14 +146,14 @@ function toggleAcoes(id: string, event: MouseEvent) {
   acoesAbertas.value = id
 }
 
-async function excluir(tabela: TabelaPrecoSummary) {
+async function excluir(tabela: PriceTableSummary) {
   acoesAbertas.value = null
-  if (!confirm(`Excluir a tabela de preço "${tabela.nome}"?`)) {
+  if (!confirm(`Excluir a tabela de preço "${tabela.name}"?`)) {
     return
   }
   erro.value = ''
   try {
-    await excluirTabelaPreco(tabela.id)
+    await deletePriceTable(tabela.id)
     await carregar(pagina.value.number)
   } catch (err: any) {
     erro.value = err?.response?.data?.mensagem ?? 'Não foi possível excluir a tabela de preço.'

@@ -2,16 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
-import TabelasPrecoListView from '@/views/TabelasPrecoListView.vue'
-import * as tabelasPrecoApi from '@/api/tabelasPreco'
+import PriceTablesListView from '@/views/PriceTablesListView.vue'
+import * as tabelasPrecoApi from '@/api/priceTables'
 
-vi.mock('@/api/tabelasPreco')
+vi.mock('@/api/priceTables')
 
 function mountWithRouter() {
   const router = createRouter({
     history: createWebHistory(),
     routes: [
-      { path: '/tabelas-preco', name: 'tabelas-preco', component: TabelasPrecoListView },
+      { path: '/tabelas-preco', name: 'tabelas-preco', component: PriceTablesListView },
       { path: '/tabelas-preco/novo', name: 'tabelas-preco-novo', component: { template: '<div />' } },
       { path: '/tabelas-preco/:id/editar', name: 'tabelas-preco-editar', component: { template: '<div />' } },
     ],
@@ -19,20 +19,20 @@ function mountWithRouter() {
   router.push('/tabelas-preco')
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(TabelasPrecoListView, { global: { plugins: [router], stubs: { teleport: true } } }),
+    wrapper: mount(PriceTablesListView, { global: { plugins: [router], stubs: { teleport: true } } }),
   }))
 }
 
 const tabelaExemplo = {
   id: 'tp-1',
-  nome: 'Varejo',
-  metodoAjuste: 'AUTOMATICO' as const,
-  operacaoAjuste: 'SOMAR' as const,
-  tipoValorAjuste: 'REAL' as const,
-  valorAjuste: 10,
-  inicioVigencia: '2026-01-01',
-  terminoVigencia: null,
-  ativo: true,
+  name: 'Varejo',
+  adjustmentMethod: 'AUTOMATIC' as const,
+  adjustmentOperation: 'ADD' as const,
+  adjustmentValueType: 'FIXED' as const,
+  adjustmentValue: 10,
+  effectiveStartDate: '2026-01-01',
+  effectiveEndDate: null,
+  active: true,
 }
 
 describe('TabelasPrecoListView', () => {
@@ -42,7 +42,7 @@ describe('TabelasPrecoListView', () => {
   })
 
   it('loads and displays the tabela de preço list', async () => {
-    vi.mocked(tabelasPrecoApi.listarTabelasPreco).mockResolvedValue({
+    vi.mocked(tabelasPrecoApi.listPriceTables).mockResolvedValue({
       content: [tabelaExemplo], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
     const { wrapper } = await mountWithRouter()
@@ -53,8 +53,8 @@ describe('TabelasPrecoListView', () => {
   })
 
   it('shows Manual for tabelas without an automatic rule', async () => {
-    vi.mocked(tabelasPrecoApi.listarTabelasPreco).mockResolvedValue({
-      content: [{ ...tabelaExemplo, metodoAjuste: 'MANUAL', operacaoAjuste: null, tipoValorAjuste: null, valorAjuste: null }],
+    vi.mocked(tabelasPrecoApi.listPriceTables).mockResolvedValue({
+      content: [{ ...tabelaExemplo, adjustmentMethod: 'MANUAL', adjustmentOperation: null, adjustmentValueType: null, adjustmentValue: null }],
       totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
     const { wrapper } = await mountWithRouter()
@@ -64,7 +64,7 @@ describe('TabelasPrecoListView', () => {
   })
 
   it('shows an error message when loading fails', async () => {
-    vi.mocked(tabelasPrecoApi.listarTabelasPreco).mockRejectedValue(new Error('network error'))
+    vi.mocked(tabelasPrecoApi.listPriceTables).mockRejectedValue(new Error('network error'))
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -72,7 +72,7 @@ describe('TabelasPrecoListView', () => {
   })
 
   it('navigates to the new-tabela route when the button is clicked', async () => {
-    vi.mocked(tabelasPrecoApi.listarTabelasPreco).mockResolvedValue({
+    vi.mocked(tabelasPrecoApi.listPriceTables).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 10,
     })
     const { router, wrapper } = await mountWithRouter()
@@ -85,10 +85,10 @@ describe('TabelasPrecoListView', () => {
   })
 
   it('deletes a tabela after confirmation and reloads the list', async () => {
-    vi.mocked(tabelasPrecoApi.listarTabelasPreco).mockResolvedValue({
+    vi.mocked(tabelasPrecoApi.listPriceTables).mockResolvedValue({
       content: [tabelaExemplo], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
-    vi.mocked(tabelasPrecoApi.excluirTabelaPreco).mockResolvedValue(undefined)
+    vi.mocked(tabelasPrecoApi.deletePriceTable).mockResolvedValue(undefined)
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     const { wrapper } = await mountWithRouter()
@@ -98,6 +98,6 @@ describe('TabelasPrecoListView', () => {
     await wrapper.find('[data-test="acao-excluir"]').trigger('click')
     await flushPromises()
 
-    expect(tabelasPrecoApi.excluirTabelaPreco).toHaveBeenCalledWith('tp-1')
+    expect(tabelasPrecoApi.deletePriceTable).toHaveBeenCalledWith('tp-1')
   })
 })
