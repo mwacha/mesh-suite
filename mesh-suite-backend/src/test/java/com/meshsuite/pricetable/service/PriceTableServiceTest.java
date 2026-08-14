@@ -1,4 +1,4 @@
-package com.meshsuite.produto.service;
+package com.meshsuite.pricetable.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -6,15 +6,15 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.service.AuthContextService;
-import com.meshsuite.produto.domain.enums.Arredondamento;
-import com.meshsuite.produto.domain.enums.MetodoAjuste;
-import com.meshsuite.produto.domain.enums.ModoSelecaoProdutos;
-import com.meshsuite.produto.dto.TabelaPrecoItemInput;
-import com.meshsuite.produto.dto.TabelaPrecoRequest;
-import com.meshsuite.produto.exception.TabelaPrecoNaoEncontradaException;
-import com.meshsuite.produto.exception.TabelaPrecoNomeDuplicadoException;
-import com.meshsuite.produto.exception.TabelaPrecoValidationException;
-import com.meshsuite.produto.service.TabelaPrecoService;
+import com.meshsuite.pricetable.domain.enums.Rounding;
+import com.meshsuite.pricetable.domain.enums.AdjustmentMethod;
+import com.meshsuite.pricetable.domain.enums.ProductSelectionMode;
+import com.meshsuite.pricetable.dto.PriceTableItemInput;
+import com.meshsuite.pricetable.dto.PriceTableRequest;
+import com.meshsuite.pricetable.exception.PriceTableNotFoundException;
+import com.meshsuite.pricetable.exception.DuplicatePriceTableNameException;
+import com.meshsuite.pricetable.exception.PriceTableValidationException;
+import com.meshsuite.pricetable.service.PriceTableService;
 import com.meshsuite.product.domain.Product;
 import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.shared.context.TenantContext;
@@ -35,9 +35,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-class TabelaPrecoServiceTest extends AbstractIntegrationTest {
+class PriceTableServiceTest extends AbstractIntegrationTest {
 
-    @Autowired TabelaPrecoService tabelaPrecoService;
+    @Autowired PriceTableService tabelaPrecoService;
     @Autowired ProductRepository produtoRepository;
     @Autowired TenantRepository tenantRepository;
     @Autowired UserRepository userRepository;
@@ -79,51 +79,51 @@ class TabelaPrecoServiceTest extends AbstractIntegrationTest {
         return produtoRepository.saveAndFlush(p);
     }
 
-    private TabelaPrecoRequest request(String nome, List<TabelaPrecoItemInput> itens) {
-        return new TabelaPrecoRequest(nome, ModoSelecaoProdutos.SELECIONAR_PRODUTOS, MetodoAjuste.MANUAL,
-                null, null, null, Arredondamento.NAO_ARREDONDAR, LocalDate.of(2026, 1, 1), null, null, null, null, itens);
+    private PriceTableRequest request(String nome, List<PriceTableItemInput> itens) {
+        return new PriceTableRequest(nome, ProductSelectionMode.SELECT_PRODUCTS, AdjustmentMethod.MANUAL,
+                null, null, null, Rounding.NO_ROUNDING, LocalDate.of(2026, 1, 1), null, null, null, null, itens);
     }
 
     @Test
     @Transactional
-    void criaERecuperaTabelaPrecoComItens() {
+    void createsAndRetrievesPriceTableWithItems() {
         UUID tenantId = setUpTenant("aurora-tp");
         Product produto = novoProduto(tenantId, "P0001", new BigDecimal("59.90"));
 
         var criada = tabelaPrecoService.criar(TenantContext.get(),
-                request("Varejo", List.of(new TabelaPrecoItemInput(produto.getId(), new BigDecimal("69.90"), new BigDecimal("5.00")))));
+                request("Varejo", List.of(new PriceTableItemInput(produto.getId(), new BigDecimal("69.90"), new BigDecimal("5.00")))));
 
         var buscada = tabelaPrecoService.buscarPorId(criada.id());
-        assertThat(buscada.nome()).isEqualTo("Varejo");
-        assertThat(buscada.itens()).hasSize(1);
-        assertThat(buscada.itens().get(0).produtoId()).isEqualTo(produto.getId());
-        assertThat(buscada.itens().get(0).precoNestaTabela()).isEqualByComparingTo("69.90");
-        assertThat(buscada.itens().get(0).precoCadastrado()).isEqualByComparingTo("59.90");
+        assertThat(buscada.name()).isEqualTo("Varejo");
+        assertThat(buscada.items()).hasSize(1);
+        assertThat(buscada.items().get(0).productId()).isEqualTo(produto.getId());
+        assertThat(buscada.items().get(0).tablePrice()).isEqualByComparingTo("69.90");
+        assertThat(buscada.items().get(0).registeredPrice()).isEqualByComparingTo("59.90");
     }
 
     @Test
     @Transactional
     void doesNotRecalculatePricesServerSide() {
         // Global Constraints: the backend persists exactly what the client sends,
-        // even a price wildly different from produto.precoVenda -- there is no
+        // even a price wildly different from produto.salePrice -- there is no
         // server-side formula to disagree with the client.
         UUID tenantId = setUpTenant("aurora-tp");
         Product produto = novoProduto(tenantId, "P0001", new BigDecimal("10.00"));
 
         var criada = tabelaPrecoService.criar(TenantContext.get(),
-                request("Promo", List.of(new TabelaPrecoItemInput(produto.getId(), new BigDecimal("999.99"), null))));
+                request("Promo", List.of(new PriceTableItemInput(produto.getId(), new BigDecimal("999.99"), null))));
 
-        assertThat(criada.itens().get(0).precoNestaTabela()).isEqualByComparingTo("999.99");
+        assertThat(criada.items().get(0).tablePrice()).isEqualByComparingTo("999.99");
     }
 
     @Test
     @Transactional
-    void rejectsDuplicateNomeOnCreate() {
+    void rejectsDuplicateNameOnCreate() {
         setUpTenant("aurora-tp");
         tabelaPrecoService.criar(TenantContext.get(), request("Varejo", List.of()));
 
         assertThatThrownBy(() -> tabelaPrecoService.criar(TenantContext.get(), request("Varejo", List.of())))
-                .isInstanceOf(TabelaPrecoNomeDuplicadoException.class);
+                .isInstanceOf(DuplicatePriceTableNameException.class);
     }
 
     @Test
@@ -134,53 +134,53 @@ class TabelaPrecoServiceTest extends AbstractIntegrationTest {
         Product produtoB = novoProduto(tenantId, "P0002", new BigDecimal("20.00"));
 
         var criada = tabelaPrecoService.criar(TenantContext.get(),
-                request("Varejo", List.of(new TabelaPrecoItemInput(produtoA.getId(), new BigDecimal("15.00"), null))));
+                request("Varejo", List.of(new PriceTableItemInput(produtoA.getId(), new BigDecimal("15.00"), null))));
 
         var atualizada = tabelaPrecoService.atualizar(criada.id(),
-                request("Varejo", List.of(new TabelaPrecoItemInput(produtoB.getId(), new BigDecimal("25.00"), null))));
+                request("Varejo", List.of(new PriceTableItemInput(produtoB.getId(), new BigDecimal("25.00"), null))));
 
-        assertThat(atualizada.itens()).hasSize(1);
-        assertThat(atualizada.itens().get(0).produtoId()).isEqualTo(produtoB.getId());
+        assertThat(atualizada.items()).hasSize(1);
+        assertThat(atualizada.items().get(0).productId()).isEqualTo(produtoB.getId());
     }
 
     @Test
     @Transactional
-    void rejectsItemWithUnknownProduto() {
+    void rejectsItemWithUnknownProduct() {
         setUpTenant("aurora-tp");
         UUID produtoInexistente = UUID.randomUUID();
 
         assertThatThrownBy(() -> tabelaPrecoService.criar(TenantContext.get(),
-                request("Varejo", List.of(new TabelaPrecoItemInput(produtoInexistente, new BigDecimal("10.00"), null)))))
-                .isInstanceOf(TabelaPrecoValidationException.class);
+                request("Varejo", List.of(new PriceTableItemInput(produtoInexistente, new BigDecimal("10.00"), null)))))
+                .isInstanceOf(PriceTableValidationException.class);
     }
 
     @Test
     @Transactional
-    void deletesTabelaPrecoAndCascadesItems() {
+    void deletesPriceTableAndCascadesItems() {
         UUID tenantId = setUpTenant("aurora-tp");
         Product produto = novoProduto(tenantId, "P0001", new BigDecimal("10.00"));
         var criada = tabelaPrecoService.criar(TenantContext.get(),
-                request("Varejo", List.of(new TabelaPrecoItemInput(produto.getId(), new BigDecimal("15.00"), null))));
+                request("Varejo", List.of(new PriceTableItemInput(produto.getId(), new BigDecimal("15.00"), null))));
 
         tabelaPrecoService.excluir(criada.id());
 
         assertThatThrownBy(() -> tabelaPrecoService.buscarPorId(criada.id()))
-                .isInstanceOf(TabelaPrecoNaoEncontradaException.class);
+                .isInstanceOf(PriceTableNotFoundException.class);
     }
 
     @Test
     @Transactional
-    void listFiltersByAtivo() {
+    void listFiltersByActive() {
         setUpTenant("aurora-tp");
-        var requestAtiva = new TabelaPrecoRequest("Ativa", ModoSelecaoProdutos.SELECIONAR_PRODUTOS, MetodoAjuste.MANUAL,
-                null, null, null, Arredondamento.NAO_ARREDONDAR, LocalDate.of(2026, 1, 1), null, null, null, true, List.of());
-        var requestInativa = new TabelaPrecoRequest("Inativa", ModoSelecaoProdutos.SELECIONAR_PRODUTOS, MetodoAjuste.MANUAL,
-                null, null, null, Arredondamento.NAO_ARREDONDAR, LocalDate.of(2026, 1, 1), null, null, null, false, List.of());
+        var requestAtiva = new PriceTableRequest("Ativa", ProductSelectionMode.SELECT_PRODUCTS, AdjustmentMethod.MANUAL,
+                null, null, null, Rounding.NO_ROUNDING, LocalDate.of(2026, 1, 1), null, null, null, true, List.of());
+        var requestInativa = new PriceTableRequest("Inativa", ProductSelectionMode.SELECT_PRODUCTS, AdjustmentMethod.MANUAL,
+                null, null, null, Rounding.NO_ROUNDING, LocalDate.of(2026, 1, 1), null, null, null, false, List.of());
         tabelaPrecoService.criar(TenantContext.get(), requestAtiva);
         tabelaPrecoService.criar(TenantContext.get(), requestInativa);
 
         var ativas = tabelaPrecoService.listar(null, true, org.springframework.data.domain.PageRequest.of(0, 10));
 
-        assertThat(ativas.getContent()).extracting("nome").containsExactly("Ativa");
+        assertThat(ativas.getContent()).extracting("name").containsExactly("Ativa");
     }
 }
