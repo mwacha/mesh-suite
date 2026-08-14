@@ -1,6 +1,6 @@
-package com.meshsuite.pedido.exception;
+package com.meshsuite.salesorder.exception;
 
-import com.meshsuite.pedido.controller.PedidoController;
+import com.meshsuite.salesorder.controller.SalesOrderController;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -8,8 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice(assignableTypes = PedidoController.class)
-public class PedidoExceptionHandler {
+@RestControllerAdvice(assignableTypes = SalesOrderController.class)
+public class SalesOrderExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException e) {

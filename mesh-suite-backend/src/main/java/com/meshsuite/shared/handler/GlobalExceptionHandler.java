@@ -76,15 +76,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.pedido.exception.PedidoNaoEncontradoException.class)
-    public ResponseEntity<Map<String, String>> handlePedidoNaoEncontrado(
-            com.meshsuite.pedido.exception.PedidoNaoEncontradoException e) {
+    @ExceptionHandler(com.meshsuite.salesorder.exception.SalesOrderNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleSalesOrderNotFound(
+            com.meshsuite.salesorder.exception.SalesOrderNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(com.meshsuite.pedido.exception.PedidoValidacaoException.class)
-    public ResponseEntity<Map<String, String>> handlePedidoValidacao(
-            com.meshsuite.pedido.exception.PedidoValidacaoException e) {
+    @ExceptionHandler(com.meshsuite.salesorder.exception.SalesOrderValidationException.class)
+    public ResponseEntity<Map<String, String>> handleSalesOrderValidation(
+            com.meshsuite.salesorder.exception.SalesOrderValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
