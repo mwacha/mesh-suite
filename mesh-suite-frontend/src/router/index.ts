@@ -13,8 +13,8 @@ import CategoriesListView from '@/views/CategoriesListView.vue'
 import CategoryFormView from '@/views/CategoryFormView.vue'
 import ColorwaysListView from '@/views/ColorwaysListView.vue'
 import ColorwayFormView from '@/views/ColorwayFormView.vue'
-import TabelasPrecoListView from '@/views/TabelasPrecoListView.vue'
-import TabelaPrecoFormView from '@/views/TabelaPrecoFormView.vue'
+import PriceTablesListView from '@/views/PriceTablesListView.vue'
+import PriceTableFormView from '@/views/PriceTableFormView.vue'
 import PedidoFormView from '@/views/PedidoFormView.vue'
 import PedidosListView from '@/views/PedidosListView.vue'
 import SalesListView from '@/views/SalesListView.vue'
@@ -44,9 +44,9 @@ const router = createRouter({
     { path: '/cores-estampas', name: 'cores-estampas', component: ColorwaysListView },
     { path: '/cores-estampas/novo', name: 'cores-estampas-novo', component: ColorwayFormView },
     { path: '/cores-estampas/:id/editar', name: 'cores-estampas-editar', component: ColorwayFormView },
-    { path: '/tabelas-preco', name: 'tabelas-preco', component: TabelasPrecoListView },
-    { path: '/tabelas-preco/novo', name: 'tabelas-preco-novo', component: TabelaPrecoFormView },
-    { path: '/tabelas-preco/:id/editar', name: 'tabelas-preco-editar', component: TabelaPrecoFormView },
+    { path: '/tabelas-preco', name: 'tabelas-preco', component: PriceTablesListView },
+    { path: '/tabelas-preco/novo', name: 'tabelas-preco-novo', component: PriceTableFormView },
+    { path: '/tabelas-preco/:id/editar', name: 'tabelas-preco-editar', component: PriceTableFormView },
     { path: '/pedidos', name: 'pedidos', component: PedidosListView },
     { path: '/pedidos/novo', name: 'pedidos-novo', component: PedidoFormView },
     { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: PedidoFormView },
