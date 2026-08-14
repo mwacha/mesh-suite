@@ -129,7 +129,7 @@ import {
   type PartnerStatus,
   type PersonType,
 } from '@/api/partners'
-import { listarMunicipios } from '@/api/municipios'
+import { listMunicipalities } from '@/api/municipalities'
 import { maskTelefone, maskDocumento } from '@/utils/masks'
 
 const router = useRouter()
@@ -241,7 +241,7 @@ async function carregarCidades() {
   const ufsSelecionadas = labelsFor('UF')
   const uf = ufsSelecionadas.length === 1 ? ufsSelecionadas[0] : undefined
   try {
-    cidades.value = await listarMunicipios({ uf })
+    cidades.value = await listMunicipalities({ uf })
   } catch {
     cidades.value = []
   }

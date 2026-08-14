@@ -4,10 +4,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import ClientesListView from '@/views/ClientesListView.vue'
 import * as partnersApi from '@/api/partners'
-import * as municipiosApi from '@/api/municipios'
+import * as municipiosApi from '@/api/municipalities'
 
 vi.mock('@/api/partners')
-vi.mock('@/api/municipios')
+vi.mock('@/api/municipalities')
 
 function mountWithRouter() {
   const router = createRouter({
@@ -42,7 +42,7 @@ describe('ClientesListView', () => {
       content: [parceiroBase], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
     vi.mocked(partnersApi.getPartnerSummary).mockResolvedValue({ total: 1, active: 1, atRisk: 0, blocked: 0 })
-    vi.mocked(municipiosApi.listarMunicipios).mockResolvedValue(['São Paulo'])
+    vi.mocked(municipiosApi.listMunicipalities).mockResolvedValue(['São Paulo'])
   })
 
   it('loads and displays the client list on mount, with the count in the page header', async () => {
@@ -66,7 +66,7 @@ describe('ClientesListView', () => {
     await flushPromises()
 
     expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ papel: 'CUSTOMER' }))
-    expect(municipiosApi.listarMunicipios).toHaveBeenCalledWith({ uf: undefined })
+    expect(municipiosApi.listMunicipalities).toHaveBeenCalledWith({ uf: undefined })
     expect(partnersApi.getPartnerSummary).toHaveBeenCalledWith('CUSTOMER')
 
     await wrapper.find('[data-test="filter-bar-more"]').trigger('click')
@@ -77,7 +77,7 @@ describe('ClientesListView', () => {
   it('re-fetches the city list scoped to the selected UF when a single UF is applied', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
-    vi.mocked(municipiosApi.listarMunicipios).mockResolvedValue(['Rio de Janeiro'])
+    vi.mocked(municipiosApi.listMunicipalities).mockResolvedValue(['Rio de Janeiro'])
 
     await wrapper.find('[data-test="filter-bar-more"]').trigger('click')
     await wrapper.find('[data-test="filter-cat-UF"]').trigger('click')
@@ -85,7 +85,7 @@ describe('ClientesListView', () => {
     await wrapper.find('[data-test="filter-bar-apply"]').trigger('click')
     await flushPromises()
 
-    expect(municipiosApi.listarMunicipios).toHaveBeenLastCalledWith({ uf: 'RJ' })
+    expect(municipiosApi.listMunicipalities).toHaveBeenLastCalledWith({ uf: 'RJ' })
   })
 
   it('re-fetches with the search term when the search field changes', async () => {
