@@ -42,7 +42,7 @@
       <section class="card">
         <h2>Itens</h2>
         <div class="item-adicionar">
-          <div class="busca-wrapper item-produto-busca">
+          <div class="busca-wrapper item-product-busca">
             <input
               v-model="productSearch"
               placeholder="Buscar produto por nome ou SKU..."
@@ -420,7 +420,7 @@ select {
   margin-bottom: 10px;
 }
 
-.item-produto-busca {
+.item-product-busca {
   min-width: 0;
 }
 

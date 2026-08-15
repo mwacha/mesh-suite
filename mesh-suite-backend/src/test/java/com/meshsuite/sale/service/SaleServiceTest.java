@@ -229,7 +229,7 @@ class SaleServiceTest extends AbstractIntegrationTest {
 
         saleService.issue(orderId);
 
-        // Second call sees the order already FATURADO (not EM_PREPARO), so it's
+        // Second call sees the order already INVOICED (not IN_PREPARATION), so it's
         // rejected by the same status guard as rejectsIssuingAnOrderThatIsNotInPreparation.
         assertThrows(SaleValidationException.class, () -> saleService.issue(orderId));
     }

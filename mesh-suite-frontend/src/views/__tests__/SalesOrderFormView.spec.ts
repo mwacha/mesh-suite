@@ -55,7 +55,7 @@ describe('SalesOrderFormView', () => {
     })
   })
 
-  it('shows required-field errors when cliente/vendedor/itens are missing on submit', async () => {
+  it('shows required-field errors when customer/salesperson/items are missing on submit', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -68,7 +68,7 @@ describe('SalesOrderFormView', () => {
     expect(salesOrdersApi.createSalesOrder).not.toHaveBeenCalled()
   })
 
-  it('loads the salesReps list for the vendedor select', async () => {
+  it('loads the salesReps list for the salesperson select', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -76,7 +76,7 @@ describe('SalesOrderFormView', () => {
     expect(wrapper.find('[data-test="salesperson"]').text()).toContain('Carla Vendedora')
   })
 
-  it('searches and selects a cliente via the busca dropdown', async () => {
+  it('searches and selects a customer via the busca dropdown', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -91,7 +91,7 @@ describe('SalesOrderFormView', () => {
     expect((wrapper.find('[data-test="customer-search"]').element as HTMLInputElement).value).toBe('Mercado Silva')
   })
 
-  it('searches for a produto, adds it as an item and computes totals live', async () => {
+  it('searches for a product, adds it as an item and computes totals live', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -186,7 +186,7 @@ describe('SalesOrderFormView', () => {
     expect(wrapper.text()).toContain('Você não tem permissão para executar esta ação')
   })
 
-  it('loads existing pedido data in edit mode', async () => {
+  it('loads existing sales order data in edit mode', async () => {
     vi.mocked(salesOrdersApi.getSalesOrder).mockResolvedValue({
       id: 'ped-1', number: 3, customerId: 'c1', customerName: 'Mercado Silva', salespersonId: 'v1',
       salespersonName: 'Carla Vendedora', orderDate: '2026-07-31', deliveryDate: null, status: 'DRAFT',
@@ -202,7 +202,7 @@ describe('SalesOrderFormView', () => {
     expect(wrapper.text()).toContain('Camiseta Polo')
   })
 
-  it('shows an error message when loading pedido data fails in edit mode', async () => {
+  it('shows an error message when loading sales order data fails in edit mode', async () => {
     vi.mocked(salesOrdersApi.getSalesOrder).mockRejectedValue(new Error('network error'))
 
     const { wrapper } = await mountWithRouter('/pedidos/ped-1/editar')
