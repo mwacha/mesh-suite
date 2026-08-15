@@ -4,11 +4,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '@/views/DashboardView.vue'
 import { useAuthStore } from '@/stores/auth'
-import * as pedidosApi from '@/api/pedidos'
+import * as pedidosApi from '@/api/salesOrders'
 import * as partnersApi from '@/api/partners'
 import * as produtosApi from '@/api/products'
 
-vi.mock('@/api/pedidos')
+vi.mock('@/api/salesOrders')
 vi.mock('@/api/partners')
 vi.mock('@/api/products')
 
@@ -32,18 +32,18 @@ function mountWithRouter() {
 }
 
 const pedidoRecente = {
-  id: 'ped1', numero: 41, clienteNome: 'Mercado Silva', vendedorNome: 'Carla Vendedora',
-  dataPedido: '2026-08-03', total: 450, status: 'DIGITADO' as const,
+  id: 'ped1', number: 41, customerName: 'Mercado Silva', salespersonName: 'Carla Vendedora',
+  orderDate: '2026-08-03', total: 450, status: 'DRAFT' as const,
 }
 
 describe('DashboardView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    vi.mocked(pedidosApi.buscarResumoPedidos).mockResolvedValue({
-      total: 38, digitados: 12, emPreparo: 18, faturados: 8,
+    vi.mocked(pedidosApi.getSalesOrderCounts).mockResolvedValue({
+      total: 38, draft: 12, inPreparation: 18, invoiced: 8,
     })
-    vi.mocked(pedidosApi.listarPedidos).mockResolvedValue({
+    vi.mocked(pedidosApi.listSalesOrders).mockResolvedValue({
       content: [pedidoRecente], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
     vi.mocked(partnersApi.getPartnerSummary).mockResolvedValue({
@@ -110,7 +110,7 @@ describe('DashboardView', () => {
   })
 
   it('shows an empty state when there are no recent orders', async () => {
-    vi.mocked(pedidosApi.listarPedidos).mockResolvedValue({
+    vi.mocked(pedidosApi.listSalesOrders).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 5,
     })
 
