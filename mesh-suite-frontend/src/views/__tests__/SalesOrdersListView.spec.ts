@@ -2,16 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
-import PedidosListView from '@/views/PedidosListView.vue'
-import * as pedidosApi from '@/api/pedidos'
+import SalesOrdersListView from '@/views/SalesOrdersListView.vue'
+import * as salesOrdersApi from '@/api/salesOrders'
 
-vi.mock('@/api/pedidos')
+vi.mock('@/api/salesOrders')
 
 function mountWithRouter() {
   const router = createRouter({
     history: createWebHistory(),
     routes: [
-      { path: '/pedidos', name: 'pedidos', component: PedidosListView },
+      { path: '/pedidos', name: 'pedidos', component: SalesOrdersListView },
       { path: '/pedidos/novo', name: 'pedidos-novo', component: { template: '<div />' } },
       { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: { template: '<div />' } },
     ],
@@ -22,34 +22,34 @@ function mountWithRouter() {
     // The Ações dropdown is Teleported to <body> so it isn't clipped by the
     // table card's `overflow: hidden` -- stub it here so it renders in
     // place instead, keeping the existing wrapper.find() queries working.
-    wrapper: mount(PedidosListView, { global: { plugins: [router], stubs: { teleport: true } } }),
+    wrapper: mount(SalesOrdersListView, { global: { plugins: [router], stubs: { teleport: true } } }),
   }))
 }
 
-const pedidoDigitado = {
-  id: 'ped1', numero: 1, clienteNome: 'Mercado Silva', vendedorNome: 'Carla Vendedora',
-  dataPedido: '2026-07-31', total: 119.8, status: 'DIGITADO' as const,
+const orderDraft = {
+  id: 'ped1', number: 1, customerName: 'Mercado Silva', salespersonName: 'Carla Vendedora',
+  orderDate: '2026-07-31', total: 119.8, status: 'DRAFT' as const,
 }
 
-const pedidoFaturado = {
-  id: 'ped2', numero: 2, clienteNome: 'Padaria Aurora', vendedorNome: 'Carla Vendedora',
-  dataPedido: '2026-07-30', total: 59.9, status: 'FATURADO' as const,
+const orderInvoiced = {
+  id: 'ped2', number: 2, customerName: 'Padaria Aurora', salespersonName: 'Carla Vendedora',
+  orderDate: '2026-07-30', total: 59.9, status: 'INVOICED' as const,
 }
 
-const pedidoEmPreparo = {
-  id: 'ped3', numero: 3, clienteNome: 'Confecções Bela Vista', vendedorNome: 'Carla Vendedora',
-  dataPedido: '2026-08-01', total: 200.0, status: 'EM_PREPARO' as const,
+const orderInPreparation = {
+  id: 'ped3', number: 3, customerName: 'Confecções Bela Vista', salespersonName: 'Carla Vendedora',
+  orderDate: '2026-08-01', total: 200.0, status: 'IN_PREPARATION' as const,
 }
 
-describe('PedidosListView', () => {
+describe('SalesOrdersListView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    vi.mocked(pedidosApi.listarPedidos).mockResolvedValue({
-      content: [pedidoDigitado], totalElements: 1, totalPages: 1, number: 0, size: 10,
+    vi.mocked(salesOrdersApi.listSalesOrders).mockResolvedValue({
+      content: [orderDraft], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
-    vi.mocked(pedidosApi.buscarResumoPedidos).mockResolvedValue({
-      total: 1, digitados: 1, emPreparo: 0, faturados: 0,
+    vi.mocked(salesOrdersApi.getSalesOrderCounts).mockResolvedValue({
+      total: 1, draft: 1, inPreparation: 0, invoiced: 0,
     })
   })
 
@@ -68,14 +68,14 @@ describe('PedidosListView', () => {
     await wrapper.find('[data-test="busca"]').setValue('silva')
     await flushPromises()
 
-    expect(pedidosApi.listarPedidos).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'silva' }))
+    expect(salesOrdersApi.listSalesOrders).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'silva' }))
   })
 
   it('navigates to the create form when "+ Novo Pedido" is clicked', async () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="novo-pedido"]').trigger('click')
+    await wrapper.find('[data-test="new-order"]').trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('pedidos-novo')
@@ -86,7 +86,7 @@ describe('PedidosListView', () => {
     await flushPromises()
 
     await wrapper.find('[data-test="btn-acoes-ped1"]').trigger('click')
-    await wrapper.find('[data-test="acao-editar"]').trigger('click')
+    await wrapper.find('[data-test="action-edit"]').trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('pedidos-editar')
@@ -105,33 +105,33 @@ describe('PedidosListView', () => {
   })
 
   it('advances the status via the "Avançar para Em Preparo" Ações item', async () => {
-    vi.mocked(pedidosApi.avancarStatusPedido).mockResolvedValue()
+    vi.mocked(salesOrdersApi.advanceSalesOrderStatus).mockResolvedValue()
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
     await wrapper.find('[data-test="btn-acoes-ped1"]').trigger('click')
-    expect(wrapper.find('[data-test="acao-avancar"]').text()).toBe('Avançar para Em Preparo')
-    await wrapper.find('[data-test="acao-avancar"]').trigger('click')
+    expect(wrapper.find('[data-test="action-advance"]').text()).toBe('Avançar para Em Preparo')
+    await wrapper.find('[data-test="action-advance"]').trigger('click')
     await flushPromises()
 
-    expect(pedidosApi.avancarStatusPedido).toHaveBeenCalledWith('ped1', 'EM_PREPARO')
+    expect(salesOrdersApi.advanceSalesOrderStatus).toHaveBeenCalledWith('ped1', 'IN_PREPARATION')
   })
 
   it('hides the "Avançar" item once a pedido is already Faturado', async () => {
-    vi.mocked(pedidosApi.listarPedidos).mockResolvedValue({
-      content: [pedidoFaturado], totalElements: 1, totalPages: 1, number: 0, size: 10,
+    vi.mocked(salesOrdersApi.listSalesOrders).mockResolvedValue({
+      content: [orderInvoiced], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
     await wrapper.find('[data-test="btn-acoes-ped2"]').trigger('click')
 
-    expect(wrapper.find('[data-test="acao-avancar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="action-advance"]').exists()).toBe(false)
   })
 
   it('issues the sale via the "Faturar" Ações item when status is Em Preparo', async () => {
-    vi.mocked(pedidosApi.listarPedidos).mockResolvedValue({
-      content: [pedidoEmPreparo], totalElements: 1, totalPages: 1, number: 0, size: 10,
+    vi.mocked(salesOrdersApi.listSalesOrders).mockResolvedValue({
+      content: [orderInPreparation], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
     const salesApi = await import('@/api/sales')
     vi.spyOn(salesApi, 'issueSale').mockResolvedValue({} as never)
@@ -139,39 +139,39 @@ describe('PedidosListView', () => {
     await flushPromises()
 
     await wrapper.find('[data-test="btn-acoes-ped3"]').trigger('click')
-    expect(wrapper.find('[data-test="acao-faturar"]').text()).toBe('Faturar')
-    await wrapper.find('[data-test="acao-faturar"]').trigger('click')
+    expect(wrapper.find('[data-test="action-issue"]').text()).toBe('Faturar')
+    await wrapper.find('[data-test="action-issue"]').trigger('click')
     await flushPromises()
 
     expect(salesApi.issueSale).toHaveBeenCalledWith('ped3')
-    expect(pedidosApi.avancarStatusPedido).not.toHaveBeenCalled()
+    expect(salesOrdersApi.advanceSalesOrderStatus).not.toHaveBeenCalled()
   })
 
   it('excludes a pedido via the Ações menu after confirming', async () => {
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
-    vi.mocked(pedidosApi.excluirPedido).mockResolvedValue()
+    vi.mocked(salesOrdersApi.deleteSalesOrder).mockResolvedValue()
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
     await wrapper.find('[data-test="btn-acoes-ped1"]').trigger('click')
-    await wrapper.find('[data-test="acao-excluir"]').trigger('click')
+    await wrapper.find('[data-test="action-delete"]').trigger('click')
     await flushPromises()
 
-    expect(pedidosApi.excluirPedido).toHaveBeenCalledWith('ped1')
+    expect(salesOrdersApi.deleteSalesOrder).toHaveBeenCalledWith('ped1')
   })
 
   it('re-fetches with the sort param when a sortable column header is clicked', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="col-cliente"]').trigger('click')
+    await wrapper.find('[data-test="col-customer"]').trigger('click')
     await flushPromises()
 
-    expect(pedidosApi.listarPedidos).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'clienteNome,asc' }))
+    expect(salesOrdersApi.listSalesOrders).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'customerName,asc' }))
   })
 
   it('shows an error message when loading the pedido list fails', async () => {
-    vi.mocked(pedidosApi.listarPedidos).mockRejectedValue(new Error('network error'))
+    vi.mocked(salesOrdersApi.listSalesOrders).mockRejectedValue(new Error('network error'))
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
