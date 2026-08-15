@@ -103,7 +103,7 @@ describe('SalesOrderFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Camiseta Polo')
-    expect(wrapper.text()).toContain('R$ 119,80')
+    expect(wrapper.text()).toContain('R$ 119,80')
 
     await wrapper.find('[data-test="item-remove"]').trigger('click')
     await flushPromises()
