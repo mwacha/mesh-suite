@@ -46,7 +46,7 @@ public class UserController {
     }
 
     // Deliberately bypasses UserService/@RequiresPermission -- support lookup for
-    // the Pedido form's vendor picker, not "viewing the Users module". See the
+    // the SalesOrder form's vendor picker, not "viewing the Users module". See the
     // Global Constraints note.
     //
     // Still needs its own @Transactional: TenantContextAspect only fires around

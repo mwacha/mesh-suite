@@ -31,9 +31,9 @@
           </thead>
           <tbody>
             <tr v-for="pedido in pedidosRecentes" :key="pedido.id">
-              <td>{{ pedido.numero }}</td>
-              <td>{{ pedido.clienteNome }}</td>
-              <td>{{ formatarData(pedido.dataPedido) }}</td>
+              <td>{{ pedido.number }}</td>
+              <td>{{ pedido.customerName }}</td>
+              <td>{{ formatarData(pedido.orderDate) }}</td>
               <td>{{ formatarPreco(pedido.total) }}</td>
               <td>
                 <span class="badge" :class="`badge-${pedido.status}`">{{ statusLabel(pedido.status) }}</span>
@@ -90,12 +90,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import {
-  buscarResumoPedidos,
-  listarPedidos,
-  type PedidoResumo,
-  type PedidoSummary,
-  type StatusPedido,
-} from '@/api/pedidos'
+  getSalesOrderCounts,
+  listSalesOrders,
+  type SalesOrderCounts,
+  type SalesOrderSummary,
+  type SalesOrderStatus,
+} from '@/api/salesOrders'
 import { getPartnerSummary, type PartnerSummary } from '@/api/partners'
 import { getProductSummary, type ProductSummary } from '@/api/products'
 
@@ -111,25 +111,25 @@ interface Stat {
 // permission on one module (Module.CUSTOMER/PRODUCT/ORDER) still sees the
 // rest of the dashboard; that section just falls back to "—" / an empty
 // state instead of blocking the whole page.
-const pedidoResumo = ref<PedidoResumo | null>(null)
+const pedidoResumo = ref<SalesOrderCounts | null>(null)
 const parceiroResumo = ref<PartnerSummary | null>(null)
 const produtoResumo = ref<ProductSummary | null>(null)
-const pedidosRecentes = ref<PedidoSummary[]>([])
+const pedidosRecentes = ref<SalesOrderSummary[]>([])
 
 const stats = computed<Stat[]>(() => [
   { icon: '📋', label: 'Total de Pedidos', value: pedidoResumo.value ? String(pedidoResumo.value.total) : '—' },
   { icon: '👥', label: 'Clientes Ativos', value: parceiroResumo.value ? String(parceiroResumo.value.active) : '—' },
-  { icon: '🧾', label: 'Pedidos Faturados', value: pedidoResumo.value ? String(pedidoResumo.value.faturados) : '—' },
+  { icon: '🧾', label: 'Pedidos Faturados', value: pedidoResumo.value ? String(pedidoResumo.value.invoiced) : '—' },
   { icon: '📦', label: 'Produtos Ativos', value: produtoResumo.value ? String(produtoResumo.value.active) : '—' },
 ])
 
-const STATUS_LABEL: Record<StatusPedido, string> = {
-  DIGITADO: 'Digitado',
-  EM_PREPARO: 'Em Preparo',
-  FATURADO: 'Faturado',
+const STATUS_LABEL: Record<SalesOrderStatus, string> = {
+  DRAFT: 'Digitado',
+  IN_PREPARATION: 'Em Preparo',
+  INVOICED: 'Faturado',
 }
 
-function statusLabel(status: StatusPedido) {
+function statusLabel(status: SalesOrderStatus) {
   return STATUS_LABEL[status]
 }
 
@@ -137,9 +137,9 @@ const statusPedidos = computed(() => {
   const r = pedidoResumo.value
   if (!r) return []
   return [
-    { label: 'Digitados', value: r.digitados, classe: 'DIGITADO' as StatusPedido },
-    { label: 'Em Preparo', value: r.emPreparo, classe: 'EM_PREPARO' as StatusPedido },
-    { label: 'Faturados', value: r.faturados, classe: 'FATURADO' as StatusPedido },
+    { label: 'Digitados', value: r.draft, classe: 'DRAFT' as SalesOrderStatus },
+    { label: 'Em Preparo', value: r.inPreparation, classe: 'IN_PREPARATION' as SalesOrderStatus },
+    { label: 'Faturados', value: r.invoiced, classe: 'INVOICED' as SalesOrderStatus },
   ]
 })
 
@@ -154,10 +154,10 @@ function formatarData(data: string) {
 
 onMounted(async () => {
   const [pedidoR, parceiroR, produtoR, pedidosR] = await Promise.allSettled([
-    buscarResumoPedidos(),
+    getSalesOrderCounts(),
     getPartnerSummary(),
     getProductSummary(),
-    listarPedidos({ page: 0, size: 5 }),
+    listSalesOrders({ page: 0, size: 5 }),
   ])
   if (pedidoR.status === 'fulfilled') pedidoResumo.value = pedidoR.value
   if (parceiroR.status === 'fulfilled') parceiroResumo.value = parceiroR.value
@@ -278,17 +278,17 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.badge-DIGITADO {
+.badge-DRAFT {
   background: var(--pm-bg);
   color: var(--pm-text-mid);
 }
 
-.badge-EM_PREPARO {
+.badge-IN_PREPARATION {
   background: var(--pm-warning-bg, var(--pm-bg));
   color: var(--pm-warning, var(--pm-text-mid));
 }
 
-.badge-FATURADO {
+.badge-INVOICED {
   background: var(--pm-success-bg);
   color: var(--pm-success);
 }
@@ -364,15 +364,15 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.dot-DIGITADO {
+.dot-DRAFT {
   background: var(--pm-text-mid);
 }
 
-.dot-EM_PREPARO {
+.dot-IN_PREPARATION {
   background: var(--pm-warning, var(--pm-text-mid));
 }
 
-.dot-FATURADO {
+.dot-INVOICED {
   background: var(--pm-success);
 }
 

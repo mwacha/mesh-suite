@@ -15,7 +15,7 @@ CREATE TABLE sale (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenant(id),
     number INTEGER NOT NULL,
-    order_id UUID NOT NULL UNIQUE REFERENCES pedido(id),
+    order_id UUID NOT NULL UNIQUE REFERENCES sales_order(id),
     customer_id UUID NOT NULL REFERENCES partner(id),
     salesperson_id UUID NOT NULL REFERENCES app_user(id),
     issue_date DATE NOT NULL DEFAULT CURRENT_DATE,

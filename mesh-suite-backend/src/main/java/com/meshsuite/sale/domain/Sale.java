@@ -1,7 +1,7 @@
 package com.meshsuite.sale.domain;
 
 import com.meshsuite.partner.domain.Partner;
-import com.meshsuite.pedido.domain.Pedido;
+import com.meshsuite.salesorder.domain.SalesOrder;
 import com.meshsuite.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -43,7 +43,7 @@ public class Sale {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false, unique = true)
-    private Pedido order;
+    private SalesOrder order;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)

@@ -15,8 +15,8 @@ import ColorwaysListView from '@/views/ColorwaysListView.vue'
 import ColorwayFormView from '@/views/ColorwayFormView.vue'
 import PriceTablesListView from '@/views/PriceTablesListView.vue'
 import PriceTableFormView from '@/views/PriceTableFormView.vue'
-import PedidoFormView from '@/views/PedidoFormView.vue'
-import PedidosListView from '@/views/PedidosListView.vue'
+import SalesOrderFormView from '@/views/SalesOrderFormView.vue'
+import SalesOrdersListView from '@/views/SalesOrdersListView.vue'
 import SalesListView from '@/views/SalesListView.vue'
 import UserFormView from '@/views/UserFormView.vue'
 import UsersListView from '@/views/UsersListView.vue'
@@ -47,9 +47,9 @@ const router = createRouter({
     { path: '/tabelas-preco', name: 'tabelas-preco', component: PriceTablesListView },
     { path: '/tabelas-preco/novo', name: 'tabelas-preco-novo', component: PriceTableFormView },
     { path: '/tabelas-preco/:id/editar', name: 'tabelas-preco-editar', component: PriceTableFormView },
-    { path: '/pedidos', name: 'pedidos', component: PedidosListView },
-    { path: '/pedidos/novo', name: 'pedidos-novo', component: PedidoFormView },
-    { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: PedidoFormView },
+    { path: '/pedidos', name: 'pedidos', component: SalesOrdersListView },
+    { path: '/pedidos/novo', name: 'pedidos-novo', component: SalesOrderFormView },
+    { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: SalesOrderFormView },
     { path: '/vendas', name: 'vendas', component: SalesListView },
     { path: '/usuarios', name: 'usuarios', component: UsersListView },
     { path: '/usuarios/novo', name: 'usuarios-novo', component: UserFormView },
