@@ -183,4 +183,16 @@ public class GlobalExceptionHandler {
             com.meshsuite.sale.exception.SaleValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.purchaseinvoice.exception.PurchaseInvoiceNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePurchaseInvoiceNotFound(
+            com.meshsuite.purchaseinvoice.exception.PurchaseInvoiceNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.purchaseinvoice.exception.PurchaseInvoiceValidationException.class)
+    public ResponseEntity<Map<String, String>> handlePurchaseInvoiceValidation(
+            com.meshsuite.purchaseinvoice.exception.PurchaseInvoiceValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
