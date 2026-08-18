@@ -8,5 +8,6 @@ public enum Module {
     PURCHASE,
     STOCK,
     PAYABLE,
-    SALE
+    SALE,
+    PURCHASE_INVOICE
 }
