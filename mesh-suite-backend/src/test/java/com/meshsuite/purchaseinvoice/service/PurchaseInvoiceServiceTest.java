@@ -1,7 +1,7 @@
 package com.meshsuite.purchaseinvoice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
@@ -225,8 +225,9 @@ class PurchaseInvoiceServiceTest extends AbstractIntegrationTest {
         purchaseInvoiceService.issue(orderId, request("NF-1001", new BigDecimal("25.00")), callerId);
 
         // Second attempt: the order is already RECEIVED from the first issuance.
-        assertThrows(PurchaseInvoiceValidationException.class,
-                () -> purchaseInvoiceService.issue(orderId, request("NF-1002", new BigDecimal("25.00")), callerId));
+        assertThatThrownBy(() -> purchaseInvoiceService.issue(orderId, request("NF-1002", new BigDecimal("25.00")), callerId))
+                .isInstanceOf(PurchaseInvoiceValidationException.class)
+                .hasMessageContaining("Só é possível lançar uma compra a partir de uma ordem em aberto");
     }
 
     @Test
@@ -237,8 +238,9 @@ class PurchaseInvoiceServiceTest extends AbstractIntegrationTest {
         UUID productId = criarProdutoSemCadastroFiscal(tenantId, "P0002", new BigDecimal("25.00"));
         UUID orderId = criarOrdemAberta(tenantId, supplierId, buyerId, productId, BigDecimal.ONE, new BigDecimal("25.00"));
 
-        assertThrows(PurchaseInvoiceValidationException.class,
-                () -> purchaseInvoiceService.issue(orderId, request("NF-1001", new BigDecimal("25.00")), callerId));
+        assertThatThrownBy(() -> purchaseInvoiceService.issue(orderId, request("NF-1001", new BigDecimal("25.00")), callerId))
+                .isInstanceOf(PurchaseInvoiceValidationException.class)
+                .hasMessageContaining("não possui cadastro fiscal aplicado");
     }
 
     @Test
@@ -251,8 +253,9 @@ class PurchaseInvoiceServiceTest extends AbstractIntegrationTest {
         UUID order2 = criarOrdemAberta(tenantId, supplierId, buyerId, productId, BigDecimal.ONE, new BigDecimal("25.00"));
         purchaseInvoiceService.issue(order1, request("NF-1001", new BigDecimal("25.00")), callerId);
 
-        assertThrows(PurchaseInvoiceValidationException.class,
-                () -> purchaseInvoiceService.issue(order2, request("NF-1001", new BigDecimal("25.00")), callerId));
+        assertThatThrownBy(() -> purchaseInvoiceService.issue(order2, request("NF-1001", new BigDecimal("25.00")), callerId))
+                .isInstanceOf(PurchaseInvoiceValidationException.class)
+                .hasMessageContaining("cadastrada para este fornecedor");
     }
 
     @Test
@@ -263,8 +266,9 @@ class PurchaseInvoiceServiceTest extends AbstractIntegrationTest {
         UUID productId = criarProdutoComCadastroFiscal(tenantId, "P0001", new BigDecimal("25.00"));
         UUID orderId = criarOrdemAberta(tenantId, supplierId, buyerId, productId, BigDecimal.ONE, new BigDecimal("25.00"));
 
-        assertThrows(PurchaseInvoiceValidationException.class,
-                () -> purchaseInvoiceService.issue(orderId, request("NF-1001", new BigDecimal("20.00")), callerId));
+        assertThatThrownBy(() -> purchaseInvoiceService.issue(orderId, request("NF-1001", new BigDecimal("20.00")), callerId))
+                .isInstanceOf(PurchaseInvoiceValidationException.class)
+                .hasMessageContaining("não bate com o total da nota");
     }
 
     @Test
@@ -279,8 +283,9 @@ class PurchaseInvoiceServiceTest extends AbstractIntegrationTest {
                 LocalDate.of(2026, 8, 12), LocalDate.of(2026, 8, 10),
                 List.of(new InstallmentInput(new BigDecimal("25.00"), LocalDate.of(2026, 9, 10))));
 
-        assertThrows(PurchaseInvoiceValidationException.class,
-                () -> purchaseInvoiceService.issue(orderId, invalido, callerId));
+        assertThatThrownBy(() -> purchaseInvoiceService.issue(orderId, invalido, callerId))
+                .isInstanceOf(PurchaseInvoiceValidationException.class)
+                .hasMessageContaining("não pode ser anterior à data de emissão");
     }
 
     @Test
