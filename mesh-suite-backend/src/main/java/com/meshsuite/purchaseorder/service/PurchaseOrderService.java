@@ -110,6 +110,11 @@ public class PurchaseOrderService {
     @Transactional
     @RequiresPermission(module = Module.PURCHASE, action = Action.EDIT)
     public PurchaseOrderResponse updateStatus(UUID id, PurchaseOrderStatus newStatus) {
+        if (newStatus == PurchaseOrderStatus.RECEIVED) {
+            throw new PurchaseOrderValidationException(
+                    "Recebimento deve ser feito através do lançamento da Compra "
+                            + "(POST /api/purchase-invoices/issue/{purchaseOrderId})");
+        }
         PurchaseOrder order = findEntityById(id);
         if (order.getStatus() != PurchaseOrderStatus.OPEN) {
             throw new PurchaseOrderValidationException(

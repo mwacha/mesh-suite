@@ -153,13 +153,13 @@ class PurchaseOrderControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(patch("/api/purchase-orders/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"RECEIVED\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("RECEIVED"));
+                .andExpect(status().isBadRequest());
 
         mockMvc.perform(patch("/api/purchase-orders/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"CANCELLED\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
 
         mockMvc.perform(delete("/api/purchase-orders/" + id).cookie(cookie))
                 .andExpect(status().isNoContent());

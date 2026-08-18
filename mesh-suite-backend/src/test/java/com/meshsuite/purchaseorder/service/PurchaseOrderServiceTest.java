@@ -18,6 +18,7 @@ import com.meshsuite.purchaseorder.dto.PurchaseOrderItemRequest;
 import com.meshsuite.purchaseorder.dto.PurchaseOrderRequest;
 import com.meshsuite.purchaseorder.exception.PurchaseOrderNotFoundException;
 import com.meshsuite.purchaseorder.exception.PurchaseOrderValidationException;
+import com.meshsuite.purchaseorder.repository.PurchaseOrderRepository;
 import com.meshsuite.purchaseorder.service.PurchaseOrderService;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
@@ -47,6 +48,7 @@ class PurchaseOrderServiceTest extends AbstractIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired ProductRepository produtoRepository;
     @Autowired PurchaseOrderService purchaseOrderService;
+    @Autowired PurchaseOrderRepository purchaseOrderRepository;
     @Autowired EntityManager entityManager;
 
     @AfterEach
@@ -134,6 +136,17 @@ class PurchaseOrderServiceTest extends AbstractIntegrationTest {
 
     private PurchaseOrderRequest request(UUID supplierId, UUID buyerId, List<PurchaseOrderItemRequest> items, BigDecimal discount) {
         return new PurchaseOrderRequest(supplierId, buyerId, null, null, discount, items);
+    }
+
+    // RECEIVED is now only reachable for real via PurchaseInvoiceService.issue
+    // (Task 5) -- these two tests only need a RECEIVED order as setup for what
+    // they actually test (status-change rejection, counts), so they set it
+    // directly through the repository instead of depending on the whole
+    // purchase-invoice issuance flow.
+    private void forceReceived(UUID orderId) {
+        var order = purchaseOrderRepository.findById(orderId).orElseThrow();
+        order.setStatus(PurchaseOrderStatus.RECEIVED);
+        purchaseOrderRepository.saveAndFlush(order);
     }
 
     @Test
@@ -291,14 +304,14 @@ class PurchaseOrderServiceTest extends AbstractIntegrationTest {
         UUID productId = criarProduto(tenantId, "P0001", new BigDecimal("25.00"));
         var items = List.of(new PurchaseOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("25.00")));
         var created = purchaseOrderService.create(tenantId, request(supplierId, buyerId, items, BigDecimal.ZERO));
-        purchaseOrderService.updateStatus(created.id(), PurchaseOrderStatus.RECEIVED);
+        forceReceived(created.id());
 
         assertThrows(PurchaseOrderValidationException.class,
                 () -> purchaseOrderService.update(created.id(), request(supplierId, buyerId, items, BigDecimal.ZERO)));
     }
 
     @Test
-    void marksAsReceivedFromOpen() {
+    void rejectsMarkingReceivedViaUpdateStatus() {
         UUID tenantId = setUpTenant("aurora");
         UUID supplierId = criarFornecedor(tenantId, "11222333000144");
         UUID buyerId = criarComprador(tenantId, "carlos@aurora.com.br");
@@ -306,9 +319,8 @@ class PurchaseOrderServiceTest extends AbstractIntegrationTest {
         var items = List.of(new PurchaseOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("25.00")));
         var created = purchaseOrderService.create(tenantId, request(supplierId, buyerId, items, BigDecimal.ZERO));
 
-        var updated = purchaseOrderService.updateStatus(created.id(), PurchaseOrderStatus.RECEIVED);
-
-        assertThat(updated.status()).isEqualTo(PurchaseOrderStatus.RECEIVED);
+        assertThrows(PurchaseOrderValidationException.class,
+                () -> purchaseOrderService.updateStatus(created.id(), PurchaseOrderStatus.RECEIVED));
     }
 
     @Test
@@ -333,7 +345,7 @@ class PurchaseOrderServiceTest extends AbstractIntegrationTest {
         UUID productId = criarProduto(tenantId, "P0001", new BigDecimal("25.00"));
         var items = List.of(new PurchaseOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("25.00")));
         var created = purchaseOrderService.create(tenantId, request(supplierId, buyerId, items, BigDecimal.ZERO));
-        purchaseOrderService.updateStatus(created.id(), PurchaseOrderStatus.RECEIVED);
+        forceReceived(created.id());
 
         assertThrows(PurchaseOrderValidationException.class,
                 () -> purchaseOrderService.updateStatus(created.id(), PurchaseOrderStatus.CANCELLED));
@@ -348,7 +360,7 @@ class PurchaseOrderServiceTest extends AbstractIntegrationTest {
         var items = List.of(new PurchaseOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("25.00")));
         var a = purchaseOrderService.create(tenantId, request(supplierId, buyerId, items, BigDecimal.ZERO));
         purchaseOrderService.create(tenantId, request(supplierId, buyerId, items, BigDecimal.ZERO));
-        purchaseOrderService.updateStatus(a.id(), PurchaseOrderStatus.RECEIVED);
+        forceReceived(a.id());
 
         var counts = purchaseOrderService.counts();
 
