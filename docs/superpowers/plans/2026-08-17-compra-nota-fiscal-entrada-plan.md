@@ -24,6 +24,7 @@
 - Package layout per module: `controller/`, `service/`, `repository/`, `repository/specification/`, `domain/`, `dto/`, `exception/` — same structure the rest of the backend already uses.
 - Only touch of already-working code: `PurchaseOrderService.updateStatus` gets one new guard clause (reject `RECEIVED`), which requires fixing three existing `PurchaseOrderServiceTest` tests and one `PurchaseOrderControllerTest` assertion that currently rely on reaching `RECEIVED` through that method — see Task 4, it explains exactly why and how. Nothing else in `purchaseorder`/`product`/`fiscal`/`stock`/`payable` changes.
 - No new frontend dependencies. No importing NF-e XML, no freight/Conhecimento de Transporte fields, no "código de indicador de pagamento" — all explicitly out of scope per the spec.
+- **Known pre-existing issue, not in scope to fix:** a filter-less `mvn clean test` (no `-Dtest=...`) is unreliable in this repo — `DevSeedTest`'s `@ActiveProfiles("test")` Spring context and the default context used by nearly every other integration test share one Testcontainers Postgres instance, and Flyway/tenant-seed state from one leaks into the other depending on execution order, cascading into unrelated duplicate-key failures across many classes. Confirmed independent of this plan (reproducible on `main`, before any Task here starts). Every task step that needs to run tests uses a scoped `-Dtest=...` filter for exactly this reason — never widen a step to a bare `mvn clean test`, and do not attempt to fix `DevSeedTest`'s isolation as part of this plan.
 
 ---
 
@@ -2010,9 +2011,11 @@ public class PurchaseInvoiceExceptionHandler {
 Run: `cd mesh-suite-backend && mvn -q test -Dtest=PurchaseInvoiceControllerTest`
 Expected: `BUILD SUCCESS`, 4 tests passed.
 
-- [ ] **Step 6: Run the full backend suite to confirm no regressions**
+- [ ] **Step 6: Run the affected modules together to confirm no regressions**
 
-Run: `cd mesh-suite-backend && mvn -q clean test`
+Do NOT run a filter-less `mvn clean test` — running the entire backend suite as one invocation is a pre-existing, unrelated instability in this repo (`DevSeedTest`'s `@ActiveProfiles("test")` context and the default context share one Testcontainers Postgres instance and collide on Flyway/tenant state; confirmed independently of this plan, reproducible on `main`). Instead run every test class this plan has touched or created so far, scoped by name:
+
+Run: `cd mesh-suite-backend && mvn -q test -Dtest=PurchaseOrder*Test,PurchaseInvoice*Test`
 Expected: `BUILD SUCCESS`.
 
 - [ ] **Step 7: Commit**
@@ -3373,9 +3376,11 @@ git commit -m "feat(purchase-invoice): add PURCHASE_INVOICE to the permission mo
 
 **Files:** none (verification only), plus `prd/ORDEM-EXECUCAO.md`.
 
-- [ ] **Step 1: Run the full backend suite**
+- [ ] **Step 1: Run the backend regression set**
 
-Run: `cd mesh-suite-backend && mvn -q clean test`
+Do NOT run a filter-less `mvn clean test` — running the entire backend suite as one invocation is a pre-existing, unrelated instability in this repo (`DevSeedTest`'s `@ActiveProfiles("test")` context and the default context share one Testcontainers Postgres instance and collide on Flyway/tenant state; confirmed independently of this plan, reproducible on `main`, and excluding just `DevSeedTest` alone is not sufficient — the full-suite run surfaces broader cross-class data collisions). Instead run every module this plan touched, consumed, or created:
+
+Run: `cd mesh-suite-backend && mvn -q test -Dtest=PurchaseOrder*Test,PurchaseInvoice*Test,Stock*Test,AccountsPayable*Test`
 Expected: `BUILD SUCCESS`. (Requires Docker for Testcontainers.)
 
 - [ ] **Step 2: Run the full frontend suite**
