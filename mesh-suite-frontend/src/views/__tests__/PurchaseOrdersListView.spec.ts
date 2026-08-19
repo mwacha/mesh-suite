@@ -14,6 +14,7 @@ function mountWithRouter() {
       { path: '/compras', name: 'compras', component: PurchaseOrdersListView },
       { path: '/compras/novo', name: 'compras-novo', component: { template: '<div />' } },
       { path: '/compras/:id/editar', name: 'compras-editar', component: { template: '<div />' } },
+      { path: '/compras/:id/nota-fiscal', name: 'compras-nota-fiscal', component: { template: '<div />' } },
     ],
   })
   router.push('/compras')
@@ -111,16 +112,18 @@ describe('PurchaseOrdersListView', () => {
     )
   })
 
-  it('marks the order as received via the Ações menu', async () => {
-    vi.mocked(purchaseOrdersApi.updatePurchaseOrderStatus).mockResolvedValue()
-    const { wrapper } = await mountWithRouter()
+  it('navigates to the Lançar Compra screen via the Ações menu', async () => {
+    const { wrapper, router } = await mountWithRouter()
     await flushPromises()
 
     await wrapper.find('[data-test="btn-acoes-po1"]').trigger('click')
-    await wrapper.find('[data-test="acao-receber"]').trigger('click')
+    expect(wrapper.find('[data-test="acao-lancar-compra"]').text()).toBe('Lançar Compra')
+    await wrapper.find('[data-test="acao-lancar-compra"]').trigger('click')
     await flushPromises()
 
-    expect(purchaseOrdersApi.updatePurchaseOrderStatus).toHaveBeenCalledWith('po1', 'RECEIVED')
+    expect(router.currentRoute.value.name).toBe('compras-nota-fiscal')
+    expect(router.currentRoute.value.params.id).toBe('po1')
+    expect(purchaseOrdersApi.updatePurchaseOrderStatus).not.toHaveBeenCalled()
   })
 
   it('cancels the order via the Ações menu', async () => {
@@ -144,7 +147,7 @@ describe('PurchaseOrdersListView', () => {
 
     await wrapper.find('[data-test="btn-acoes-po2"]').trigger('click')
 
-    expect(wrapper.find('[data-test="acao-receber"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="acao-lancar-compra"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="acao-cancelar"]').exists()).toBe(false)
   })
 

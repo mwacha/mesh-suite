@@ -197,14 +197,8 @@ function editarOrdem(id: string) {
   router.push({ name: 'compras-editar', params: { id } })
 }
 
-async function marcarComoRecebida(ordem: PurchaseOrderSummary) {
-  erro.value = ''
-  try {
-    await updatePurchaseOrderStatus(ordem.id, 'RECEIVED')
-    await Promise.all([carregar(pagina.value.number), carregarResumo()])
-  } catch {
-    erro.value = 'Não foi possível atualizar o status da ordem de compra.'
-  }
+function lancarCompra(ordem: PurchaseOrderSummary) {
+  router.push({ name: 'compras-nota-fiscal', params: { id: ordem.id } })
 }
 
 async function cancelarOrdem(ordem: PurchaseOrderSummary) {
@@ -235,7 +229,7 @@ function acoesPara(ordem: PurchaseOrderSummary): ActionsMenuItem[] {
     { label: 'Editar', action: () => editarOrdem(ordem.id), testId: 'acao-editar' },
   ]
   if (ordem.status === 'OPEN') {
-    itens.push({ label: 'Marcar como Recebida', action: () => marcarComoRecebida(ordem), testId: 'acao-receber' })
+    itens.push({ label: 'Lançar Compra', action: () => lancarCompra(ordem), testId: 'acao-lancar-compra' })
     itens.push({ label: 'Cancelar', action: () => cancelarOrdem(ordem), testId: 'acao-cancelar' })
   }
   itens.push({ label: 'Excluir', action: () => excluir(ordem), danger: true, testId: 'acao-excluir' })
