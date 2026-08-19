@@ -115,4 +115,27 @@ describe('PurchaseInvoiceFormView', () => {
 
     expect(wrapper.text()).toContain('Não foi possível lançar a compra.')
   })
+
+  it('shows the backend validation message when issuing fails with a 400 response', async () => {
+    vi.mocked(purchaseInvoicesApi.issuePurchaseInvoice).mockRejectedValue({
+      response: { status: 400, data: { mensagem: 'Já existe uma nota NF-1001 cadastrada para este fornecedor' } },
+    })
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="nota-numero"]').setValue('NF-1001')
+    await wrapper.find('[data-test="nota-serie"]').setValue('1')
+    await wrapper.find('[data-test="nota-modelo"]').setValue('55')
+    await wrapper.find('[data-test="nota-data-emissao"]').setValue('2026-08-10')
+    await wrapper.find('[data-test="nota-data-entrada"]').setValue('2026-08-12')
+    await wrapper.find('[data-test="parcela-adicionar"]').trigger('click')
+    await wrapper.find('[data-test="parcela-valor-0"]').setValue('200')
+    await wrapper.find('[data-test="parcela-vencimento-0"]').setValue('2026-09-10')
+
+    await wrapper.find('[data-test="salvar"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Já existe uma nota NF-1001 cadastrada para este fornecedor')
+    expect(wrapper.text()).not.toContain('Não foi possível lançar a compra.')
+  })
 })

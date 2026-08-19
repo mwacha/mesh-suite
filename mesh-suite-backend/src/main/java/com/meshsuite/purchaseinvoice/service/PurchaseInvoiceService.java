@@ -33,7 +33,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +68,23 @@ public class PurchaseInvoiceService {
     @RequiresPermission(module = Module.PURCHASE_INVOICE, action = Action.VIEW)
     public Page<PurchaseInvoiceSummaryResponse> list(String search, Pageable pageable) {
         Specification<PurchaseInvoice> spec = Specification.where(PurchaseInvoiceSpecifications.withSearch(search));
-        return purchaseInvoiceRepository.findAll(spec, pageable).map(this::toSummary);
+        return purchaseInvoiceRepository.findAll(spec, remapSupplierNameSort(pageable)).map(this::toSummary);
+    }
+
+    // PurchaseInvoiceSummaryResponse.supplierName is a projection, not a direct
+    // PurchaseInvoice property -- the actual JPA path is the supplier association's
+    // tradeName. Remap here so sorting by "supplierName" (as sent by the frontend)
+    // doesn't blow up with a PropertyReferenceException.
+    private Pageable remapSupplierNameSort(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        Sort remapped = Sort.by(pageable.getSort().stream()
+                .map(order -> "supplierName".equals(order.getProperty())
+                        ? order.withProperty("supplier.tradeName")
+                        : order)
+                .toList());
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), remapped);
     }
 
     @Transactional(readOnly = true)

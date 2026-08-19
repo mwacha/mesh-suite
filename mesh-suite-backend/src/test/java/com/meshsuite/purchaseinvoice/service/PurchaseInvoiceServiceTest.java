@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,11 +103,15 @@ class PurchaseInvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     private UUID criarFornecedor(UUID tenantId, String documento) {
+        return criarFornecedor(tenantId, documento, "Tecidos Aurora");
+    }
+
+    private UUID criarFornecedor(UUID tenantId, String documento, String tradeName) {
         Partner p = new Partner();
         p.setTenantId(tenantId);
         p.setPersonType(PersonType.LEGAL_ENTITY);
         p.setDocument(documento);
-        p.setTradeName("Tecidos Aurora");
+        p.setTradeName(tradeName);
         p.getRoles().add(PartnerRole.SUPPLIER);
         return partnerRepository.saveAndFlush(p).getId();
     }
@@ -302,5 +307,28 @@ class PurchaseInvoiceServiceTest extends AbstractIntegrationTest {
 
         assertThat(pagina.getTotalElements()).isEqualTo(1);
         assertThat(buscada.supplierName()).isEqualTo("Tecidos Aurora");
+    }
+
+    @Test
+    void listsSortedBySupplierNameWithoutThrowing() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID buyerId = criarComprador(tenantId, "carlos@aurora.com.br");
+        UUID productId = criarProdutoComCadastroFiscal(tenantId, "P0001", new BigDecimal("25.00"));
+
+        UUID supplierZeta = criarFornecedor(tenantId, "11222333000144", "Zeta Tecidos");
+        UUID orderZeta = criarOrdemAberta(tenantId, supplierZeta, buyerId, productId, BigDecimal.ONE, new BigDecimal("25.00"));
+        purchaseInvoiceService.issue(orderZeta, request("NF-1001", new BigDecimal("25.00")), callerId);
+
+        UUID supplierAlfa = criarFornecedor(tenantId, "22333444000155", "Alfa Tecidos");
+        UUID orderAlfa = criarOrdemAberta(tenantId, supplierAlfa, buyerId, productId, BigDecimal.ONE, new BigDecimal("25.00"));
+        purchaseInvoiceService.issue(orderAlfa, request("NF-1002", new BigDecimal("25.00")), callerId);
+
+        var pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("supplierName")));
+
+        var pagina = purchaseInvoiceService.list(null, pageable);
+
+        assertThat(pagina.getTotalElements()).isEqualTo(2);
+        assertThat(pagina.getContent()).extracting("supplierName")
+                .containsExactly("Alfa Tecidos", "Zeta Tecidos");
     }
 }
