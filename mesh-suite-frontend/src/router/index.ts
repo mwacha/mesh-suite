@@ -22,6 +22,8 @@ import UserFormView from '@/views/UserFormView.vue'
 import UsersListView from '@/views/UsersListView.vue'
 import PurchaseOrderFormView from '@/views/PurchaseOrderFormView.vue'
 import PurchaseOrdersListView from '@/views/PurchaseOrdersListView.vue'
+import PurchaseInvoicesListView from '@/views/PurchaseInvoicesListView.vue'
+import PurchaseInvoiceFormView from '@/views/PurchaseInvoiceFormView.vue'
 import AccountsPayableListView from '@/views/AccountsPayableListView.vue'
 
 const router = createRouter({
@@ -57,6 +59,8 @@ const router = createRouter({
     { path: '/compras', name: 'compras', component: PurchaseOrdersListView },
     { path: '/compras/novo', name: 'compras-novo', component: PurchaseOrderFormView },
     { path: '/compras/:id/editar', name: 'compras-editar', component: PurchaseOrderFormView },
+    { path: '/compras/:id/nota-fiscal', name: 'compras-nota-fiscal', component: PurchaseInvoiceFormView },
+    { path: '/notas-fiscais-entrada', name: 'notas-fiscais-entrada', component: PurchaseInvoicesListView },
     { path: '/contas-a-pagar', name: 'contas-a-pagar', component: AccountsPayableListView },
   ],
 })

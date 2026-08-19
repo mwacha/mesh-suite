@@ -121,6 +121,23 @@ describe('AppSidebar', () => {
     expect(router.currentRoute.value.path).toBe('/compras')
   })
 
+  it('navigates to /notas-fiscais-entrada when Notas de Entrada is clicked', async () => {
+    const router = createRouter({
+      history: createWebHistory(),
+      routes: [
+        { path: '/', name: 'dashboard', component: { template: '<div />' } },
+        { path: '/notas-fiscais-entrada', name: 'notas-fiscais-entrada', component: { template: '<div />' } },
+      ],
+    })
+    const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
+
+    await wrapper.find('[data-test="group-compras"]').trigger('click')
+    await wrapper.find('[data-test="nav-Notas de Entrada"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/notas-fiscais-entrada')
+  })
+
   it('groups nav items under category headers, collapsed by default', () => {
     const { wrapper } = mountWithRouter()
 

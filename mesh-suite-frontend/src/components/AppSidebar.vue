@@ -99,7 +99,10 @@ const navGroups: NavGroup[] = [
   {
     key: 'compras',
     title: 'COMPRAS',
-    items: [{ icon: '📥', label: 'Compras', route: '/compras' }],
+    items: [
+      { icon: '📥', label: 'Compras', route: '/compras' },
+      { icon: '🧾', label: 'Notas de Entrada', route: '/notas-fiscais-entrada' },
+    ],
   },
   {
     key: 'catalogo',
