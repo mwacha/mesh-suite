@@ -22,7 +22,7 @@ export async function listBuyers(): Promise<Buyer[]> {
 
 export type Role = 'ADMINISTRATIVE' | 'SALES_REP' | 'PRODUCTION' | 'OUTSOURCED' | 'ADMIN'
 export type Profile = 'ADMIN' | 'MANAGER' | 'SALES' | 'VIEWER'
-export type ModuleName = 'CUSTOMER' | 'PRODUCT' | 'ORDER' | 'USER' | 'PURCHASE' | 'PAYABLE' | 'SALE'
+export type ModuleName = 'CUSTOMER' | 'PRODUCT' | 'ORDER' | 'USER' | 'PURCHASE' | 'PAYABLE' | 'SALE' | 'PURCHASE_INVOICE'
 export type ActionName = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE'
 
 export interface Permission {
