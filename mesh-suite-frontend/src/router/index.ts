@@ -7,6 +7,9 @@ import DashboardView from '@/views/DashboardView.vue'
 import ClienteFormView from '@/views/ClienteFormView.vue'
 import ClientesListView from '@/views/ClientesListView.vue'
 import ClienteDetailView from '@/views/ClienteDetailView.vue'
+import FornecedoresListView from '@/views/FornecedoresListView.vue'
+import FornecedorFormView from '@/views/FornecedorFormView.vue'
+import FornecedorDetailView from '@/views/FornecedorDetailView.vue'
 import ProductFormView from '@/views/ProductFormView.vue'
 import ProductsListView from '@/views/ProductsListView.vue'
 import CategoriesListView from '@/views/CategoriesListView.vue'
@@ -37,6 +40,10 @@ const router = createRouter({
     { path: '/clientes/novo', name: 'clientes-novo', component: ClienteFormView },
     { path: '/clientes/:id/editar', name: 'clientes-editar', component: ClienteFormView },
     { path: '/clientes/:id', name: 'clientes-detalhe', component: ClienteDetailView },
+    { path: '/fornecedores', name: 'fornecedores', component: FornecedoresListView },
+    { path: '/fornecedores/novo', name: 'fornecedores-novo', component: FornecedorFormView },
+    { path: '/fornecedores/:id/editar', name: 'fornecedores-editar', component: FornecedorFormView },
+    { path: '/fornecedores/:id', name: 'fornecedores-detalhe', component: FornecedorDetailView },
     { path: '/produtos', name: 'produtos', component: ProductsListView },
     { path: '/produtos/novo', name: 'produtos-novo', component: ProductFormView },
     { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProductFormView },

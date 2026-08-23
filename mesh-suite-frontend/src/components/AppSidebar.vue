@@ -119,7 +119,7 @@ const navGroups: NavGroup[] = [
     title: 'CADASTROS',
     items: [
       { icon: '👥', label: 'Clientes', route: '/clientes' },
-      { icon: '🏭', label: 'Fornecedores', route: null },
+      { icon: '🏭', label: 'Fornecedores', route: '/fornecedores' },
       { icon: '🚚', label: 'Transportadoras', route: null },
     ],
   },

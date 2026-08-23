@@ -104,6 +104,23 @@ describe('AppSidebar', () => {
     expect(wrapper.find('[data-test="nav-Clientes"]').classes()).toContain('nav-item-active')
   })
 
+  it('navigates to /fornecedores when Fornecedores is clicked', async () => {
+    const router = createRouter({
+      history: createWebHistory(),
+      routes: [
+        { path: '/', name: 'dashboard', component: { template: '<div />' } },
+        { path: '/fornecedores', name: 'fornecedores', component: { template: '<div />' } },
+      ],
+    })
+    const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
+
+    await wrapper.find('[data-test="group-cadastros"]').trigger('click')
+    await wrapper.find('[data-test="nav-Fornecedores"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/fornecedores')
+  })
+
   it('navigates to /compras when Compras is clicked', async () => {
     const router = createRouter({
       history: createWebHistory(),
@@ -172,7 +189,9 @@ describe('AppSidebar', () => {
     }
 
     await wrapper.find('[data-test="group-cadastros"]').trigger('click')
-    for (const label of ['Fornecedores', 'Transportadoras']) {
+    // Fornecedores now routes to a real screen (this task), so it's no longer inert.
+    expect(wrapper.find('[data-test="nav-Fornecedores"]').classes()).not.toContain('nav-item-inert')
+    for (const label of ['Transportadoras']) {
       expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
       expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).toContain('nav-item-inert')
     }
