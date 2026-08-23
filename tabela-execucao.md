@@ -1,4 +1,18 @@
-# Tabela de Execução — PRD-14 slice 1 (Login/Multitenant)
+# Tabela de Execução
+
+## Backlog — itens do menu sem tela
+
+Itens que já aparecem no menu lateral (`AppSidebar.vue`, `route: null`) mas ainda não têm tela implementada.
+
+| ID | Item | Grupo do menu | Observação | Status |
+|----|------|----------------|------------|--------|
+| MENU-01 | Fornecedores | CADASTROS | Tela dedicada de listagem/cadastro — hoje Fornecedor é só um papel (`PartnerRole.SUPPLIER`) dentro do cadastro genérico de Parceiro, sem view própria | Em andamento |
+| MENU-02 | Transportadoras | CADASTROS | Idem — hoje `PartnerRole.CARRIER` existe no backend, sem tela própria | Pendente |
+| MENU-03 | Marcas | CATÁLOGO | Sem entidade/backend ainda | Pendente |
+| MENU-04 | Empresa | CONFIGURAÇÕES | Tela de edição dos dados da(s) `Company`(s) do tenant — hoje só existe via seed/migration | Pendente |
+| MENU-05 | Permissões | CONFIGURAÇÕES | Tela dedicada de matriz de permissões — hoje só é editável embutida no formulário de Usuário | Pendente |
+
+## PRD-14 slice 1 (Login/Multitenant)
 
 Plano: `docs/superpowers/specs/2026-07-25-login-multitenant-foundation-design.md`
 Plano de implementação: `docs/superpowers/plans/2026-07-25-login-multitenant-foundation-plan.md`
