@@ -6,7 +6,7 @@ Itens que já aparecem no menu lateral (`AppSidebar.vue`, `route: null`) mas ain
 
 | ID | Item | Grupo do menu | Observação | Status |
 |----|------|----------------|------------|--------|
-| MENU-01 | Fornecedores | CADASTROS | Tela dedicada de listagem/cadastro — hoje Fornecedor é só um papel (`PartnerRole.SUPPLIER`) dentro do cadastro genérico de Parceiro, sem view própria | Em andamento |
+| MENU-01 | Fornecedores | CADASTROS | **Concluído** — `FornecedoresListView.vue`/`FornecedorFormView.vue`/`FornecedorDetailView.vue`, reaproveitando 100% do backend Partner/`PartnerRole.SUPPLIER` já existente, sem mudança de backend. | Concluído |
 | MENU-02 | Transportadoras | CADASTROS | Idem — hoje `PartnerRole.CARRIER` existe no backend, sem tela própria | Pendente |
 | MENU-03 | Marcas | CATÁLOGO | Sem entidade/backend ainda | Pendente |
 | MENU-04 | Empresa | CONFIGURAÇÕES | Tela de edição dos dados da(s) `Company`(s) do tenant — hoje só existe via seed/migration | Pendente |
