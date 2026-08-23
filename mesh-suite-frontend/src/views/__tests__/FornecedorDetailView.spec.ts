@@ -52,6 +52,13 @@ describe('FornecedorDetailView', () => {
     expect((wrapper.find('input[readonly]').element as HTMLInputElement).value).toBe('Tecidos Aurora Ltda')
   })
 
+  it('filters the rail search by supplier role', async () => {
+    await mountWithRouter()
+    await flushPromises()
+
+    expect(partnersApi.listPartners).toHaveBeenCalledWith(expect.objectContaining({ papel: 'SUPPLIER' }))
+  })
+
   it('does not show the sale-only stub fields (Tabela de Preço, Limite de Crédito, Forma de Pagamento, Vendedor Responsável)', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()

@@ -107,7 +107,7 @@ async function carregarParceiro(id: string) {
 async function carregarRail() {
   erro.value = ''
   try {
-    const pagina = await listPartners({ busca: buscaRail.value || undefined, page: 0, size: 10 })
+    const pagina = await listPartners({ busca: buscaRail.value || undefined, papel: 'SUPPLIER', page: 0, size: 10 })
     listaRail.value = pagina.content
   } catch {
     erro.value = 'Não foi possível carregar a lista de fornecedores.'

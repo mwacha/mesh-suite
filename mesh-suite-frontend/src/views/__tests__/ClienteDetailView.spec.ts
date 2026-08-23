@@ -52,6 +52,13 @@ describe('ClienteDetailView', () => {
     expect((wrapper.find('input[readonly]').element as HTMLInputElement).value).toBe('Mercado Silva Ltda')
   })
 
+  it('filters the rail search by customer role', async () => {
+    await mountWithRouter()
+    await flushPromises()
+
+    expect(partnersApi.listPartners).toHaveBeenCalledWith(expect.objectContaining({ papel: 'CUSTOMER' }))
+  })
+
   it('shows an empty state on the Pedidos tab', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
