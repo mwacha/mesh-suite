@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = ProdutoController.class)
+@RestControllerAdvice(assignableTypes = {ProdutoController.class, ProdutoKitController.class, ProdutoVariacaoController.class})
 public class ProdutoExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)

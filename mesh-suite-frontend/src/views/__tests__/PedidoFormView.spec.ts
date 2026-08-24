@@ -39,7 +39,7 @@ const salesRepBase = { id: 'v1', name: 'Carla Vendedora' }
 
 const produtoBase = {
   id: 'p1', nome: 'Camiseta Polo', sku: 'P0001', marca: 'Marca Alpha',
-  precoVenda: 59.9, quantidadeEstoque: 10, status: 'ATIVO' as const,
+  precoVenda: 59.9, quantidadeEstoque: 10, status: 'ATIVO' as const, tipo: 'PRODUCT' as const,
 }
 
 describe('PedidoFormView', () => {

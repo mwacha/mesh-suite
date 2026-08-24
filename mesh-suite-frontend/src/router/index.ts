@@ -7,7 +7,9 @@ import DashboardView from '@/views/DashboardView.vue'
 import ClienteFormView from '@/views/ClienteFormView.vue'
 import ClientesListView from '@/views/ClientesListView.vue'
 import ClienteDetailView from '@/views/ClienteDetailView.vue'
-import ProdutoFormView from '@/views/ProdutoFormView.vue'
+import ProdutoSimplesFormView from '@/views/ProdutoSimplesFormView.vue'
+import ProdutoKitFormView from '@/views/ProdutoKitFormView.vue'
+import ProdutoVariacaoFormView from '@/views/ProdutoVariacaoFormView.vue'
 import ProdutosListView from '@/views/ProdutosListView.vue'
 import PedidoFormView from '@/views/PedidoFormView.vue'
 import PedidosListView from '@/views/PedidosListView.vue'
@@ -29,8 +31,11 @@ const router = createRouter({
     { path: '/clientes/:id/editar', name: 'clientes-editar', component: ClienteFormView },
     { path: '/clientes/:id', name: 'clientes-detalhe', component: ClienteDetailView },
     { path: '/produtos', name: 'produtos', component: ProdutosListView },
-    { path: '/produtos/novo', name: 'produtos-novo', component: ProdutoFormView },
-    { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoFormView },
+    { path: '/produtos/novo/simples', name: 'produtos-novo-simples', component: ProdutoSimplesFormView },
+    { path: '/produtos/novo/kit', name: 'produtos-novo-kit', component: ProdutoKitFormView },
+    { path: '/produtos/novo/variacao', name: 'produtos-novo-variacao', component: ProdutoVariacaoFormView },
+    { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoSimplesFormView },
+    { path: '/produtos/:id/editar/variacao', name: 'produtos-editar-variacao', component: ProdutoVariacaoFormView },
     { path: '/pedidos', name: 'pedidos', component: PedidosListView },
     { path: '/pedidos/novo', name: 'pedidos-novo', component: PedidoFormView },
     { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: PedidoFormView },

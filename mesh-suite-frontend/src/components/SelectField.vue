@@ -1,52 +1,37 @@
 <template>
-  <div class="text-field">
+  <div class="select-field">
     <label v-if="label" class="field-label">
       {{ label }}<span v-if="required" class="required-mark">*</span>
     </label>
-    <input
-      :value="displayValue"
-      :placeholder="placeholder"
-      :maxlength="maxlength"
-      :disabled="disabled"
-      :data-test="testId"
-      :class="{ 'input-error': !!error }"
-      @input="onInput"
-      @blur="$emit('blur')"
-    />
+    <select :value="modelValue" :disabled="disabled" :data-test="testId" @change="onChange">
+      <option v-for="opt in options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+    </select>
     <p v-if="error" class="field-error">⚠️ {{ error }}</p>
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed } from 'vue'
-
+<script setup lang="ts" generic="T extends string">
 const props = defineProps<{
-  modelValue: string
+  modelValue: T
+  options: { value: T; label: string }[]
   label?: string
   required?: boolean
   error?: string
-  placeholder?: string
-  maxlength?: number
   disabled?: boolean
   testId?: string
-  mask?: (valor: string) => string
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [valor: string]
-  blur: []
+  'update:modelValue': [valor: T]
 }>()
 
-const displayValue = computed(() => (props.mask ? props.mask(props.modelValue) : props.modelValue))
-
-function onInput(event: Event) {
-  const raw = (event.target as HTMLInputElement).value
-  emit('update:modelValue', props.mask ? props.mask(raw) : raw)
+function onChange(event: Event) {
+  emit('update:modelValue', (event.target as HTMLSelectElement).value as T)
 }
 </script>
 
 <style scoped>
-.text-field {
+.select-field {
   margin-bottom: 10px;
 }
 
@@ -63,7 +48,7 @@ function onInput(event: Event) {
   margin-left: 2px;
 }
 
-input {
+select {
   width: 100%;
   box-sizing: border-box;
   background: var(--pm-white);
@@ -75,14 +60,10 @@ input {
   font-family: var(--pm-font);
 }
 
-input:disabled {
+select:disabled {
   background: var(--pm-bg);
   color: var(--pm-text-muted);
   cursor: not-allowed;
-}
-
-.input-error {
-  border-color: var(--pm-error);
 }
 
 .field-error {

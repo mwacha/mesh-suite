@@ -39,7 +39,7 @@ const compradorBase = { id: 'b1', name: 'Carlos Comprador' }
 
 const produtoBase = {
   id: 'p1', nome: 'Tecido Algodão', sku: 'P0001', marca: 'Marca Alpha',
-  precoVenda: 25.0, quantidadeEstoque: 100, status: 'ATIVO' as const,
+  precoVenda: 25.0, quantidadeEstoque: 100, status: 'ATIVO' as const, tipo: 'PRODUCT' as const,
 }
 
 describe('PurchaseOrderFormView', () => {

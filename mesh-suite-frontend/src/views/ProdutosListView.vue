@@ -56,7 +56,7 @@
           :key="produto.id"
           class="table-grid-row table-grid-row-clickable"
           :data-test="`row-${produto.id}`"
-          @click="editarProduto(produto.id)"
+          @click="editarProduto(produto)"
         >
           <div class="table-grid-cell">{{ produto.sku }}</div>
           <div class="table-grid-cell table-grid-cell-nome">{{ produto.nome }}</div>
@@ -170,11 +170,15 @@ function onSizeChange(novoSize: number) {
 }
 
 function novoProduto() {
-  router.push({ name: 'produtos-novo' })
+  router.push({ name: 'produtos-novo-simples' })
 }
 
-function editarProduto(id: string) {
-  router.push({ name: 'produtos-editar', params: { id } })
+// Produto Simples and Kit still share the generic edit route/form (Kit editing
+// isn't implemented yet either -- out of scope here); only Variação has its
+// own type-specific edit screen so far.
+function editarProduto(produto: ProdutoSummary) {
+  const name = produto.tipo === 'VARIATION_PARENT' ? 'produtos-editar-variacao' : 'produtos-editar'
+  router.push({ name, params: { id: produto.id } })
 }
 
 async function alternarStatus(produto: ProdutoSummary) {
@@ -203,7 +207,7 @@ async function excluir(produto: ProdutoSummary) {
 
 function acoesPara(produto: ProdutoSummary): ActionsMenuItem[] {
   return [
-    { label: 'Editar', action: () => editarProduto(produto.id), testId: 'acao-editar' },
+    { label: 'Editar', action: () => editarProduto(produto), testId: 'acao-editar' },
     {
       label: produto.status === 'INATIVO' ? 'Ativar' : 'Inativar',
       action: () => alternarStatus(produto),

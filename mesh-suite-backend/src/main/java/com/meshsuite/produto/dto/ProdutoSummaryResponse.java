@@ -1,5 +1,6 @@
 package com.meshsuite.produto.dto;
 
+import com.meshsuite.produto.ProdutoTipo;
 import com.meshsuite.produto.StatusProduto;
 
 import java.math.BigDecimal;
@@ -12,5 +13,6 @@ public record ProdutoSummaryResponse(
         String marca,
         BigDecimal precoVenda,
         BigDecimal quantidadeEstoque,
-        StatusProduto status) {
+        StatusProduto status,
+        ProdutoTipo tipo) {
 }

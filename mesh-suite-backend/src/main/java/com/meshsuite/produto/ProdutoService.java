@@ -26,6 +26,7 @@ public class ProdutoService {
     @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
     public Page<ProdutoSummaryResponse> listar(String busca, StatusProduto status, Pageable pageable) {
         Specification<Produto> spec = Specification.allOf(
+                ProdutoSpecifications.raizesDoCatalogo(),
                 ProdutoSpecifications.comBusca(busca),
                 ProdutoSpecifications.comStatus(status));
         return produtoRepository.findAll(spec, pageable).map(this::toSummary);
@@ -34,8 +35,8 @@ public class ProdutoService {
     @Transactional(readOnly = true)
     @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
     public ProdutoResumoResponse resumo() {
-        long ativos = produtoRepository.countByStatus(StatusProduto.ATIVO);
-        long inativos = produtoRepository.countByStatus(StatusProduto.INATIVO);
+        long ativos = produtoRepository.countByStatusAndParentIsNull(StatusProduto.ATIVO);
+        long inativos = produtoRepository.countByStatusAndParentIsNull(StatusProduto.INATIVO);
         return new ProdutoResumoResponse(ativos + inativos, ativos, inativos);
     }
 
@@ -52,6 +53,7 @@ public class ProdutoService {
 
         Produto produto = new Produto();
         produto.setTenantId(tenantId);
+        produto.setTipo(ProdutoTipo.PRODUCT);
         aplicar(produto, request);
         return toResponse(produtoRepository.saveAndFlush(produto));
     }
@@ -115,7 +117,8 @@ public class ProdutoService {
 
     private ProdutoSummaryResponse toSummary(Produto p) {
         return new ProdutoSummaryResponse(
-                p.getId(), p.getNome(), p.getSku(), p.getMarca(), p.getPrecoVenda(), p.getQuantidadeEstoque(), p.getStatus());
+                p.getId(), p.getNome(), p.getSku(), p.getMarca(), p.getPrecoVenda(), p.getQuantidadeEstoque(),
+                p.getStatus(), p.getTipo());
     }
 
     private ProdutoResponse toResponse(Produto p) {
@@ -123,6 +126,6 @@ public class ProdutoService {
                 p.getId(), p.getNome(), p.getSku(), p.getCodigoBarras(), p.getMarca(), p.getCategoria(),
                 p.getPrecoVenda(), p.getPrecoCusto(), p.getStatus(), p.getDescricao(), p.getQuantidadeEstoque(),
                 p.getUnidadeMedida(), p.getEstoqueMinimo(), p.getEstoqueMaximo(), p.getPeso(), p.getComprimento(),
-                p.getLargura(), p.getAltura());
+                p.getLargura(), p.getAltura(), p.getTipo());
     }
 }

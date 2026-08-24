@@ -2,28 +2,30 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
-import ProdutoFormView from '@/views/ProdutoFormView.vue'
+import ProdutoSimplesFormView from '@/views/ProdutoSimplesFormView.vue'
 import * as produtosApi from '@/api/produtos'
 
 vi.mock('@/api/produtos')
 
-function mountWithRouter(path = '/produtos/novo') {
+function mountWithRouter(path = '/produtos/novo/simples') {
   const router = createRouter({
     history: createWebHistory(),
     routes: [
       { path: '/produtos', name: 'produtos', component: { template: '<div />' } },
-      { path: '/produtos/novo', name: 'produtos-novo', component: ProdutoFormView },
-      { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoFormView },
+      { path: '/produtos/novo/simples', name: 'produtos-novo-simples', component: ProdutoSimplesFormView },
+      { path: '/produtos/novo/kit', name: 'produtos-novo-kit', component: { template: '<div />' } },
+      { path: '/produtos/novo/variacao', name: 'produtos-novo-variacao', component: { template: '<div />' } },
+      { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProdutoSimplesFormView },
     ],
   })
   router.push(path)
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(ProdutoFormView, { global: { plugins: [router] } }),
+    wrapper: mount(ProdutoSimplesFormView, { global: { plugins: [router] } }),
   }))
 }
 
-describe('ProdutoFormView', () => {
+describe('ProdutoSimplesFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     // Mocks otherwise persist mock.calls across tests in this file, so a later
@@ -75,10 +77,10 @@ describe('ProdutoFormView', () => {
     await wrapper.find('[data-test="sku"]').setValue('P0001')
     await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
     // Simulate a user typing into the optional "Preço de Custo" field and then
-    // clearing it. With v-model.number, clearing a numeric input drives the
-    // underlying form value to '' (empty string), not null -- this is the exact
-    // state that must be normalized by paraPayload()/numeroOuNull() before the
-    // request is sent, or the backend's BigDecimal deserialization 400s.
+    // clearing it. NumberField normalizes a cleared input to null before it
+    // reaches the form, but paraPayload()/numeroOuNull() must also normalize
+    // whatever the controller receives, or the backend's BigDecimal
+    // deserialization 400s.
     await wrapper.find('[data-test="preco-custo"]').setValue('123.45')
     await wrapper.find('[data-test="preco-custo"]').setValue('')
     await wrapper.find('form').trigger('submit.prevent')
@@ -138,5 +140,19 @@ describe('ProdutoFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Não foi possível carregar os dados do produto.')
+  })
+
+  it('does not show the Tipo de Produto selector in edit mode', async () => {
+    vi.mocked(produtosApi.buscarProduto).mockResolvedValue({
+      id: 'abc-123', nome: 'Camiseta Polo', sku: 'P0001', codigoBarras: '', marca: '', categoria: '',
+      precoVenda: 59.9, precoCusto: null, status: 'ATIVO', descricao: '', quantidadeEstoque: 10,
+      unidadeMedida: 'UN', estoqueMinimo: null, estoqueMaximo: null, peso: null, comprimento: null,
+      largura: null, altura: null,
+    } as any)
+
+    const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Tipo de Produto')
   })
 })

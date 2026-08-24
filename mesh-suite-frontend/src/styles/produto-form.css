@@ -1,0 +1,141 @@
+/* Shared structural primitives for the Produto (Simples/Kit/Variação) form
+   screens: cards, grids, action buttons and the Tipo de Produto selector.
+   Field-level styling (labels, inputs, errors) lives in the reusable
+   TextField/NumberField/SelectField/StatusPillGroup components instead, so
+   it isn't duplicated here. */
+
+.pm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--pm-font);
+}
+
+.pm-grid-cards {
+  display: flex;
+  gap: 12px;
+}
+
+.pm-grid-cards .pm-card {
+  flex: 1;
+}
+
+.pm-card {
+  background: var(--pm-white);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.pm-card h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+  margin: 0 0 12px;
+}
+
+.pm-grid {
+  display: grid;
+  gap: 0 14px;
+}
+
+.pm-grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.pm-error-geral {
+  color: var(--pm-error);
+  font-size: 14px;
+}
+
+/* Freestanding validation message not tied to a single TextField/NumberField
+   instance (e.g. "add at least one item to the kit"). */
+.pm-field-error {
+  color: var(--pm-error);
+  font-size: 12px;
+  margin: 4px 0 10px;
+}
+
+/* Actions row */
+.pm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pm-btn-primary,
+.pm-btn-secondary {
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--pm-font);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.pm-btn-primary {
+  background: var(--pm-accent);
+  color: var(--pm-white);
+  border: none;
+}
+
+.pm-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pm-btn-secondary {
+  background: var(--pm-white);
+  color: var(--pm-text-dark);
+  border: 1px solid var(--pm-border-light);
+}
+
+/* Tipo de Produto selector */
+.pm-tipo-grid {
+  display: flex;
+  gap: 10px;
+}
+
+.pm-tipo-card {
+  flex: 1;
+  text-align: left;
+  border: 2px solid var(--pm-border-light);
+  border-radius: 7px;
+  padding: 12px;
+  cursor: pointer;
+  background: var(--pm-white);
+  font-family: var(--pm-font);
+}
+
+.pm-tipo-card:disabled {
+  cursor: default;
+}
+
+.pm-tipo-card--ativo {
+  border-color: var(--pm-accent);
+  background: var(--pm-accent-bg);
+}
+
+.pm-tipo-icone {
+  display: block;
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.pm-tipo-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+}
+
+.pm-tipo-card--ativo .pm-tipo-label {
+  color: var(--pm-accent);
+}
+
+.pm-tipo-descricao {
+  display: block;
+  font-size: 11px;
+  color: var(--pm-text-muted);
+}

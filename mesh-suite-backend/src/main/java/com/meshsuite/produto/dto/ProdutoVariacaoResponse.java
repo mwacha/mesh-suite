@@ -1,30 +1,22 @@
 package com.meshsuite.produto.dto;
 
-import com.meshsuite.produto.ProdutoTipo;
 import com.meshsuite.produto.StatusProduto;
 import com.meshsuite.produto.UnidadeMedida;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
-public record ProdutoResponse(
+public record ProdutoVariacaoResponse(
         UUID id,
         String nome,
         String sku,
-        String codigoBarras,
         String marca,
         String categoria,
         BigDecimal precoVenda,
-        BigDecimal precoCusto,
         StatusProduto status,
         String descricao,
-        BigDecimal quantidadeEstoque,
         UnidadeMedida unidadeMedida,
-        BigDecimal estoqueMinimo,
-        BigDecimal estoqueMaximo,
-        BigDecimal peso,
-        BigDecimal comprimento,
-        BigDecimal largura,
-        BigDecimal altura,
-        ProdutoTipo tipo) {
+        List<TipoVariacaoResponse> tiposVariacao,
+        List<VarianteResponse> variantes) {
 }

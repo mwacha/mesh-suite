@@ -63,7 +63,7 @@
             <button type="button" class="btn-secondary" @click="router.push({ name: 'clientes-novo' })">
               + Novo Cliente
             </button>
-            <button type="button" class="btn-secondary" data-test="novo-produto" @click="router.push({ name: 'produtos-novo' })">
+            <button type="button" class="btn-secondary" data-test="novo-produto" @click="router.push({ name: 'produtos-novo-simples' })">
               + Novo Produto
             </button>
           </div>

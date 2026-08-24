@@ -12,7 +12,7 @@ function mountWithRouter() {
     history: createWebHistory(),
     routes: [
       { path: '/produtos', name: 'produtos', component: ProdutosListView },
-      { path: '/produtos/novo', name: 'produtos-novo', component: { template: '<div />' } },
+      { path: '/produtos/novo/simples', name: 'produtos-novo-simples', component: { template: '<div />' } },
       { path: '/produtos/:id/editar', name: 'produtos-editar', component: { template: '<div />' } },
     ],
   })
@@ -28,7 +28,7 @@ function mountWithRouter() {
 
 const produtoBase = {
   id: 'p1', nome: 'Camiseta Polo', sku: 'P0001', marca: 'Marca Alpha',
-  precoVenda: 59.9, quantidadeEstoque: 10, status: 'ATIVO' as const,
+  precoVenda: 59.9, quantidadeEstoque: 10, status: 'ATIVO' as const, tipo: 'PRODUCT' as const,
 }
 
 describe('ProdutosListView', () => {
@@ -65,7 +65,7 @@ describe('ProdutosListView', () => {
     await wrapper.find('[data-test="novo-produto"]').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.name).toBe('produtos-novo')
+    expect(router.currentRoute.value.name).toBe('produtos-novo-simples')
   })
 
   it('navigates to the edit form via the Ações menu', async () => {

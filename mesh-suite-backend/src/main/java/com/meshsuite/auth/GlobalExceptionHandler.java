@@ -2,6 +2,8 @@ package com.meshsuite.auth;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -9,6 +11,24 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    // Bean Validation (@Valid) failures on @RequestBody are the one exception
+    // type Spring resolves itself instead of reaching a handler below -- and
+    // in this app that default path ends up surfacing to the client as a 401
+    // (Spring's MethodArgumentNotValidException handling calls
+    // response.sendError(), which triggers Tomcat's /error re-dispatch; that
+    // re-enters the security filter chain and, for reasons not fully pinned
+    // down, resolves to 401 instead of 400). Handling it explicitly here --
+    // like every other exception in this file -- writes the response
+    // directly and sidesteps that re-dispatch entirely.
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
+        String mensagem = e.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElse("Verifique os dados informados.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", mensagem));
+    }
 
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<Map<String, String>> handleAuth(AuthException e) {
@@ -72,6 +92,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleSkuDuplicado(
             com.meshsuite.produto.SkuDuplicadoException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.produto.ProdutoValidacaoException.class)
+    public ResponseEntity<Map<String, String>> handleProdutoValidacao(
+            com.meshsuite.produto.ProdutoValidacaoException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
     @ExceptionHandler(com.meshsuite.pedido.PedidoNaoEncontradoException.class)

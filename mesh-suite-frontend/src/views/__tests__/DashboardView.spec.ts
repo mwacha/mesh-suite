@@ -18,7 +18,7 @@ function mountWithRouter() {
     routes: [
       { path: '/', name: 'dashboard', component: DashboardView },
       { path: '/clientes/novo', name: 'clientes-novo', component: { template: '<div />' } },
-      { path: '/produtos/novo', name: 'produtos-novo', component: { template: '<div />' } },
+      { path: '/produtos/novo/simples', name: 'produtos-novo-simples', component: { template: '<div />' } },
       { path: '/pedidos', name: 'pedidos', component: { template: '<div />' } },
       { path: '/pedidos/novo', name: 'pedidos-novo', component: { template: '<div />' } },
       { path: '/pedidos/:id/editar', name: 'pedidos-editar', component: { template: '<div />' } },
@@ -137,7 +137,7 @@ describe('DashboardView', () => {
     await wrapper.find('[data-test="novo-produto"]').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.name).toBe('produtos-novo')
+    expect(router.currentRoute.value.name).toBe('produtos-novo-simples')
   })
 
   it('navigates to the client creation form when + Novo Cliente is clicked', async () => {

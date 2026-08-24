@@ -1,52 +1,51 @@
 <template>
-  <div class="text-field">
+  <div class="number-field">
     <label v-if="label" class="field-label">
       {{ label }}<span v-if="required" class="required-mark">*</span>
     </label>
     <input
-      :value="displayValue"
+      :value="modelValue ?? ''"
+      type="number"
+      :step="step"
+      :min="min"
       :placeholder="placeholder"
-      :maxlength="maxlength"
       :disabled="disabled"
       :data-test="testId"
       :class="{ 'input-error': !!error }"
       @input="onInput"
-      @blur="$emit('blur')"
     />
     <p v-if="error" class="field-error">⚠️ {{ error }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
-const props = defineProps<{
-  modelValue: string
-  label?: string
-  required?: boolean
-  error?: string
-  placeholder?: string
-  maxlength?: number
-  disabled?: boolean
-  testId?: string
-  mask?: (valor: string) => string
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: number | null
+    label?: string
+    required?: boolean
+    error?: string
+    placeholder?: string
+    step?: number | string
+    min?: number | string
+    disabled?: boolean
+    testId?: string
+  }>(),
+  { step: 1 },
+)
 
 const emit = defineEmits<{
-  'update:modelValue': [valor: string]
-  blur: []
+  'update:modelValue': [valor: number | null]
 }>()
-
-const displayValue = computed(() => (props.mask ? props.mask(props.modelValue) : props.modelValue))
 
 function onInput(event: Event) {
   const raw = (event.target as HTMLInputElement).value
-  emit('update:modelValue', props.mask ? props.mask(raw) : raw)
+  emit('update:modelValue', raw === '' ? null : Number(raw))
 }
 </script>
 
 <style scoped>
-.text-field {
+.number-field {
   margin-bottom: 10px;
 }
 

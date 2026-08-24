@@ -8,6 +8,8 @@ import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -83,4 +85,41 @@ public class Produto {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fiscal_registration_id")
     private FiscalRegistration fiscalRegistration;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ProdutoTipo tipo = ProdutoTipo.PRODUCT;
+
+    // Set only when tipo == VARIATION_CHILD, pointing back at the VARIATION_PARENT
+    // row it was generated from.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Produto parent;
+
+    // Populated only when tipo == VARIATION_CHILD: the combination's values
+    // joined by '|', in the same order as the parent's `tipos` -- mirrors the
+    // key the frontend already uses internally (combinacao.join('|')).
+    @Column(name = "combinacao_valores", length = 500)
+    private String combinacaoValores;
+
+    // Meaningful only when tipo == VARIATION_PARENT.
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Produto> variantes = new ArrayList<>();
+
+    // Meaningful only when tipo == VARIATION_PARENT.
+    @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("ordem")
+    private List<TipoVariacao> tiposVariacao = new ArrayList<>();
+
+    // Meaningful only when tipo == PRODUCT_KIT.
+    @OneToMany(mappedBy = "produtoKit", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProdutoKitItem> itensKit = new ArrayList<>();
+
+    public List<String> getCombinacao() {
+        return combinacaoValores == null ? List.of() : List.of(combinacaoValores.split("\\|"));
+    }
+
+    public void setCombinacao(List<String> combinacao) {
+        this.combinacaoValores = String.join("|", combinacao);
+    }
 }
