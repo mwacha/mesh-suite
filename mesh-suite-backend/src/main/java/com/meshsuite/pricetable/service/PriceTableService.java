@@ -47,6 +47,14 @@ public class PriceTableService {
         return toResponse(buscarEntidadePorId(id));
     }
 
+    @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
+    public PriceTableCountsResponse counts() {
+        long active = tabelaPrecoRepository.countByActive(true);
+        long inactive = tabelaPrecoRepository.countByActive(false);
+        return new PriceTableCountsResponse(active + inactive, active, inactive);
+    }
+
     @Transactional
     @RequiresPermission(module = Module.PRODUCT, action = Action.CREATE)
     public PriceTableResponse criar(UUID tenantId, PriceTableRequest request) {
@@ -72,6 +80,14 @@ public class PriceTableService {
     @RequiresPermission(module = Module.PRODUCT, action = Action.DELETE)
     public void excluir(UUID id) {
         tabelaPrecoRepository.delete(buscarEntidadePorId(id));
+    }
+
+    @Transactional
+    @RequiresPermission(module = Module.PRODUCT, action = Action.EDIT)
+    public PriceTableResponse atualizarStatus(UUID id, boolean active) {
+        PriceTable tabelaPreco = buscarEntidadePorId(id);
+        tabelaPreco.setActive(active);
+        return toResponse(tabelaPrecoRepository.saveAndFlush(tabelaPreco));
     }
 
     private PriceTable buscarEntidadePorId(UUID id) {

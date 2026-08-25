@@ -21,11 +21,20 @@ function mountWithRouter(path = '/tabelas-preco/novo') {
   router.push(path)
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(PriceTableFormView, { global: { plugins: [router] } }),
+    wrapper: mount(PriceTableFormView, { global: { plugins: [router], stubs: { teleport: true } } }),
   }))
 }
 
 const produtoAtivo = { id: 'prod-1', name: 'Camiseta Polo', sku: 'P0001', brand: '', salePrice: 100, stockQuantity: 10, status: 'ACTIVE' as const }
+
+async function adicionarProdutoViaModal(wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper']) {
+  await wrapper.find('[data-test="adicionar-itens"]').trigger('click')
+  await flushPromises()
+  await wrapper.find(`[data-test="modal-adicionar-${produtoAtivo.id}"]`).trigger('click')
+  await flushPromises()
+  await wrapper.find('[data-test="slide-over-close"]').trigger('click')
+  await flushPromises()
+}
 
 describe('PriceTableFormView', () => {
   beforeEach(() => {
@@ -80,7 +89,18 @@ describe('PriceTableFormView', () => {
     expect(Number(precoInput.value)).toBeCloseTo(150, 2) // produtoAtivo.salePrice=100, ADD+FIXED+50
   })
 
-  it('starts empty in SELECIONAR_PRODUTOS mode and adds an item via search', async () => {
+  it('disables the Manual method while in TODOS_PRODUTOS mode', async () => {
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+      content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
+    })
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    const manual = wrapper.find('[data-test="metodo-MANUAL"]').element as HTMLButtonElement
+    expect(manual.disabled).toBe(true)
+  })
+
+  it('starts empty in SELECIONAR_PRODUTOS mode and adds an item via the modal', async () => {
     vi.mocked(produtosApi.listProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
@@ -89,15 +109,12 @@ describe('PriceTableFormView', () => {
 
     await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
     await flushPromises()
-    expect(wrapper.find('.tabela-itens').exists()).toBe(false)
+    expect(wrapper.find('.itens-grid').exists()).toBe(false)
 
     vi.mocked(produtosApi.listProducts).mockResolvedValue({
-      content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 5,
+      content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
-    await wrapper.find('[data-test="produto-busca"]').setValue('Camiseta')
-    await flushPromises()
-    await wrapper.find('[data-test="produto-resultados"] li').trigger('click')
-    await flushPromises()
+    await adicionarProdutoViaModal(wrapper)
 
     expect(wrapper.text()).toContain('Camiseta Polo')
   })
@@ -113,12 +130,9 @@ describe('PriceTableFormView', () => {
     await flushPromises()
 
     vi.mocked(produtosApi.listProducts).mockResolvedValue({
-      content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 5,
+      content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
-    await wrapper.find('[data-test="produto-busca"]').setValue('Camiseta')
-    await flushPromises()
-    await wrapper.find('[data-test="produto-resultados"] li').trigger('click')
-    await flushPromises()
+    await adicionarProdutoViaModal(wrapper)
 
     await wrapper.find('[data-test="item-preco-0"]').setValue('999')
     await wrapper.find('[data-test="valor-ajuste"]').setValue('20')
@@ -134,28 +148,69 @@ describe('PriceTableFormView', () => {
     expect(Number(precoInput.value)).toBeCloseTo(120, 2) // produtoAtivo.salePrice=100, ADD+FIXED+20
   })
 
-  it('filters the item list by Preenchido/Pendente', async () => {
+  it('removing an item in the modal removes it from the tabela', async () => {
     vi.mocked(produtosApi.listProducts).mockResolvedValue({
-      content: [produtoAtivo, { ...produtoAtivo, id: 'prod-2', name: 'Bermuda', sku: 'P0002' }],
-      totalElements: 2, totalPages: 1, number: 0, size: 1000,
+      content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    // Switching to MANUAL clears every item's price to Pendente (null) via the
-    // same rule-change watcher, since TODOS_PRODUTOS items are always rule-driven.
-    await wrapper.find('[data-test="metodo-manual"]').trigger('click')
+    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
+    await flushPromises()
+
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+      content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 10,
+    })
+    await wrapper.find('[data-test="adicionar-itens"]').trigger('click')
+    await flushPromises()
+    await wrapper.find(`[data-test="modal-adicionar-${produtoAtivo.id}"]`).trigger('click')
+    await flushPromises()
+    expect(wrapper.find(`[data-test="modal-remover-${produtoAtivo.id}"]`).exists()).toBe(true)
+
+    await wrapper.find(`[data-test="modal-remover-${produtoAtivo.id}"]`).trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-test="slide-over-close"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Camiseta Polo')
+  })
+
+  it('filters the item list by Preenchido/Pendente', async () => {
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+      content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
+    })
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    // Manual is disabled in TODOS_PRODUTOS mode (see the dedicated test above), so
+    // switch to SELECIONAR_PRODUTOS + MANUAL first: items added afterwards start
+    // with tablePrice = null (Pendente) until priced by hand.
+    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
+    await flushPromises()
+    await wrapper.find('[data-test="metodo-MANUAL"]').trigger('click')
+    await flushPromises()
+
+    const bermuda = { ...produtoAtivo, id: 'prod-2', name: 'Bermuda', sku: 'P0002' }
+    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+      content: [produtoAtivo, bermuda], totalElements: 2, totalPages: 1, number: 0, size: 10,
+    })
+    await wrapper.find('[data-test="adicionar-itens"]').trigger('click')
+    await flushPromises()
+    await wrapper.find(`[data-test="modal-adicionar-${produtoAtivo.id}"]`).trigger('click')
+    await wrapper.find(`[data-test="modal-adicionar-${bermuda.id}"]`).trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="slide-over-close"]').trigger('click')
     await flushPromises()
 
     await wrapper.find('[data-test="item-preco-0"]').setValue('120')
     await flushPromises()
 
-    await wrapper.find('[data-test="filtro-preenchimento"]').setValue('PENDENTE')
+    await wrapper.find('[data-test="filtro-preenchimento-PENDENTE"]').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('Bermuda')
     expect(wrapper.text()).not.toContain('Camiseta Polo')
 
-    await wrapper.find('[data-test="filtro-preenchimento"]').setValue('PREENCHIDO')
+    await wrapper.find('[data-test="filtro-preenchimento-PREENCHIDO"]').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('Camiseta Polo')
     expect(wrapper.text()).not.toContain('Bermuda')
