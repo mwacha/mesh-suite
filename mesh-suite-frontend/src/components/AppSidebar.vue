@@ -121,6 +121,7 @@ const navGroups: NavGroup[] = [
       { icon: '👥', label: 'Clientes', route: '/clientes' },
       { icon: '🏭', label: 'Fornecedores', route: '/fornecedores' },
       { icon: '🚚', label: 'Transportadoras', route: null },
+      { icon: '💳', label: 'Formas de Pagamento', route: '/formas-pagamento' },
     ],
   },
   {

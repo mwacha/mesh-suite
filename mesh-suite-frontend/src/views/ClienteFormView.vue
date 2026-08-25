@@ -86,6 +86,18 @@
         <p class="hint">Para inserir mais de um e-mail, use a vírgula</p>
       </CollapsibleSection>
 
+      <CollapsibleSection title="Condições Comerciais">
+        <div class="grid grid-2">
+          <div>
+            <label class="field-label">Forma de Pagamento</label>
+            <select v-model="form.paymentMethodId" data-test="forma-pagamento">
+              <option :value="null">Selecione...</option>
+              <option v-for="forma in formasPagamento" :key="forma.id" :value="forma.id">{{ forma.description }}</option>
+            </select>
+          </div>
+        </div>
+      </CollapsibleSection>
+
       <CollapsibleSection title="Informações Fiscais">
         <div class="grid grid-4">
           <div>
@@ -221,6 +233,7 @@ import {
   type PartnerRole,
 } from '@/api/partners'
 import { buscarEnderecoPorCep } from '@/api/cep'
+import { listPaymentMethods, type PaymentMethodSummary } from '@/api/paymentMethods'
 import { maskTelefone, maskCep, maskDocumento } from '@/utils/masks'
 import { emailValido, emailsValidos, telefoneValido, documentoValido, cepValido } from '@/utils/validacao'
 import { useToast } from '@/composables/useToast'
@@ -259,6 +272,7 @@ function novoFormulario(): PartnerRequest {
     city: '',
     notes: '',
     contacts: [],
+    paymentMethodId: null,
   }
 }
 
@@ -282,8 +296,16 @@ const errosContatos = ref<ErrosContato[]>([])
 const erroGeral = ref('')
 const erroCep = ref('')
 const salvando = ref(false)
+const formasPagamento = ref<PaymentMethodSummary[]>([])
 
 onMounted(async () => {
+  try {
+    const pagina = await listPaymentMethods({ ativo: true, size: 100 })
+    formasPagamento.value = pagina.content
+  } catch {
+    formasPagamento.value = []
+  }
+
   const id = route.params.id
   if (typeof id === 'string') {
     try {

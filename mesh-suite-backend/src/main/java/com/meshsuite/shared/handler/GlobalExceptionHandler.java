@@ -195,4 +195,22 @@ public class GlobalExceptionHandler {
             com.meshsuite.purchaseinvoice.exception.PurchaseInvoiceValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.paymentmethod.exception.PaymentMethodNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePaymentMethodNotFound(
+            com.meshsuite.paymentmethod.exception.PaymentMethodNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.paymentmethod.exception.DuplicatePaymentMethodDescriptionException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicatePaymentMethodDescription(
+            com.meshsuite.paymentmethod.exception.DuplicatePaymentMethodDescriptionException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.paymentmethod.exception.PaymentMethodValidationException.class)
+    public ResponseEntity<Map<String, String>> handlePaymentMethodValidation(
+            com.meshsuite.paymentmethod.exception.PaymentMethodValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }

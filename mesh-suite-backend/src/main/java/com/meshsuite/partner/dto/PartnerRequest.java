@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 public record PartnerRequest(
         @NotNull PersonType personType,
@@ -30,5 +31,6 @@ public record PartnerRequest(
         String state,
         String city,
         String notes,
-        List<PartnerContactDto> contacts) {
+        List<PartnerContactDto> contacts,
+        UUID paymentMethodId) {
 }

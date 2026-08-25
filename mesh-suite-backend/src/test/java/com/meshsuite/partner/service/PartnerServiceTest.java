@@ -16,6 +16,9 @@ import com.meshsuite.partner.exception.DuplicateDocumentException;
 import com.meshsuite.partner.exception.PartnerNotFoundException;
 import com.meshsuite.partner.exception.PartnerValidationException;
 import com.meshsuite.partner.service.PartnerService;
+import com.meshsuite.paymentmethod.domain.PaymentMethod;
+import com.meshsuite.paymentmethod.domain.PaymentMethodInstallment;
+import com.meshsuite.paymentmethod.repository.PaymentMethodRepository;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
@@ -43,6 +46,7 @@ class PartnerServiceTest extends AbstractIntegrationTest {
     @Autowired PartnerService partnerService;
     @Autowired EntityManager entityManager;
     @Autowired UserRepository userRepository;
+    @Autowired PaymentMethodRepository paymentMethodRepository;
 
     @AfterEach
     void clearContext() {
@@ -79,13 +83,31 @@ class PartnerServiceTest extends AbstractIntegrationTest {
     }
 
     private PartnerRequest request(String documento, Set<PartnerRole> papeis) {
+        return request(documento, papeis, null);
+    }
+
+    private PartnerRequest request(String documento, Set<PartnerRole> papeis, UUID paymentMethodId) {
         return new PartnerRequest(
                 PersonType.LEGAL_ENTITY, documento, "Mercado Silva", "Mercado Silva Ltda", papeis,
                 "financeiro@mercadosilva.com.br", "(11) 99999-9999", TaxIndicator.TAXPAYER,
                 "123456789", null, null,
                 "01310100", "Av. Paulista", "1000", "Bela Vista", null, "SP", "São Paulo",
                 "Cliente antigo", List.of(new PartnerContactDto("Ana Souza", "ana@mercadosilva.com.br",
-                        "(11) 3333-3333", "(11) 98888-8888", "Financeiro")));
+                        "(11) 3333-3333", "(11) 98888-8888", "Financeiro")),
+                paymentMethodId);
+    }
+
+    private PaymentMethod criarFormaPagamento(UUID tenantId, String description) {
+        PaymentMethod pm = new PaymentMethod();
+        pm.setTenantId(tenantId);
+        pm.setDescription(description);
+        PaymentMethodInstallment installment = new PaymentMethodInstallment();
+        installment.setPaymentMethod(pm);
+        installment.setInstallmentNumber(1);
+        installment.setDaysDue(0);
+        installment.setPercentage(new java.math.BigDecimal("100.00"));
+        pm.getInstallments().add(installment);
+        return paymentMethodRepository.saveAndFlush(pm);
     }
 
     @Test
@@ -244,7 +266,7 @@ class PartnerServiceTest extends AbstractIntegrationTest {
                 PersonType.LEGAL_ENTITY, "55666777000155", "Comércio Rio", "Comércio Rio Ltda", Set.of(PartnerRole.CUSTOMER),
                 "financeiro@comerciorio.com.br", "(21) 99999-9999", TaxIndicator.TAXPAYER, "987654321", null, null,
                 "20000000", "Av. Rio Branco", "1", "Centro", null, "RJ", "Rio de Janeiro",
-                null, List.of());
+                null, List.of(), null);
         var rj = partnerService.create(TenantContext.get(), outraUf);
 
         var pagina = partnerService.list(null, null, null, null, List.of("SP", "RJ"), null, null, PageRequest.of(0, 10));
@@ -274,7 +296,7 @@ class PartnerServiceTest extends AbstractIntegrationTest {
                 TaxIndicator.TAXPAYER, "123456789", null, null,
                 "01310100", "Av. Paulista", "1000", "Bela Vista", null, "SP", "São Paulo",
                 "Cliente antigo", List.of(new PartnerContactDto("Ana Souza", "ana@mercadosilva.com.br",
-                        "(11) 3333-3333", "(11) 98888-8888", "Financeiro")));
+                        "(11) 3333-3333", "(11) 98888-8888", "Financeiro")), null);
 
         partnerService.update(criado.id(), requestAtualizado);
 
@@ -327,5 +349,27 @@ class PartnerServiceTest extends AbstractIntegrationTest {
 
         assertThrows(com.meshsuite.auth.exception.PermissionDeniedException.class,
                 () -> partnerService.list(null, null, null, null, null, null, null, org.springframework.data.domain.PageRequest.of(0, 10)));
+    }
+
+    @Test
+    void linksPaymentMethodToPartner() {
+        UUID tenantId = setUpTenant("aurora");
+        PaymentMethod formaPagamento = criarFormaPagamento(tenantId, "À Vista");
+
+        var criado = partnerService.create(TenantContext.get(),
+                request("11222333000144", Set.of(PartnerRole.CUSTOMER), formaPagamento.getId()));
+
+        assertThat(criado.paymentMethodId()).isEqualTo(formaPagamento.getId());
+        assertThat(criado.paymentMethodDescription()).isEqualTo("À Vista");
+    }
+
+    @Test
+    void createsPartnerWithoutPaymentMethod() {
+        setUpTenant("aurora");
+
+        var criado = partnerService.create(TenantContext.get(), request("11222333000144", Set.of(PartnerRole.CUSTOMER)));
+
+        assertThat(criado.paymentMethodId()).isNull();
+        assertThat(criado.paymentMethodDescription()).isNull();
     }
 }

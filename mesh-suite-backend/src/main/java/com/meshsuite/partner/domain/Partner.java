@@ -4,6 +4,7 @@ import com.meshsuite.partner.domain.enums.PartnerRole;
 import com.meshsuite.partner.domain.enums.PartnerStatus;
 import com.meshsuite.partner.domain.enums.PersonType;
 import com.meshsuite.partner.domain.enums.TaxIndicator;
+import com.meshsuite.paymentmethod.domain.PaymentMethod;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -93,6 +94,10 @@ public class Partner {
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_method_id")
+    private PaymentMethod paymentMethod;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();

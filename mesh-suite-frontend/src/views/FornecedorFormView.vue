@@ -259,6 +259,7 @@ function novoFormulario(): PartnerRequest {
     city: '',
     notes: '',
     contacts: [],
+    paymentMethodId: null,
   }
 }
 

@@ -61,7 +61,7 @@
           </div>
           <div>
             <label class="field-label">Forma de Pagamento</label>
-            <select disabled title="Depende do domínio Financeiro, ainda não implementado"><option>—</option></select>
+            <input :value="parceiro.paymentMethodDescription || '—'" data-test="forma-pagamento" readonly />
           </div>
           <div>
             <label class="field-label">Vendedor Responsável</label>

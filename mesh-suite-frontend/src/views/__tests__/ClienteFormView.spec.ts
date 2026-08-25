@@ -5,10 +5,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ClienteFormView from '@/views/ClienteFormView.vue'
 import * as partnersApi from '@/api/partners'
 import * as cepApi from '@/api/cep'
+import * as formasPagamentoApi from '@/api/paymentMethods'
 import { useToast } from '@/composables/useToast'
 
 vi.mock('@/api/partners')
 vi.mock('@/api/cep')
+vi.mock('@/api/paymentMethods')
 
 function mountWithRouter(path = '/clientes/novo') {
   const router = createRouter({
@@ -31,6 +33,31 @@ describe('ClienteFormView', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     useToast().toasts.splice(0, useToast().toasts.length)
+    vi.mocked(formasPagamentoApi.listPaymentMethods).mockResolvedValue({
+      content: [], totalElements: 0, totalPages: 0, number: 0, size: 100,
+    })
+  })
+
+  it('populates the forma de pagamento select with active payment methods and submits the chosen one', async () => {
+    vi.mocked(formasPagamentoApi.listPaymentMethods).mockResolvedValue({
+      content: [{ id: 'pm-1', description: 'À Vista', active: true, installmentsCount: 1 }],
+      totalElements: 1, totalPages: 1, number: 0, size: 100,
+    })
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('À Vista')
+
+    await wrapper.find('[data-test="forma-pagamento"]').setValue('pm-1')
+    await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
+    await wrapper.find('[data-test="razaoSocial"]').setValue('Mercado Silva Ltda')
+    await wrapper.find('[data-test="documento"]').setValue('11222333000144')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(partnersApi.createPartner).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentMethodId: 'pm-1' }),
+    )
   })
 
   it('shows a required-field error when nomeFantasia is blank on submit', async () => {

@@ -35,11 +35,13 @@ export interface PartnerRequest {
   city: string
   notes: string
   contacts: PartnerContact[]
+  paymentMethodId: string | null
 }
 
 export interface PartnerResponse extends PartnerRequest {
   id: string
   status: PartnerStatus
+  paymentMethodDescription: string | null
 }
 
 export interface PartnerListItem {

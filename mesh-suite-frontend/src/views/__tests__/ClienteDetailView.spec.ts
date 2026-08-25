@@ -52,6 +52,23 @@ describe('ClienteDetailView', () => {
     expect((wrapper.find('input[readonly]').element as HTMLInputElement).value).toBe('Mercado Silva Ltda')
   })
 
+  it('shows the linked forma de pagamento description', async () => {
+    vi.mocked(partnersApi.getPartner).mockResolvedValue({
+      ...parceiroCompleto, paymentMethodId: 'pm-1', paymentMethodDescription: 'À Vista',
+    })
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    expect((wrapper.find('[data-test="forma-pagamento"]').element as HTMLInputElement).value).toBe('À Vista')
+  })
+
+  it('shows a placeholder when no forma de pagamento is linked', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    expect((wrapper.find('[data-test="forma-pagamento"]').element as HTMLInputElement).value).toBe('—')
+  })
+
   it('filters the rail search by customer role', async () => {
     await mountWithRouter()
     await flushPromises()

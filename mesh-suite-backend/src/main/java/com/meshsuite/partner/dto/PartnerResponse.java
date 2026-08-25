@@ -31,5 +31,7 @@ public record PartnerResponse(
         String state,
         String city,
         String notes,
-        List<PartnerContactDto> contacts) {
+        List<PartnerContactDto> contacts,
+        UUID paymentMethodId,
+        String paymentMethodDescription) {
 }

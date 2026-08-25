@@ -28,6 +28,8 @@ import PurchaseOrdersListView from '@/views/PurchaseOrdersListView.vue'
 import PurchaseInvoicesListView from '@/views/PurchaseInvoicesListView.vue'
 import PurchaseInvoiceFormView from '@/views/PurchaseInvoiceFormView.vue'
 import AccountsPayableListView from '@/views/AccountsPayableListView.vue'
+import PaymentMethodsListView from '@/views/PaymentMethodsListView.vue'
+import PaymentMethodFormView from '@/views/PaymentMethodFormView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -69,6 +71,9 @@ const router = createRouter({
     { path: '/compras/:id/nota-fiscal', name: 'compras-nota-fiscal', component: PurchaseInvoiceFormView },
     { path: '/notas-fiscais-entrada', name: 'notas-fiscais-entrada', component: PurchaseInvoicesListView },
     { path: '/contas-a-pagar', name: 'contas-a-pagar', component: AccountsPayableListView },
+    { path: '/formas-pagamento', name: 'formas-pagamento', component: PaymentMethodsListView },
+    { path: '/formas-pagamento/novo', name: 'formas-pagamento-novo', component: PaymentMethodFormView },
+    { path: '/formas-pagamento/:id/editar', name: 'formas-pagamento-editar', component: PaymentMethodFormView },
   ],
 })
 

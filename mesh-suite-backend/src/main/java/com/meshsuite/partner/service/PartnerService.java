@@ -14,6 +14,9 @@ import com.meshsuite.partner.exception.PartnerNotFoundException;
 import com.meshsuite.partner.exception.PartnerValidationException;
 import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.partner.repository.specification.PartnerSpecifications;
+import com.meshsuite.paymentmethod.domain.PaymentMethod;
+import com.meshsuite.paymentmethod.exception.PaymentMethodNotFoundException;
+import com.meshsuite.paymentmethod.repository.PaymentMethodRepository;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,9 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class PartnerService {
 
     private final PartnerRepository partnerRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
 
-    public PartnerService(PartnerRepository partnerRepository) {
+    public PartnerService(PartnerRepository partnerRepository, PaymentMethodRepository paymentMethodRepository) {
         this.partnerRepository = partnerRepository;
+        this.paymentMethodRepository = paymentMethodRepository;
     }
 
     @Transactional(readOnly = true)
@@ -162,6 +167,9 @@ public class PartnerService {
         partner.setState(request.state());
         partner.setCity(request.city());
         partner.setNotes(request.notes());
+        partner.setPaymentMethod(request.paymentMethodId() == null ? null
+                : paymentMethodRepository.findById(request.paymentMethodId())
+                        .orElseThrow(PaymentMethodNotFoundException::new));
 
         partner.getContacts().clear();
         List<PartnerContactDto> contacts = request.contacts() == null ? List.of() : request.contacts();
@@ -188,11 +196,14 @@ public class PartnerService {
                 .map(c -> new PartnerContactDto(c.getName(), c.getEmail(), c.getBusinessPhone(),
                         c.getMobilePhone(), c.getJobTitle()))
                 .toList();
+        PaymentMethod paymentMethod = p.getPaymentMethod();
         return new PartnerResponse(
                 p.getId(), p.getPersonType(), p.getDocument(), p.getTradeName(), p.getLegalName(),
                 p.getStatus(), p.getRoles(), p.getBillingEmails(), p.getWhatsapp(), p.getTaxIndicator(),
                 p.getStateRegistration(), p.getMunicipalRegistration(), p.getSuframaRegistration(), p.getZipCode(),
                 p.getStreet(), p.getNumber(), p.getNeighborhood(), p.getComplement(), p.getState(), p.getCity(),
-                p.getNotes(), contacts);
+                p.getNotes(), contacts,
+                paymentMethod == null ? null : paymentMethod.getId(),
+                paymentMethod == null ? null : paymentMethod.getDescription());
     }
 }
