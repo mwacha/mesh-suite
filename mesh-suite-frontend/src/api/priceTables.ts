@@ -72,9 +72,16 @@ export interface Page<T> {
   size: number
 }
 
+export interface PriceTableCounts {
+  total: number
+  active: number
+  inactive: number
+}
+
 export interface ListPriceTablesParams {
   busca?: string
   ativo?: boolean
+  sort?: string
   page?: number
   size?: number
 }
@@ -82,6 +89,15 @@ export interface ListPriceTablesParams {
 export async function listPriceTables(params: ListPriceTablesParams): Promise<Page<PriceTableSummary>> {
   const { data } = await apiClient.get<Page<PriceTableSummary>>('/price-tables', { params })
   return data
+}
+
+export async function getPriceTableCounts(): Promise<PriceTableCounts> {
+  const { data } = await apiClient.get<PriceTableCounts>('/price-tables/counts')
+  return data
+}
+
+export async function updatePriceTableStatus(id: string, active: boolean): Promise<void> {
+  await apiClient.patch(`/price-tables/${id}/status`, { active })
 }
 
 export async function getPriceTable(id: string): Promise<PriceTableResponse> {

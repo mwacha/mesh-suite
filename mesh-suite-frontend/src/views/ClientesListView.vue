@@ -45,17 +45,7 @@
       </template>
     </FilterBar>
 
-    <section class="table-card">
-      <div class="table-card-header">
-        <span class="table-card-title">Lista de Clientes</span>
-        <div v-if="resumo" class="table-card-stats">
-          <StatPill :value="resumo.total" label="Total" color="dark" />
-          <StatPill :value="resumo.active" label="Ativos" color="green" />
-          <StatPill :value="resumo.atRisk" label="Em Risco" color="amber" />
-          <StatPill :value="resumo.blocked" label="Bloqueados" color="red" />
-        </div>
-      </div>
-
+    <ListCard title="Lista de Clientes" :stats="statsCard">
       <div class="table-grid">
         <div class="table-grid-header">
           <div class="table-grid-col table-grid-col-sortable" data-test="col-nome" @click="toggleSort('tradeName')">
@@ -94,7 +84,7 @@
           </div>
         </div>
       </div>
-    </section>
+    </ListCard>
 
     <Pagination
       :number="pagina.number"
@@ -115,7 +105,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import TextField from '@/components/TextField.vue'
 import StatusBadge, { type StatusBadgeColor } from '@/components/StatusBadge.vue'
-import StatPill from '@/components/StatPill.vue'
+import ListCard, { type ListCardStat } from '@/components/ListCard.vue'
 import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
 import Pagination from '@/components/Pagination.vue'
 import type { Page } from '@/api/types'
@@ -160,6 +150,16 @@ const resumo = ref<PartnerSummary | null>(null)
 const erro = ref('')
 
 const countLabel = computed(() => (resumo.value ? `${resumo.value.total} clientes cadastrados` : undefined))
+const statsCard = computed<ListCardStat[]>(() =>
+  resumo.value
+    ? [
+        { value: resumo.value.total, label: 'Total', color: 'dark' },
+        { value: resumo.value.active, label: 'Ativos', color: 'green' },
+        { value: resumo.value.atRisk, label: 'Em Risco', color: 'amber' },
+        { value: resumo.value.blocked, label: 'Bloqueados', color: 'red' },
+      ]
+    : [],
+)
 
 function statusLabel(status: PartnerStatus) {
   return { ACTIVE: 'Ativo', AT_RISK: 'Em Risco', BLOCKED: 'Bloqueado' }[status]
@@ -341,34 +341,6 @@ onMounted(() => {
   cursor: pointer;
   white-space: nowrap;
   font-family: var(--pm-font);
-}
-
-.table-card {
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.table-card-header {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--pm-border-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--pm-font);
-}
-
-.table-card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--pm-text-dark);
-}
-
-.table-card-stats {
-  display: flex;
-  gap: 8px;
 }
 
 .table-grid {
