@@ -59,6 +59,7 @@ export interface Page<T> {
 export interface ListSalesOrdersParams {
   busca?: string
   status?: SalesOrderStatus
+  salespersonId?: string
   page?: number
   size?: number
   sort?: string

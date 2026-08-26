@@ -2,6 +2,7 @@ package com.meshsuite.salesorder.repository.specification;
 
 import com.meshsuite.salesorder.domain.SalesOrder;
 import com.meshsuite.salesorder.domain.enums.SalesOrderStatus;
+import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
 
 public final class SalesOrderSpecifications {
@@ -31,6 +32,13 @@ public final class SalesOrderSpecifications {
             return null;
         }
         return (root, query, cb) -> cb.equal(root.get("status"), status);
+    }
+
+    public static Specification<SalesOrder> withSalesperson(UUID salespersonId) {
+        if (salespersonId == null) {
+            return null;
+        }
+        return (root, query, cb) -> cb.equal(root.get("salesperson").get("id"), salespersonId);
     }
 
     private static Integer tryParseInt(String value) {

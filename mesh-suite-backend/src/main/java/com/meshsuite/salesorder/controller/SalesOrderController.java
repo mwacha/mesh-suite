@@ -28,8 +28,9 @@ public class SalesOrderController {
     public Page<SalesOrderSummaryResponse> list(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) SalesOrderStatus status,
+            @RequestParam(required = false) UUID salespersonId,
             @PageableDefault(size = 10, sort = "number", direction = Sort.Direction.DESC) Pageable pageable) {
-        return salesOrderService.list(busca, status, pageable);
+        return salesOrderService.list(busca, status, salespersonId, pageable);
     }
 
     @GetMapping("/counts")
