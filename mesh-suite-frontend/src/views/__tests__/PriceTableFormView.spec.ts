@@ -58,12 +58,27 @@ describe('PriceTableFormView', () => {
     expect(tabelasPrecoApi.createPriceTable).not.toHaveBeenCalled()
   })
 
-  it('populates items from all active produtos in TODOS_PRODUTOS mode, with live-calculated prices', async () => {
+  it('starts TODOS_PRODUTOS with no rows -- the catalogue is covered by the rule, only exceptions are stored', async () => {
     vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
     await flushPromises()
+
+    expect(wrapper.find('[data-test="excecoes-vazio"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Nenhuma exceção cadastrada')
+    expect(wrapper.find('[data-test="item-preco-0"]').exists()).toBe(false)
+    // The whole catalogue must not be pulled in just to render the section.
+    expect(wrapper.text()).not.toContain('Camiseta Polo')
+  })
+
+  it('offers "+ Adicionar exceção" in TODOS_PRODUTOS and prices the added row by the rule', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="adicionar-itens"]').text()).toContain('Adicionar exceção')
+
+    await adicionarProdutoViaModal(wrapper)
 
     // default rule is AUTOMATIC/ADD/FIXED/adjustmentValue=0 -> preço = precoVenda
     expect(wrapper.text()).toContain('Camiseta Polo')
@@ -71,15 +86,13 @@ describe('PriceTableFormView', () => {
     expect(Number(precoInput.value)).toBeCloseTo(100, 2)
   })
 
-  it('recalculates every item live when the ajuste rule changes in TODOS_PRODUTOS mode', async () => {
-    // Per spec §5 ("recalcula sempre que a regra muda"): TODOS_PRODUTOS items stay
+  it('recalculates the exceptions live when the ajuste rule changes in TODOS_PRODUTOS mode', async () => {
+    // Per spec §5 ("recalcula sempre que a regra muda"): TODOS_PRODUTOS rows stay
     // fully rule-driven, so a manually typed price is overwritten the next time a
     // rule field changes -- this is deliberate, not a bug.
-    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
-      content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 1000,
-    })
     const { wrapper } = await mountWithRouter()
     await flushPromises()
+    await adicionarProdutoViaModal(wrapper)
 
     await wrapper.find('[data-test="item-preco-0"]').setValue('250')
     await wrapper.find('[data-test="valor-ajuste"]').setValue('50')
@@ -87,6 +100,65 @@ describe('PriceTableFormView', () => {
 
     const precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
     expect(Number(precoInput.value)).toBeCloseTo(150, 2) // produtoAtivo.salePrice=100, ADD+FIXED+50
+  })
+
+  // SegmentedControl stamps its test-id on each option button, so the filter is probed
+  // through a real option -- the bare container id never exists and would pass vacuously.
+  it('hides the Preenchido/Pendente filter and the search in TODOS_PRODUTOS mode', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+    await adicionarProdutoViaModal(wrapper)
+
+    expect(wrapper.find('[data-test="filtro-preenchimento-TODOS"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="busca-itens"]').exists()).toBe(false)
+  })
+
+  it('shows the Preenchido/Pendente filter in SELECIONAR_PRODUTOS mode, in wireframe order', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
+    await flushPromises()
+    await adicionarProdutoViaModal(wrapper)
+
+    const opcoes = wrapper.findAll('.segmented-option').map((b) => b.text())
+    expect(opcoes).toContain('Preenchido')
+    expect(opcoes.slice(-3)).toEqual(['Preenchido', 'Pendente', 'Todos'])
+    expect(wrapper.find('[data-test="filtro-preenchimento-PENDENTE"]').exists()).toBe(true)
+  })
+
+  it('narrows the grid to pending rows when the Pendente filter is picked', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
+    await flushPromises()
+    await adicionarProdutoViaModal(wrapper)
+
+    // The added row is priced by the rule, so it counts as "Preenchido".
+    await wrapper.find('[data-test="filtro-preenchimento-PENDENTE"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-test="item-preco-0"]').exists()).toBe(false)
+
+    await wrapper.find('[data-test="filtro-preenchimento-PREENCHIDO"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-test="item-preco-0"]').exists()).toBe(true)
+  })
+
+  it('filters the SELECIONAR_PRODUTOS grid by name or SKU', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+    await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
+    await flushPromises()
+    await adicionarProdutoViaModal(wrapper)
+
+    expect(wrapper.find('[data-test="busca-itens"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="busca-itens"]').setValue('P0001')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Camiseta Polo')
+
+    await wrapper.find('[data-test="busca-itens"]').setValue('inexistente')
+    await flushPromises()
+    expect(wrapper.find('[data-test="item-preco-0"]').exists()).toBe(false)
   })
 
   it('disables the Manual method while in TODOS_PRODUTOS mode', async () => {

@@ -85,24 +85,49 @@
       </CollapsibleSection>
 
       <CollapsibleSection title="Itens na Tabela">
-        <div v-if="form.productSelectionMode === 'ALL_PRODUCTS'" class="info-banner">
-          <span class="info-banner-icon">ℹ️</span>
-          <div>
-            Todos os produtos ativos são incluídos automaticamente com a <strong>regra padrão</strong> definida acima.
-            Edite o preço de um item abaixo para criar uma <strong>exceção</strong>, ou remova um item para excluí-lo desta tabela.
+        <template v-if="form.productSelectionMode === 'ALL_PRODUCTS'">
+          <div class="info-banner">
+            <span class="info-banner-icon">ℹ️</span>
+            <div>
+              Todos os produtos serão incluídos automaticamente com a <strong>regra padrão</strong> definida acima.
+              Adicione abaixo apenas os produtos que terão <strong>configuração diferente</strong> (exceções).
+            </div>
           </div>
-        </div>
 
-        <div v-else class="itens-toolbar">
-          <button type="button" class="btn-add-itens" data-test="adicionar-itens" @click="modalAberto = true">
-            + Adicionar mais itens à tabela
-          </button>
-        </div>
+          <div class="excecoes-toolbar">
+            <span class="excecoes-titulo">Exceções · produtos com configuração diferente</span>
+            <button type="button" class="btn-add-itens" data-test="adicionar-itens" @click="modalAberto = true">
+              + Adicionar exceção
+            </button>
+          </div>
 
-        <div v-if="itens.length" class="filtro-itens">
-          <span class="field-label">Mostrar</span>
-          <SegmentedControl v-model="filtroPreenchimento" :options="filtroOptions" test-id="filtro-preenchimento" />
-        </div>
+          <div v-if="itens.length === 0" class="excecoes-vazio" data-test="excecoes-vazio">
+            <div class="itens-vazio-titulo">Nenhuma exceção cadastrada</div>
+            <div class="itens-vazio-texto">
+              Todos os produtos seguem a regra padrão. Use "+ Adicionar exceção" para configurar preço ou comissão
+              específicos.
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="itens-toolbar">
+            <button type="button" class="btn-add-itens" data-test="adicionar-itens" @click="modalAberto = true">
+              + Adicionar mais itens à tabela
+            </button>
+          </div>
+
+          <div v-if="itens.length" class="filtro-itens">
+            <input
+              v-model="buscaItens"
+              class="filtro-itens-busca"
+              placeholder="Busque por nome ou SKU"
+              data-test="busca-itens"
+              autocomplete="off"
+            />
+            <SegmentedControl v-model="filtroPreenchimento" :options="filtroOptions" test-id="filtro-preenchimento" />
+          </div>
+        </template>
 
         <div v-if="itensExibidos.length" class="itens-grid">
           <div class="itens-grid-header">
@@ -152,6 +177,43 @@
           <div class="itens-vazio-titulo">Nenhum item adicionado</div>
           <div class="itens-vazio-texto">Use "+ Adicionar mais itens à tabela" para incluir produtos.</div>
         </div>
+
+        <div v-if="form.productSelectionMode === 'SELECT_PRODUCTS' && itensFiltrados.length" class="itens-paginacao">
+          <span class="itens-paginacao-info" data-test="itens-paginacao-info">
+            Exibindo {{ faixaExibida.inicio }}–{{ faixaExibida.fim }} de {{ itensFiltrados.length }} itens
+          </span>
+          <div v-if="totalPaginasItens > 1" class="itens-paginacao-botoes">
+            <button
+              type="button"
+              class="itens-paginacao-btn"
+              data-test="itens-pagina-anterior"
+              :disabled="paginaItens === 0"
+              @click="paginaItens = Math.max(0, paginaItens - 1)"
+            >
+              ‹
+            </button>
+            <button
+              v-for="p in totalPaginasItens"
+              :key="p"
+              type="button"
+              class="itens-paginacao-btn"
+              :class="{ 'itens-paginacao-btn-ativa': paginaItens === p - 1 }"
+              :data-test="`itens-pagina-${p}`"
+              @click="paginaItens = p - 1"
+            >
+              {{ p }}
+            </button>
+            <button
+              type="button"
+              class="itens-paginacao-btn"
+              data-test="itens-pagina-proxima"
+              :disabled="paginaItens >= totalPaginasItens - 1"
+              @click="paginaItens = Math.min(totalPaginasItens - 1, paginaItens + 1)"
+            >
+              ›
+            </button>
+          </div>
+        </div>
       </CollapsibleSection>
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
@@ -186,7 +248,8 @@ import {
   type PriceTableRequest,
   type PriceTableItemInput,
 } from '@/api/priceTables'
-import { listSellableProducts, type SellableProductItem } from '@/api/products'
+import { type SellableProductItem } from '@/api/products'
+import { normalizarTexto } from '@/utils/texto'
 import { calculateAdjustedPrice, type AdjustmentRule } from '@/utils/priceCalculation'
 import { useToast } from '@/composables/useToast'
 
@@ -209,10 +272,12 @@ const tipoValorOptions: SegmentedOption[] = [
   { value: 'PERCENTAGE', label: '%' },
 ]
 const filtroOptions: SegmentedOption[] = [
-  { value: 'TODOS', label: 'Todos' },
   { value: 'PREENCHIDO', label: 'Preenchido' },
   { value: 'PENDENTE', label: 'Pendente' },
+  { value: 'TODOS', label: 'Todos' },
 ]
+
+const ITENS_POR_PAGINA = 20
 
 interface ItemForm extends PriceTableItemInput {
   productName: string
@@ -246,16 +311,42 @@ const salvando = ref(false)
 const modalAberto = ref(false)
 
 const filtroPreenchimento = ref<'TODOS' | 'PREENCHIDO' | 'PENDENTE'>('TODOS')
+const buscaItens = ref('')
+const paginaItens = ref(0)
 
-const itensExibidos = computed(() =>
-  itens.value
+const itensFiltrados = computed(() => {
+  const consulta = normalizarTexto(buscaItens.value)
+  return itens.value
     .map((item, indexReal) => ({ item, indexReal }))
     .filter(({ item }) => {
-      if (filtroPreenchimento.value === 'PREENCHIDO') return item.tablePrice !== null
-      if (filtroPreenchimento.value === 'PENDENTE') return item.tablePrice === null
-      return true
-    }),
-)
+      if (filtroPreenchimento.value === 'PREENCHIDO' && item.tablePrice === null) return false
+      if (filtroPreenchimento.value === 'PENDENTE' && item.tablePrice !== null) return false
+      if (!consulta) return true
+      return normalizarTexto(`${item.productName} ${item.productSku}`).includes(consulta)
+    })
+})
+
+// Exceptions are never paginated -- the wireframe pages only the "Selecionar os
+// Produtos" grid, where the list can run to the whole catalogue.
+const itensExibidos = computed(() => {
+  if (form.productSelectionMode === 'ALL_PRODUCTS') {
+    return itensFiltrados.value
+  }
+  const inicio = paginaItens.value * ITENS_POR_PAGINA
+  return itensFiltrados.value.slice(inicio, inicio + ITENS_POR_PAGINA)
+})
+
+const totalPaginasItens = computed(() => Math.max(1, Math.ceil(itensFiltrados.value.length / ITENS_POR_PAGINA)))
+
+const faixaExibida = computed(() => ({
+  inicio: itensFiltrados.value.length === 0 ? 0 : paginaItens.value * ITENS_POR_PAGINA + 1,
+  fim: Math.min((paginaItens.value + 1) * ITENS_POR_PAGINA, itensFiltrados.value.length),
+}))
+
+// Narrowing the list can strand the viewer on a page that no longer exists.
+watch([buscaItens, filtroPreenchimento], () => {
+  paginaItens.value = 0
+})
 
 function formatarPreco(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -299,30 +390,16 @@ watch(
   },
 )
 
-async function popularTodosOsProdutos() {
-  try {
-    const pagina = await listSellableProducts({ status: 'ACTIVE', size: 1000 })
-    itens.value = pagina.content.map((p) => ({
-      productId: p.id,
-      productName: p.name,
-      productSku: p.sku,
-      registeredPrice: p.salePrice,
-      tablePrice: precoParaNovoItem(p.salePrice),
-      commissionPercentage: form.defaultCommissionPercentage,
-    }))
-  } catch {
-    erroGeral.value = 'Não foi possível carregar a lista de produtos.'
-  }
-}
-
 function aoMudarModoSelecao() {
+  // "Todos os Produtos" stores only the exceptions: the catalogue is covered by the
+  // default rule at read time, so materialising every product as an item row would
+  // both freeze today's catalogue into the table and bury the real exceptions.
+  itens.value = []
+  paginaItens.value = 0
   if (form.productSelectionMode === 'ALL_PRODUCTS') {
     // Ver wireframe: tabelas "todos os produtos" só fazem sentido com regra
     // automática -- não há como preencher preço manual item a item de todo o catálogo.
     form.adjustmentMethod = 'AUTOMATIC'
-    popularTodosOsProdutos()
-  } else {
-    itens.value = []
   }
 }
 
@@ -381,8 +458,6 @@ onMounted(async () => {
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados da tabela de preço.'
     }
-  } else if (form.productSelectionMode === 'ALL_PRODUCTS') {
-    await popularTodosOsProdutos()
   }
 })
 
@@ -545,6 +620,87 @@ input {
 
 .filtro-itens .field-label {
   margin-bottom: 0;
+}
+
+.filtro-itens-busca {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid var(--pm-border-light);
+  border-radius: 6px;
+  background: var(--pm-white);
+  padding: 0 10px;
+  font-size: 12px;
+  font-family: var(--pm-font);
+  color: var(--pm-text-dark);
+}
+
+.excecoes-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.excecoes-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+  font-family: var(--pm-font);
+}
+
+.excecoes-vazio {
+  padding: 28px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px dashed var(--pm-border-light);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.itens-paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+  font-family: var(--pm-font);
+}
+
+.itens-paginacao-info {
+  font-size: 12px;
+  color: var(--pm-text-muted);
+}
+
+.itens-paginacao-botoes {
+  display: flex;
+  gap: 4px;
+}
+
+.itens-paginacao-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--pm-border-light);
+  border-radius: 4px;
+  background: var(--pm-white);
+  color: var(--pm-text-dark);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.itens-paginacao-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.itens-paginacao-btn-ativa {
+  background: var(--pm-accent);
+  border-color: var(--pm-accent);
+  color: var(--pm-white);
 }
 
 .itens-grid {
