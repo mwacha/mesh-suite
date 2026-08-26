@@ -2,8 +2,10 @@ package com.meshsuite.product.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
 import com.meshsuite.product.domain.enums.ProductStatus;
+import com.meshsuite.product.domain.enums.ProductType;
 import com.meshsuite.product.dto.*;
 import com.meshsuite.product.service.KitProductService;
+import com.meshsuite.product.service.ProductListingService;
 import com.meshsuite.product.service.ProductTypeStrategyResolver;
 import com.meshsuite.product.service.SimpleProductService;
 import com.meshsuite.product.service.VariationProductService;
@@ -24,14 +26,17 @@ public class ProductController {
     private final KitProductService kitProductService;
     private final VariationProductService variationProductService;
     private final ProductTypeStrategyResolver productTypeStrategyResolver;
+    private final ProductListingService productListingService;
 
     public ProductController(SimpleProductService productService, KitProductService kitProductService,
                               VariationProductService variationProductService,
-                              ProductTypeStrategyResolver productTypeStrategyResolver) {
+                              ProductTypeStrategyResolver productTypeStrategyResolver,
+                              ProductListingService productListingService) {
         this.productService = productService;
         this.kitProductService = kitProductService;
         this.variationProductService = variationProductService;
         this.productTypeStrategyResolver = productTypeStrategyResolver;
+        this.productListingService = productListingService;
     }
 
     @GetMapping
@@ -40,6 +45,19 @@ public class ProductController {
             @RequestParam(required = false) ProductStatus status,
             @PageableDefault(size = 10, sort = "name") Pageable pageable) {
         return productService.list(search, status, pageable);
+    }
+
+    // Unified cross-type listing for the Produtos screen (Simples + Kit + Variação parent rows
+    // with a type discriminator, and nested children for Variação) -- deliberately separate from
+    // the type-scoped GET above, which other consumers (e.g. the Tabela de Preço item picker)
+    // depend on returning only type=PRODUCT.
+    @GetMapping("/all")
+    public Page<ProductAllListItemResponse> listAll(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) ProductStatus status,
+            @RequestParam(required = false) ProductType type,
+            @PageableDefault(size = 10, sort = "name") Pageable pageable) {
+        return productListingService.listAll(search, status, type, pageable);
     }
 
     @GetMapping("/resumo")

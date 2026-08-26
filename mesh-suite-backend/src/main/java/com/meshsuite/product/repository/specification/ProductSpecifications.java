@@ -3,6 +3,7 @@ package com.meshsuite.product.repository.specification;
 import com.meshsuite.product.domain.Product;
 import com.meshsuite.product.domain.enums.ProductStatus;
 import com.meshsuite.product.domain.enums.ProductType;
+import java.util.Collection;
 import org.springframework.data.jpa.domain.Specification;
 
 public final class ProductSpecifications {
@@ -29,5 +30,9 @@ public final class ProductSpecifications {
 
     public static Specification<Product> hasType(ProductType type) {
         return (root, query, cb) -> cb.equal(root.get("type"), type);
+    }
+
+    public static Specification<Product> hasTypeIn(Collection<ProductType> types) {
+        return (root, query, cb) -> root.get("type").in(types);
     }
 }
