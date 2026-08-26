@@ -83,12 +83,12 @@ describe('PermissionProfilesListView', () => {
     expect(perfisApi.deletePermissionProfile).toHaveBeenCalledWith('pp-1')
   })
 
-  it('shows the backend error message when deleting a system profile fails', async () => {
+  it('shows the backend error message when deleting a profile fails', async () => {
     vi.mocked(perfisApi.listPermissionProfiles).mockResolvedValue({
-      content: [perfilExemplo], totalElements: 1, totalPages: 1, number: 0, size: 20,
+      content: [{ ...perfilExemplo, isSystem: false }], totalElements: 1, totalPages: 1, number: 0, size: 20,
     })
     vi.mocked(perfisApi.deletePermissionProfile).mockRejectedValue({
-      response: { data: { mensagem: 'Não é possível excluir um perfil padrão do sistema' } },
+      response: { data: { mensagem: 'Não é possível excluir: 2 usuário(s) usam este perfil' } },
     })
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
@@ -99,6 +99,6 @@ describe('PermissionProfilesListView', () => {
     await wrapper.find('[data-test="acao-excluir"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Não é possível excluir um perfil padrão do sistema')
+    expect(wrapper.text()).toContain('Não é possível excluir: 2 usuário(s) usam este perfil')
   })
 })

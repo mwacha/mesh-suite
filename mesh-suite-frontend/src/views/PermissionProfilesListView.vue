@@ -44,7 +44,7 @@
     <Teleport to="body">
       <div v-if="perfilAcoesAtual" class="dropdown-acoes" :style="{ top: posicaoDropdown.top, left: posicaoDropdown.left }">
         <div data-test="acao-editar" @click="editarPerfil(perfilAcoesAtual.id)">Editar</div>
-        <div data-test="acao-excluir" class="acao-excluir" @click="excluir(perfilAcoesAtual)">Excluir</div>
+        <div v-if="!perfilAcoesAtual.isSystem" data-test="acao-excluir" class="acao-excluir" @click="excluir(perfilAcoesAtual)">Excluir</div>
       </div>
     </Teleport>
 
