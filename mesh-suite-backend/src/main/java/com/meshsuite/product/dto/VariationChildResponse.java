@@ -1,6 +1,7 @@
 package com.meshsuite.product.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public record VariationChildResponse(
@@ -15,5 +16,6 @@ public record VariationChildResponse(
         String size,
         UUID colorwayId,
         String colorwayName,
-        BigDecimal saleMultiple) {
+        BigDecimal saleMultiple,
+        List<String> variationValues) {
 }

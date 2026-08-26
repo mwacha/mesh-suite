@@ -102,6 +102,7 @@
     <AdicionarItensModal
       v-if="modalAberto"
       title="Adicionar produtos ao kit"
+      :types="TIPOS_COMPONENTE"
       :itens-adicionados-ids="itens.map((i) => i.componentProductId)"
       @add="aoAdicionarProduto"
       @remove="aoRemoverProdutoPorId"
@@ -120,7 +121,11 @@ import FormActions from '@/components/FormActions.vue'
 import ProductTypeSelector from '@/components/ProductTypeSelector.vue'
 import AdicionarItensModal from '@/components/AdicionarItensModal.vue'
 import { getKit, createKit, updateKit, type KitProductRequest } from '@/api/productKits'
-import type { ProductListItem, MeasurementUnit, ProductStatus } from '@/api/products'
+import type { SellableProductItem, MeasurementUnit, ProductStatus, ProductType } from '@/api/products'
+
+// Mirrors what KitProductService already rejects on save: a component can be neither
+// another kit nor a variação-pai, so the picker must not offer them in the first place.
+const TIPOS_COMPONENTE: ProductType[] = ['PRODUCT', 'VARIATION_CHILD']
 
 const UNIDADES: MeasurementUnit[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
 const STATUS_OPCOES: { value: ProductStatus; label: string }[] = [
@@ -181,7 +186,7 @@ function aoMudarTipo(tipo: string) {
   }
 }
 
-function aoAdicionarProduto(produto: ProductListItem) {
+function aoAdicionarProduto(produto: SellableProductItem) {
   itens.value.push({
     componentProductId: produto.id,
     componentName: produto.name,

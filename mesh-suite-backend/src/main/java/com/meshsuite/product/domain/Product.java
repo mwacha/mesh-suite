@@ -118,6 +118,14 @@ public class Product {
     @Column(name = "variation_axes", columnDefinition = "TEXT")
     private String variationAxesJson;
 
+    // Set only on VARIATION_CHILD rows -- this child's own coordinate in the parent's
+    // matrix, e.g. ["40","VERMELHA"], in the same order as the parent's axes. Only
+    // "Tamanho" has a real column of its own (size); every other axis value would be
+    // unrecoverable on reload without this, leaving the child unmatchable to the
+    // combination that generated it.
+    @Column(name = "variation_values", columnDefinition = "TEXT")
+    private String variationValuesJson;
+
     // Owned only by PRODUCT_KIT rows -- see ProductKitItem. Cleared and rebuilt
     // wholesale on every save, same convention as PriceTable/PurchaseOrder items.
     @OneToMany(mappedBy = "kitProduct", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -51,10 +51,11 @@ public class SalesOrderService {
 
     @Transactional(readOnly = true)
     @RequiresPermission(module = Module.ORDER, action = Action.VIEW)
-    public Page<SalesOrderSummaryResponse> list(String search, SalesOrderStatus status, Pageable pageable) {
+    public Page<SalesOrderSummaryResponse> list(String search, SalesOrderStatus status, UUID salespersonId, Pageable pageable) {
         Specification<SalesOrder> spec = Specification.allOf(
                 SalesOrderSpecifications.withSearch(search),
-                SalesOrderSpecifications.withStatus(status));
+                SalesOrderSpecifications.withStatus(status),
+                SalesOrderSpecifications.withSalesperson(salespersonId));
         return salesOrderRepository.findAll(spec, pageable).map(this::toSummary);
     }
 

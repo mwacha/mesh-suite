@@ -390,12 +390,56 @@ function sanitizeSkuPart(value: string) {
   return semAcentos.toUpperCase().replace(/[^A-Z0-9]+/g, '')
 }
 
-// Keeps `children` in sync with the matrix: adds a default row for every new
-// combination, removes rows whose combination no longer exists. Rows without a
-// comboKey (added via "+ Adicionar Variante") are never touched here.
+function criarLinhaPadrao(combo: string[]): ChildForm {
+  const sufixo = combo.map(sanitizeSkuPart).join('-')
+  return {
+    sku: form.sku ? `${form.sku}-${sufixo}` : sufixo,
+    barcode: null,
+    salePrice: Number(form.salePrice) || 0,
+    costPrice: null,
+    stockQuantity: 0,
+    minStock: null,
+    maxStock: null,
+    size: sizeFromCombo(combo),
+    colorwayId: null,
+    saleMultiple: 1,
+    comboKey: comboKeyFor(combo),
+    comboLabels: combo,
+  }
+}
+
+// Tracks the set of Tipo de Variação NAMES (not values) behind the last synced
+// state, so the watcher below can tell "a value was added/removed within the
+// same axes" apart from "an axis itself was added/removed". Kept in sync with
+// the loaded data in onMounted so the very first sync after loading an
+// existing Variação is never mistaken for a live composition change.
+function assinaturaDosTipos(types: VarType[]): string {
+  return types.map((vt) => vt.name).join('::')
+}
+
+let axisSignature = ''
+
+// Keeps `children` in sync with the matrix. When the set of axes themselves
+// changes (a Tipo de Variação is added or removed), the product's composition
+// changed -- per business rule every child is replaced by a fresh cartesian
+// product, including legacy/unlinked rows that never got a comboKey (e.g. a
+// pre-migration child with no colorwayName to match a newly added Cor axis).
+// When only a value changes within the same set of axes, the sync stays
+// incremental: matching rows are kept, the new combination is added, and rows
+// without a comboKey are left alone (there's no other way for such a row to
+// exist today, but they're legacy data we must not destroy just by syncing).
 watch(
   combinations,
   (novasCombinacoes) => {
+    const novaAssinatura = assinaturaDosTipos(varTypes.value)
+    const composicaoMudou = novaAssinatura !== axisSignature
+    axisSignature = novaAssinatura
+
+    if (composicaoMudou) {
+      children.value = novasCombinacoes.map((combo) => criarLinhaPadrao(combo))
+      return
+    }
+
     const chaves = new Set(novasCombinacoes.map(comboKeyFor))
     children.value = children.value.filter((c) => !c.comboKey || chaves.has(c.comboKey))
 
@@ -405,21 +449,7 @@ watch(
       if (existentes.has(key)) {
         continue
       }
-      const sufixo = combo.map(sanitizeSkuPart).join('-')
-      children.value.push({
-        sku: form.sku ? `${form.sku}-${sufixo}` : sufixo,
-        barcode: null,
-        salePrice: Number(form.salePrice) || 0,
-        costPrice: null,
-        stockQuantity: 0,
-        minStock: null,
-        maxStock: null,
-        size: sizeFromCombo(combo),
-        colorwayId: null,
-        saleMultiple: 1,
-        comboKey: key,
-        comboLabels: combo,
-      })
+      children.value.push(criarLinhaPadrao(combo))
     }
   },
   { deep: true },
@@ -591,40 +621,73 @@ onMounted(async () => {
         }
       }
 
-      // Each child is only tagged as combo-generated if its own value per axis is
-      // actually derivable (only "Tamanho" maps to a real child field, child.size --
-      // any other axis has no per-child value stored anywhere, e.g. "Cor" is a best-
-      // effort read of child.colorwayName, and a truly custom axis like "Material"
-      // can't be derived at all) AND that combo is covered by the loaded matrix --
-      // otherwise the child is left as a plain row so it's never silently dropped by
-      // the sync watcher below.
-      const chavesValidas = new Set(combosFor(tiposCarregados).map((combo) => combo.join('|')))
-
-      children.value = variacao.children.map((c) => {
-        const labels = tiposCarregados.map((vt) =>
+      // Work out which combination each saved child belongs to. variationValues is
+      // the authoritative answer (persisted per child); for rows saved before that
+      // column existed, fall back to deriving it -- only "Tamanho" maps to a real
+      // field (size), so a "Cor" axis is a best-effort read of colorwayName and a
+      // custom axis (Material, Voltagem...) can't be derived at all.
+      const carregados = variacao.children.map((c) => {
+        const derivados = tiposCarregados.map((vt) =>
           vt.name.trim().toLowerCase() === 'tamanho' ? c.size : c.colorwayName,
         )
-        const completo = labels.every((v): v is string => !!v)
-        const key = completo ? labels.join('|') : null
-        const comboLabels = key && chavesValidas.has(key) ? (labels as string[]) : undefined
+        const valores = c.variationValues?.length ? c.variationValues : derivados
+        const completo =
+          valores.length === tiposCarregados.length && valores.every((v): v is string => !!v)
         return {
-          id: c.id,
-          sku: c.sku,
-          barcode: c.barcode,
-          salePrice: c.salePrice,
-          costPrice: c.costPrice,
-          stockQuantity: c.stockQuantity,
-          minStock: c.minStock,
-          maxStock: c.maxStock,
-          size: c.size,
-          colorwayId: c.colorwayId,
-          colorwayName: c.colorwayName,
-          saleMultiple: c.saleMultiple,
-          comboKey: comboLabels ? key! : undefined,
-          comboLabels,
+          filho: {
+            id: c.id,
+            sku: c.sku,
+            barcode: c.barcode,
+            salePrice: c.salePrice,
+            costPrice: c.costPrice,
+            stockQuantity: c.stockQuantity,
+            minStock: c.minStock,
+            maxStock: c.maxStock,
+            size: c.size,
+            colorwayId: c.colorwayId,
+            colorwayName: c.colorwayName,
+            saleMultiple: c.saleMultiple,
+            comboKey: completo ? (valores as string[]).join('|') : undefined,
+            comboLabels: completo ? (valores as string[]) : undefined,
+          } as ChildForm,
+          key: completo ? (valores as string[]).join('|') : null,
         }
       })
+
+      // The matrix is authoritative: the rows are exactly its combinations. A saved
+      // child is reused (keeping its id, prices and stock) for the combination it
+      // belongs to; combinations with no saved child get a fresh default row; and
+      // saved children that match no combination are dropped, since they can no
+      // longer be part of this product's composition.
+      const combosCarregados = combosFor(tiposCarregados)
+      if (combosCarregados.length > 0) {
+        const porChave = new Map<string, ChildForm>()
+        for (const { filho, key } of carregados) {
+          if (key && !porChave.has(key)) {
+            porChave.set(key, filho)
+          }
+        }
+        // Nothing could be matched (e.g. every axis is a custom one that was never
+        // persisted): fall back to position, since children are created in the same
+        // order the matrix generates them.
+        const semCorrespondencia = porChave.size === 0 && carregados.length === combosCarregados.length
+        children.value = combosCarregados.map((combo, index) => {
+          const key = comboKeyFor(combo)
+          const existente = semCorrespondencia ? carregados[index].filho : porChave.get(key)
+          if (!existente) {
+            return criarLinhaPadrao(combo)
+          }
+          return { ...existente, comboKey: key, comboLabels: combo }
+        })
+      } else {
+        children.value = carregados.map(({ filho }) => filho)
+      }
+
       varTypes.value = tiposCarregados
+      // Sync the signature to the just-loaded axes so the sync watcher's first
+      // pass (triggered by the assignment above) treats this as "no composition
+      // change yet" and leaves the freshly-tagged children.value alone.
+      axisSignature = assinaturaDosTipos(tiposCarregados)
 
       if (
         variacao.categoryId &&
@@ -668,6 +731,7 @@ function paraPayload(): VariationParentRequest {
       size: c.size?.trim() || null,
       colorwayId: c.colorwayId,
       saleMultiple: Number(c.saleMultiple) || 1,
+      variationValues: c.comboLabels ?? [],
     })),
     saleMultiple: Number(form.saleMultiple) || 1,
     variationAxes: varTypes.value.map((vt) => ({ name: vt.name, values: vt.values })),

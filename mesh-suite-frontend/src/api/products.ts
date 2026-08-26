@@ -104,6 +104,38 @@ export async function listProducts(params: ListProductsParams): Promise<Page<Pro
   return data
 }
 
+/** A row the order-entry picker can add as a line item, with the fields it badges and filters on. */
+export interface SellableProductItem {
+  id: string
+  name: string
+  sku: string
+  type: ProductType
+  salePrice: number
+  stockQuantity: number
+  status: ProductStatus
+  size: string | null
+  colorwayName: string | null
+}
+
+// Item picker for order entry: every orderable row -- Simples, Kit, and Variação
+// children -- flattened into one search. Unlike listProducts (type=PRODUCT only,
+// used by pickers like the Tabela de Preço item list), this excludes only the
+// Variação parent itself, which has no price/stock of its own to sell.
+export interface ListSellableProductsParams extends ListProductsParams {
+  /** Narrows the picker to a subset (e.g. a Kit's components); omit for every sellable type. */
+  types?: ProductType[]
+}
+
+export async function listSellableProducts(params: ListSellableProductsParams): Promise<Page<SellableProductItem>> {
+  const { types, ...rest } = params
+  const { data } = await apiClient.get<Page<SellableProductItem>>('/products/sellable', {
+    // Comma-joined rather than left to axios, whose default `types[]=A&types[]=B`
+    // shape Spring will not bind to a List<ProductType>.
+    params: { ...rest, types: types?.length ? types.join(',') : undefined },
+  })
+  return data
+}
+
 export async function getProduct(id: string): Promise<ProductResponse> {
   const { data } = await apiClient.get<ProductResponse>(`/products/${id}`)
   return data
