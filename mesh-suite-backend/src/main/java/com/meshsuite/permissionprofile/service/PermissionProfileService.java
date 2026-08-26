@@ -14,6 +14,7 @@ import com.meshsuite.permissionprofile.repository.PermissionProfileRepository;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.user.domain.UserPermissionGrant;
 import com.meshsuite.user.dto.PermissionDto;
+import com.meshsuite.user.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,9 +28,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class PermissionProfileService {
 
     private final PermissionProfileRepository permissionProfileRepository;
+    private final UserRepository userRepository;
 
-    public PermissionProfileService(PermissionProfileRepository permissionProfileRepository) {
+    public PermissionProfileService(PermissionProfileRepository permissionProfileRepository, UserRepository userRepository) {
         this.permissionProfileRepository = permissionProfileRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -76,6 +79,11 @@ public class PermissionProfileService {
         if (profile.getIsSystem()) {
             throw new PermissionProfileValidationException(
                     "Não é possível excluir um perfil padrão do sistema");
+        }
+        long linked = userRepository.countByPermissionProfileId(id);
+        if (linked > 0) {
+            throw new PermissionProfileValidationException(
+                    "Não é possível excluir: " + linked + " usuário(s) usam este perfil");
         }
         permissionProfileRepository.delete(profile);
     }
@@ -167,8 +175,9 @@ public class PermissionProfileService {
 
     private PermissionProfileSummaryResponse toSummary(PermissionProfile p) {
         long moduleCount = p.getGrants().stream().map(UserPermissionGrant::getModule).distinct().count();
+        long userCount = userRepository.countByPermissionProfileId(p.getId());
         return new PermissionProfileSummaryResponse(p.getId(), p.getName(), p.getDescription(), p.getIsSystem(),
-                (int) moduleCount, 0L);
+                (int) moduleCount, userCount);
     }
 
     private PermissionProfileResponse toResponse(PermissionProfile p) {

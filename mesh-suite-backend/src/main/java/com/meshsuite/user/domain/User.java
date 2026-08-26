@@ -1,5 +1,6 @@
 package com.meshsuite.user.domain;
 
+import com.meshsuite.permissionprofile.domain.PermissionProfile;
 import com.meshsuite.user.domain.enums.Profile;
 import com.meshsuite.user.domain.enums.Role;
 import jakarta.persistence.*;
@@ -53,6 +54,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private Profile profile = Profile.ADMIN;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "permission_profile_id")
+    private PermissionProfile permissionProfile;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_permission", joinColumns = @JoinColumn(name = "user_id"))

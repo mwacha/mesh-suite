@@ -38,6 +38,7 @@ class UserServiceTest extends AbstractIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired UserService userService;
     @Autowired EntityManager entityManager;
+    @Autowired com.meshsuite.permissionprofile.repository.PermissionProfileRepository permissionProfileRepository;
 
     @AfterEach
     void clearContext() {
@@ -90,7 +91,13 @@ class UserServiceTest extends AbstractIntegrationTest {
 
     private UserRequest request(String email, String password, String confirmPassword, List<PermissionDto> permissions) {
         return new UserRequest("Marina", email, "(11) 99999-9999", Role.ADMINISTRATIVE, Profile.ADMIN, true,
-                password, confirmPassword, permissions);
+                password, confirmPassword, permissions, null);
+    }
+
+    private UserRequest requestWithProfile(String email, String password, String confirmPassword,
+                                            List<PermissionDto> permissions, UUID permissionProfileId) {
+        return new UserRequest("Marina", email, "(11) 99999-9999", Role.ADMINISTRATIVE, Profile.ADMIN, true,
+                password, confirmPassword, permissions, permissionProfileId);
     }
 
     @Test
@@ -216,5 +223,33 @@ class UserServiceTest extends AbstractIntegrationTest {
 
         assertThrows(PermissionDeniedException.class,
                 () -> userService.create(tenantId, request("marina@aurora.com.br", "senha1234", "senha1234", List.of())));
+    }
+
+    @Test
+    void linksPermissionProfileToUser() {
+        UUID tenantId = setUpTenant("aurora");
+        authenticateAsFullAdmin(tenantId);
+        com.meshsuite.permissionprofile.domain.PermissionProfile perfil =
+                new com.meshsuite.permissionprofile.domain.PermissionProfile();
+        perfil.setTenantId(tenantId);
+        perfil.setName("Financeiro");
+        permissionProfileRepository.saveAndFlush(perfil);
+
+        var criado = userService.create(tenantId,
+                requestWithProfile("marina@aurora.com.br", "senha1234", "senha1234", List.of(), perfil.getId()));
+
+        assertThat(criado.permissionProfileId()).isEqualTo(perfil.getId());
+        assertThat(criado.permissionProfileName()).isEqualTo("Financeiro");
+    }
+
+    @Test
+    void createsUserWithoutPermissionProfile() {
+        UUID tenantId = setUpTenant("aurora");
+        authenticateAsFullAdmin(tenantId);
+
+        var criado = userService.create(tenantId, request("marina@aurora.com.br", "senha1234", "senha1234", List.of()));
+
+        assertThat(criado.permissionProfileId()).isNull();
+        assertThat(criado.permissionProfileName()).isNull();
     }
 }

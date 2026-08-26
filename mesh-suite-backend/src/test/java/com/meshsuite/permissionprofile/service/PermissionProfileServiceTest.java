@@ -37,6 +37,7 @@ class PermissionProfileServiceTest extends AbstractIntegrationTest {
     @Autowired TenantRepository tenantRepository;
     @Autowired UserRepository userRepository;
     @Autowired EntityManager entityManager;
+    @Autowired com.meshsuite.permissionprofile.repository.PermissionProfileRepository permissionProfileRepository;
 
     @AfterEach
     void clearContext() {
@@ -190,5 +191,24 @@ class PermissionProfileServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> permissionProfileService.create(TenantContext.get(), request("Financeiro", List.of())))
                 .isInstanceOf(PermissionDeniedException.class);
+    }
+
+    @Test
+    void rejectsDeletingAProfileThatIsInUseByAUser() {
+        UUID tenantId = setUpTenant("aurora");
+        var criado = permissionProfileService.create(TenantContext.get(), request("Financeiro", List.of()));
+        var perfilEntity = permissionProfileRepository.findById(criado.id()).orElseThrow();
+
+        User linked = new User();
+        linked.setTenantId(tenantId);
+        linked.setName("Usuário Vinculado");
+        linked.setEmail("vinculado@aurora.com.br");
+        linked.setPasswordHash("hash");
+        linked.setRole(Role.ADMINISTRATIVE);
+        linked.setPermissionProfile(perfilEntity);
+        userRepository.saveAndFlush(linked);
+
+        assertThatThrownBy(() -> permissionProfileService.delete(criado.id()))
+                .isInstanceOf(PermissionProfileValidationException.class);
     }
 }

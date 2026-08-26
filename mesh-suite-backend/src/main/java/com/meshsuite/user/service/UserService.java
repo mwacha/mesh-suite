@@ -3,6 +3,9 @@ package com.meshsuite.user.service;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
+import com.meshsuite.permissionprofile.domain.PermissionProfile;
+import com.meshsuite.permissionprofile.exception.PermissionProfileNotFoundException;
+import com.meshsuite.permissionprofile.repository.PermissionProfileRepository;
 import com.meshsuite.user.domain.User;
 import com.meshsuite.user.domain.UserPermissionGrant;
 import com.meshsuite.user.domain.enums.Profile;
@@ -29,10 +32,13 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PermissionProfileRepository permissionProfileRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                        PermissionProfileRepository permissionProfileRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.permissionProfileRepository = permissionProfileRepository;
     }
 
     @Transactional(readOnly = true)
@@ -120,8 +126,17 @@ public class UserService {
         user.setEmail(request.email());
         user.setPhone(request.phone());
         user.setRole(request.role());
-        user.setProfile(request.profile());
+        if (request.profile() != null) {
+            user.setProfile(request.profile());
+        }
         user.setActive(request.active());
+        if (request.permissionProfileId() != null) {
+            PermissionProfile permissionProfile = permissionProfileRepository.findById(request.permissionProfileId())
+                    .orElseThrow(PermissionProfileNotFoundException::new);
+            user.setPermissionProfile(permissionProfile);
+        } else {
+            user.setPermissionProfile(null);
+        }
         if (request.password() != null && !request.password().isBlank()) {
             user.setPasswordHash(passwordEncoder.encode(request.password()));
         }
@@ -134,14 +149,17 @@ public class UserService {
     }
 
     private UserListItemResponse toListItem(User u) {
-        return new UserListItemResponse(u.getId(), u.getName(), u.getEmail(), u.getProfile(), u.isActive());
+        PermissionProfile pp = u.getPermissionProfile();
+        return new UserListItemResponse(u.getId(), u.getName(), u.getEmail(), u.getProfile(), u.isActive(),
+                pp == null ? null : pp.getId(), pp == null ? null : pp.getName());
     }
 
     private UserResponse toResponse(User u) {
         List<PermissionDto> permissions = u.getPermissions().stream()
                 .map(p -> new PermissionDto(p.getModule(), p.getAction()))
                 .toList();
+        PermissionProfile pp = u.getPermissionProfile();
         return new UserResponse(u.getId(), u.getName(), u.getEmail(), u.getPhone(), u.getRole(), u.getProfile(),
-                u.isActive(), permissions);
+                u.isActive(), permissions, pp == null ? null : pp.getId(), pp == null ? null : pp.getName());
     }
 }
