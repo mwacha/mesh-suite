@@ -390,12 +390,56 @@ function sanitizeSkuPart(value: string) {
   return semAcentos.toUpperCase().replace(/[^A-Z0-9]+/g, '')
 }
 
-// Keeps `children` in sync with the matrix: adds a default row for every new
-// combination, removes rows whose combination no longer exists. Rows without a
-// comboKey (added via "+ Adicionar Variante") are never touched here.
+function criarLinhaPadrao(combo: string[]): ChildForm {
+  const sufixo = combo.map(sanitizeSkuPart).join('-')
+  return {
+    sku: form.sku ? `${form.sku}-${sufixo}` : sufixo,
+    barcode: null,
+    salePrice: Number(form.salePrice) || 0,
+    costPrice: null,
+    stockQuantity: 0,
+    minStock: null,
+    maxStock: null,
+    size: sizeFromCombo(combo),
+    colorwayId: null,
+    saleMultiple: 1,
+    comboKey: comboKeyFor(combo),
+    comboLabels: combo,
+  }
+}
+
+// Tracks the set of Tipo de Variação NAMES (not values) behind the last synced
+// state, so the watcher below can tell "a value was added/removed within the
+// same axes" apart from "an axis itself was added/removed". Kept in sync with
+// the loaded data in onMounted so the very first sync after loading an
+// existing Variação is never mistaken for a live composition change.
+function assinaturaDosTipos(types: VarType[]): string {
+  return types.map((vt) => vt.name).join('::')
+}
+
+let axisSignature = ''
+
+// Keeps `children` in sync with the matrix. When the set of axes themselves
+// changes (a Tipo de Variação is added or removed), the product's composition
+// changed -- per business rule every child is replaced by a fresh cartesian
+// product, including legacy/unlinked rows that never got a comboKey (e.g. a
+// pre-migration child with no colorwayName to match a newly added Cor axis).
+// When only a value changes within the same set of axes, the sync stays
+// incremental: matching rows are kept, the new combination is added, and rows
+// without a comboKey are left alone (there's no other way for such a row to
+// exist today, but they're legacy data we must not destroy just by syncing).
 watch(
   combinations,
   (novasCombinacoes) => {
+    const novaAssinatura = assinaturaDosTipos(varTypes.value)
+    const composicaoMudou = novaAssinatura !== axisSignature
+    axisSignature = novaAssinatura
+
+    if (composicaoMudou) {
+      children.value = novasCombinacoes.map((combo) => criarLinhaPadrao(combo))
+      return
+    }
+
     const chaves = new Set(novasCombinacoes.map(comboKeyFor))
     children.value = children.value.filter((c) => !c.comboKey || chaves.has(c.comboKey))
 
@@ -405,21 +449,7 @@ watch(
       if (existentes.has(key)) {
         continue
       }
-      const sufixo = combo.map(sanitizeSkuPart).join('-')
-      children.value.push({
-        sku: form.sku ? `${form.sku}-${sufixo}` : sufixo,
-        barcode: null,
-        salePrice: Number(form.salePrice) || 0,
-        costPrice: null,
-        stockQuantity: 0,
-        minStock: null,
-        maxStock: null,
-        size: sizeFromCombo(combo),
-        colorwayId: null,
-        saleMultiple: 1,
-        comboKey: key,
-        comboLabels: combo,
-      })
+      children.value.push(criarLinhaPadrao(combo))
     }
   },
   { deep: true },
@@ -625,6 +655,10 @@ onMounted(async () => {
         }
       })
       varTypes.value = tiposCarregados
+      // Sync the signature to the just-loaded axes so the sync watcher's first
+      // pass (triggered by the assignment above) treats this as "no composition
+      // change yet" and leaves the freshly-tagged children.value alone.
+      axisSignature = assinaturaDosTipos(tiposCarregados)
 
       if (
         variacao.categoryId &&

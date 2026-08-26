@@ -304,6 +304,60 @@ describe('ProductVariationFormView', () => {
     expect(wrapper.text()).toContain('V0001-GG')
   })
 
+  it('drops orphan legacy children (no colorwayName) once a matrix-changing action re-syncs the Variação', async () => {
+    // Real reported scenario: a pre-existing Variação already has 6 legacy
+    // children whose color was only ever embedded in free-text SKUs (never a
+    // real colorwayId/colorwayName link), alongside 6 properly-linked children
+    // for the same Tamanho x Cor combinations. The 6 legacy rows can never be
+    // tagged with a comboKey (they're missing a value for the Cor axis), so on
+    // load they must NOT be touched -- but once the user changes the matrix
+    // again, they must be swept away along with everything else and replaced
+    // by a fresh cartesian product, since they can never legitimately fit it.
+    vi.mocked(variationsApi.getVariation).mockResolvedValue({
+      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
+      salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [
+        { id: 'c-1', sku: '2408-PP-VE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-2', sku: '2408-PP-CH', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-3', sku: '2408-P-VER', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-4', sku: '2408-P-CHO', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-5', sku: '2408-M-VER', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-6', sku: '2408-M-CH', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-7', sku: '2408-PP-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1 },
+        { id: 'c-8', sku: '2408-PP-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1 },
+        { id: 'c-9', sku: '2408-P-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1 },
+        { id: 'c-10', sku: '2408-P-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1 },
+        { id: 'c-11', sku: '2408-M-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1 },
+        { id: 'c-12', sku: '2408-M-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1 },
+      ],
+      variationAxes: [
+        { name: 'Tamanho', values: ['PP', 'P', 'M'] },
+        { name: 'Cor', values: ['Vermelha', 'Chocolate'] },
+      ],
+    })
+
+    const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
+    await flushPromises()
+
+    // Merely opening the form must not silently discard the 6 legacy rows.
+    expect(wrapper.text()).toContain('Variantes Geradas (12)')
+
+    // Adding a new axis is a composition change -- everything is swept away,
+    // including the legacy rows, and rebuilt as a fresh cartesian product.
+    await adicionarTipoDeVariacao(wrapper, 'Estampa', ['Lisa'])
+
+    expect(wrapper.text()).toContain('Variantes Geradas (6)')
+    const skus = wrapper.findAll('.itens-grid-cell-nome').map((n) => n.text())
+    expect(skus).toEqual([
+      '2408-PP-VERMELHA-LISA',
+      '2408-PP-CHOCOLATE-LISA',
+      '2408-P-VERMELHA-LISA',
+      '2408-P-CHOCOLATE-LISA',
+      '2408-M-VERMELHA-LISA',
+      '2408-M-CHOCOLATE-LISA',
+    ])
+  })
+
   it('shows an error message when loading variação data fails in edit mode', async () => {
     vi.mocked(variationsApi.getVariation).mockRejectedValue(new Error('network error'))
 
