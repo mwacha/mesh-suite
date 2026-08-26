@@ -48,9 +48,10 @@ describe('ProductsListView', () => {
     vi.mocked(produtosApi.listAllProducts).mockResolvedValue({
       content: [simples, kit, variacaoPai], totalElements: 3, totalPages: 1, number: 0, size: 10,
     })
+    vi.mocked(produtosApi.getAllProductsSummary).mockResolvedValue({ total: 3, active: 3, inactive: 0 })
   })
 
-  it('loads and displays the unified product list with a Tipo badge per row', async () => {
+  it('loads and displays the unified product list with a Tipo column per row', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -60,6 +61,18 @@ describe('ProductsListView', () => {
     expect(wrapper.text()).toContain('Kit')
     expect(wrapper.text()).toContain('Variação')
     expect(wrapper.text()).toContain('3 produtos cadastrados')
+  })
+
+  it('shows Total/Ativos/Inativos totalizers from the unified summary endpoint', async () => {
+    vi.mocked(produtosApi.getAllProductsSummary).mockResolvedValue({ total: 12, active: 9, inactive: 3 })
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('12')
+    expect(wrapper.text()).toContain('Ativos')
+    expect(wrapper.text()).toContain('9')
+    expect(wrapper.text()).toContain('Inativos')
+    expect(wrapper.text()).toContain('3')
   })
 
   it('re-fetches with the search term when the filter bar search changes', async () => {
@@ -154,6 +167,21 @@ describe('ProductsListView', () => {
 
     expect(wrapper.find('[data-test="row-filho-v1-p"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('V0001-P')
+  })
+
+  it('routes a child row\'s Editar action to the parent Variação edit form', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="expandir-v1"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-test="btn-acoes-v1-p"]').trigger('click')
+    await wrapper.find('[data-test="acao-editar"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-editar-variacao')
+    expect(router.currentRoute.value.params.id).toBe('v1')
   })
 
   it('re-fetches with the sort param when a sortable column header is clicked', async () => {

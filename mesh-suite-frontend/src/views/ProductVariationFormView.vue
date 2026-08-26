@@ -1,7 +1,8 @@
 <template>
   <AppShell :title="modoEdicao ? 'Editar Produto com Variação' : 'Novo Produto com Variação'">
     <form class="form" @submit.prevent="salvar">
-      <CollapsibleSection title="Tipo de Produto">
+      <section class="card">
+        <h2>Tipo de Produto</h2>
         <SegmentedControl
           :model-value="'VARIATION_PARENT'"
           :options="tipoOptions"
@@ -9,7 +10,7 @@
           test-id="tipo-produto"
           @update:model-value="aoMudarTipo"
         />
-      </CollapsibleSection>
+      </section>
 
       <CollapsibleSection title="Informações Gerais">
         <TextField v-model="form.name" label="Nome do Produto" required :error="erros.name" test-id="nome" />
@@ -43,36 +44,43 @@
             <input disabled placeholder="Definido por variante" />
           </div>
         </div>
-        <div class="grid grid-2">
+        <div class="field-full">
+          <label class="field-label">Status</label>
+          <div class="status-pills">
+            <button
+              v-for="opt in STATUS_OPCOES"
+              :key="opt.value"
+              type="button"
+              class="status-pill"
+              :class="{
+                'status-pill--ativo': form.status === opt.value && opt.value === 'ACTIVE',
+                'status-pill--inativo': form.status === opt.value && opt.value === 'INACTIVE',
+              }"
+              @click="form.status = opt.value"
+            >
+              <span class="status-dot"></span>
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+        <div class="field-full">
+          <label class="field-label">Descrição</label>
+          <textarea v-model="form.description" rows="3" placeholder="Descreva o produto..."></textarea>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Estoque">
+        <div class="grid grid-2 grid-narrow">
           <div>
             <label class="field-label">Unidade de Medida</label>
             <select v-model="form.measurementUnit">
               <option v-for="unidade in UNIDADES" :key="unidade" :value="unidade">{{ unidade }}</option>
             </select>
           </div>
-          <div class="field-full">
-            <label class="field-label">Status</label>
-            <div class="status-pills">
-              <button
-                v-for="opt in STATUS_OPCOES"
-                :key="opt.value"
-                type="button"
-                class="status-pill"
-                :class="{
-                  'status-pill--ativo': form.status === opt.value && opt.value === 'ACTIVE',
-                  'status-pill--inativo': form.status === opt.value && opt.value === 'INACTIVE',
-                }"
-                @click="form.status = opt.value"
-              >
-                <span class="status-dot"></span>
-                {{ opt.label }}
-              </button>
-            </div>
+          <div>
+            <label class="field-label">Múltiplo de Venda</label>
+            <div class="readonly-field">1</div>
           </div>
-        </div>
-        <div class="field-full">
-          <label class="field-label">Descrição</label>
-          <textarea v-model="form.description" rows="3" placeholder="Descreva o produto..."></textarea>
         </div>
         <div class="info-banner">
           <span class="info-banner-icon">ℹ️</span>
@@ -148,16 +156,20 @@
             <input v-model.number="draft.stockQuantity" type="number" step="1" min="0" />
           </div>
           <div>
-            <label class="field-label">Tamanho</label>
-            <input v-model="sizeDraftModel" placeholder="Ex: M, 40, Único" />
-          </div>
-          <div>
             <label class="field-label">Estoque Mínimo</label>
             <input v-model.number="draft.minStock" type="number" step="1" min="0" />
           </div>
           <div>
             <label class="field-label">Estoque Máximo</label>
             <input v-model.number="draft.maxStock" type="number" step="1" min="0" />
+          </div>
+          <div>
+            <label class="field-label">Múltiplo de Venda</label>
+            <div class="readonly-field">1</div>
+          </div>
+          <div>
+            <label class="field-label">Tamanho</label>
+            <input v-model="sizeDraftModel" placeholder="Ex: M, 40, Único" />
           </div>
           <div>
             <label class="field-label">Cor / Estampa</label>
@@ -455,6 +467,34 @@ function cancelar() {
   font-family: var(--pm-font);
 }
 
+.card {
+  background: var(--pm-white);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.card h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+  margin: 0 0 12px;
+  font-family: var(--pm-font);
+}
+
+.readonly-field {
+  height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  background: var(--pm-bg);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--pm-text-muted);
+  font-size: 13px;
+}
+
 .grid {
   display: grid;
   gap: 0 14px;
@@ -463,6 +503,10 @@ function cancelar() {
 
 .grid-2 {
   grid-template-columns: 1fr 1fr;
+}
+
+.grid-narrow {
+  max-width: 460px;
 }
 
 .field-full {

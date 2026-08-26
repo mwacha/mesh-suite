@@ -130,3 +130,8 @@ export async function getProductSummary(): Promise<ProductSummary> {
   const { data } = await apiClient.get<ProductSummary>('/products/resumo')
   return data
 }
+
+export async function getAllProductsSummary(): Promise<ProductSummary> {
+  const { data } = await apiClient.get<ProductSummary>('/products/all/resumo')
+  return data
+}

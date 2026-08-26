@@ -60,6 +60,11 @@ public class ProductController {
         return productListingService.listAll(search, status, type, pageable);
     }
 
+    @GetMapping("/all/resumo")
+    public ProductSummaryResponse listAllSummary() {
+        return productListingService.summary();
+    }
+
     @GetMapping("/resumo")
     public ProductSummaryResponse summary() {
         return productService.summary();

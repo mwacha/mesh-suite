@@ -1,7 +1,8 @@
 <template>
   <AppShell :title="modoEdicao ? 'Editar Produto' : 'Novo Produto'">
     <form class="form" @submit.prevent="salvar">
-      <CollapsibleSection title="Tipo de Produto">
+      <section class="card">
+        <h2>Tipo de Produto</h2>
         <SegmentedControl
           :model-value="'PRODUCT'"
           :options="tipoOptions"
@@ -9,7 +10,7 @@
           test-id="tipo-produto"
           @update:model-value="aoMudarTipo"
         />
-      </CollapsibleSection>
+      </section>
 
       <CollapsibleSection title="Informações Gerais">
         <TextField v-model="form.name" label="Nome do Produto" required :error="erros.name" test-id="nome" />
@@ -97,6 +98,10 @@
             <div>
               <label class="field-label">Estoque Máximo</label>
               <input v-model.number="form.maxStock" type="number" step="1" min="0" />
+            </div>
+            <div>
+              <label class="field-label">Múltiplo de Venda</label>
+              <div class="readonly-field">1</div>
             </div>
           </div>
         </CollapsibleSection>
@@ -353,6 +358,34 @@ function cancelar() {
 
 .grid-cards > * {
   flex: 1;
+}
+
+.card {
+  background: var(--pm-white);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.card h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+  margin: 0 0 12px;
+  font-family: var(--pm-font);
+}
+
+.readonly-field {
+  height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  background: var(--pm-bg);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--pm-text-muted);
+  font-size: 13px;
 }
 
 .grid {

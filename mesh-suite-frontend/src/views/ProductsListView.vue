@@ -50,9 +50,7 @@
             </div>
             <div class="table-grid-cell table-grid-cell-nome">{{ produto.name }}</div>
             <div class="table-grid-cell">{{ produto.brand }}</div>
-            <div class="table-grid-cell">
-              <StatusBadge :label="tipoLabel(produto.type)" :color="tipoBadgeColor(produto.type)" />
-            </div>
+            <div class="table-grid-cell">{{ tipoLabel(produto.type) }}</div>
             <div class="table-grid-cell">{{ formatarPreco(produto.salePrice) }}</div>
             <div class="table-grid-cell">{{ produto.stockQuantity }}</div>
             <div class="table-grid-cell">
@@ -74,12 +72,16 @@
               <div class="table-grid-cell table-grid-cell-nome">— {{ filho.name }}</div>
               <div class="table-grid-cell"></div>
               <div class="table-grid-cell">
-                <StatusBadge label="Variante" color="amber" />
+                <StatusBadge label="Variação" color="amber" />
               </div>
               <div class="table-grid-cell">{{ formatarPreco(filho.salePrice) }}</div>
               <div class="table-grid-cell">{{ filho.stockQuantity }}</div>
-              <div class="table-grid-cell"></div>
-              <div class="table-grid-cell"></div>
+              <div class="table-grid-cell">
+                <StatusBadge :label="statusLabel(produto.status)" :color="produto.status === 'ACTIVE' ? 'green' : 'red'" />
+              </div>
+              <div class="table-grid-cell">
+                <ActionsMenu :items="acoesParaFilho(produto)" :test-id="`btn-acoes-${filho.id}`" />
+              </div>
             </div>
           </template>
         </template>
@@ -104,17 +106,19 @@ import AppShell from '@/components/AppShell.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import ListCard, { type ListCardStat } from '@/components/ListCard.vue'
-import StatusBadge, { type StatusBadgeColor } from '@/components/StatusBadge.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
 import Pagination from '@/components/Pagination.vue'
 import {
   listAllProducts,
+  getAllProductsSummary,
   updateProductStatus,
   deleteProduct,
   type ProductAllListItem,
   type ProductType,
   type Page as ApiPage,
   type ProductStatus,
+  type ProductSummary,
 } from '@/api/products'
 
 const router = useRouter()
@@ -144,23 +148,21 @@ const sortField = ref<'name' | 'salePrice' | 'status' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 const erro = ref('')
 const expandedIds = ref<Set<string>>(new Set())
+const resumo = ref<ProductSummary | null>(null)
 
 const countLabel = computed(() => `${pagina.value.totalElements} produtos cadastrados`)
-const statsCard = computed<ListCardStat[]>(() => [{ value: pagina.value.totalElements, label: 'Total', color: 'dark' }])
+const statsCard = computed<ListCardStat[]>(() =>
+  resumo.value
+    ? [
+        { value: resumo.value.total, label: 'Total', color: 'dark' },
+        { value: resumo.value.active, label: 'Ativos', color: 'green' },
+        { value: resumo.value.inactive, label: 'Inativos', color: 'red' },
+      ]
+    : [],
+)
 
 function tipoLabel(type: ProductType) {
   return TIPO_LABEL[type]
-}
-
-const TIPO_BADGE_COLOR: Record<ProductType, StatusBadgeColor> = {
-  PRODUCT: 'gray',
-  PRODUCT_KIT: 'blue',
-  VARIATION_PARENT: 'amber',
-  VARIATION_CHILD: 'amber',
-}
-
-function tipoBadgeColor(type: ProductType): StatusBadgeColor {
-  return TIPO_BADGE_COLOR[type]
 }
 
 function statusLabel(status: ProductStatus) {
@@ -226,6 +228,14 @@ async function carregar(page: number) {
   }
 }
 
+async function carregarResumo() {
+  try {
+    resumo.value = await getAllProductsSummary()
+  } catch {
+    // Pills de contagem são um complemento -- uma falha aqui não deve bloquear a listagem.
+  }
+}
+
 function onBuscaChange(valor: string) {
   filtros.busca = valor
   carregar(0)
@@ -254,7 +264,7 @@ async function alternarStatus(produto: ProductAllListItem) {
   const novoStatus = produto.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE'
   try {
     await updateProductStatus(produto.id, novoStatus)
-    await carregar(pagina.value.number)
+    await Promise.all([carregar(pagina.value.number), carregarResumo()])
   } catch {
     erro.value = 'Não foi possível atualizar o status.'
   }
@@ -267,7 +277,7 @@ async function excluir(produto: ProductAllListItem) {
   erro.value = ''
   try {
     await deleteProduct(produto.id)
-    await carregar(pagina.value.number)
+    await Promise.all([carregar(pagina.value.number), carregarResumo()])
   } catch {
     erro.value = 'Não foi possível excluir o produto.'
   }
@@ -285,8 +295,18 @@ function acoesPara(produto: ProductAllListItem): ActionsMenuItem[] {
   ]
 }
 
+// A variante (VARIATION_CHILD) nunca é um recurso próprio no backend -- só é
+// gerenciada através do formulário de Variação do pai (ver
+// ProductTypeStrategyResolver), então a única ação sensata aqui é abrir esse
+// formulário, e não repetir Ativar/Inativar/Excluir como se a variante fosse
+// editável isoladamente.
+function acoesParaFilho(pai: ProductAllListItem): ActionsMenuItem[] {
+  return [{ label: 'Editar', action: () => editarProduto(pai), testId: 'acao-editar' }]
+}
+
 onMounted(() => {
   carregar(0)
+  carregarResumo()
 })
 </script>
 

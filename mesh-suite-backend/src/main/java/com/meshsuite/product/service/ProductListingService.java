@@ -7,6 +7,7 @@ import com.meshsuite.product.domain.Product;
 import com.meshsuite.product.domain.enums.ProductStatus;
 import com.meshsuite.product.domain.enums.ProductType;
 import com.meshsuite.product.dto.ProductAllListItemResponse;
+import com.meshsuite.product.dto.ProductSummaryResponse;
 import com.meshsuite.product.dto.VariationChildSummaryResponse;
 import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.product.repository.specification.ProductSpecifications;
@@ -63,6 +64,19 @@ public class ProductListingService {
                                 Collectors.mapping(this::toChildSummary, Collectors.toList())));
 
         return page.map(p -> toListItem(p, childrenByParentId.getOrDefault(p.getId(), List.of())));
+    }
+
+    // Counts Simples+Kit+Variação-parent rows only, same scope as listAll -- a
+    // VARIATION_CHILD is never a standalone row in this screen, so it isn't counted
+    // separately from its parent.
+    @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
+    public ProductSummaryResponse summary() {
+        long active = productRepository.count(Specification.allOf(
+                ProductSpecifications.hasTypeIn(LISTABLE_TYPES), ProductSpecifications.hasStatus(ProductStatus.ACTIVE)));
+        long inactive = productRepository.count(Specification.allOf(
+                ProductSpecifications.hasTypeIn(LISTABLE_TYPES), ProductSpecifications.hasStatus(ProductStatus.INACTIVE)));
+        return new ProductSummaryResponse(active + inactive, active, inactive);
     }
 
     private ProductAllListItemResponse toListItem(Product p, List<VariationChildSummaryResponse> children) {

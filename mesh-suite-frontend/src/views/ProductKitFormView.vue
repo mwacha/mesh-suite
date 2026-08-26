@@ -1,7 +1,8 @@
 <template>
   <AppShell :title="modoEdicao ? 'Editar Kit' : 'Novo Kit'">
     <form class="form" @submit.prevent="salvar">
-      <CollapsibleSection title="Tipo de Produto">
+      <section class="card">
+        <h2>Tipo de Produto</h2>
         <SegmentedControl
           :model-value="'PRODUCT_KIT'"
           :options="tipoOptions"
@@ -9,7 +10,7 @@
           test-id="tipo-produto"
           @update:model-value="aoMudarTipo"
         />
-      </CollapsibleSection>
+      </section>
 
       <CollapsibleSection title="Informações Gerais">
         <TextField v-model="form.name" label="Nome do Kit" required :error="erros.name" test-id="nome" />
@@ -24,6 +25,12 @@
               <option v-for="unidade in UNIDADES" :key="unidade" :value="unidade">{{ unidade }}</option>
             </select>
           </div>
+          <div>
+            <label class="field-label">Múltiplo de Venda</label>
+            <div class="readonly-field">1</div>
+          </div>
+        </div>
+        <div class="grid grid-2">
           <div>
             <label class="field-label">Valor de Venda do Kit</label>
             <div class="valor-calculado" data-test="valor-kit">
@@ -290,6 +297,34 @@ function cancelar() {
   flex-direction: column;
   gap: 12px;
   font-family: var(--pm-font);
+}
+
+.card {
+  background: var(--pm-white);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.card h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+  margin: 0 0 12px;
+  font-family: var(--pm-font);
+}
+
+.readonly-field {
+  height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  background: var(--pm-bg);
+  border: 1px solid var(--pm-border-light);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--pm-text-muted);
+  font-size: 13px;
 }
 
 .grid {

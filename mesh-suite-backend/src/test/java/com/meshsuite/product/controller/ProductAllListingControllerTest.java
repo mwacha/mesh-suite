@@ -129,6 +129,23 @@ class ProductAllListingControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void summaryCountsActiveAndInactiveAcrossAllTypes() throws Exception {
+        LoginContext ctx = loginAndSetUp("aurora-all", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
+
+        product(ctx.tenantId(), ProductType.PRODUCT, "P0001", null);
+        Product inactiveKit = product(ctx.tenantId(), ProductType.PRODUCT_KIT, "KIT001", null);
+        inactiveKit.setStatus(com.meshsuite.product.domain.enums.ProductStatus.INACTIVE);
+        productRepository.saveAndFlush(inactiveKit);
+
+        mockMvc.perform(get("/api/products/all/resumo").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.active").value(1))
+                .andExpect(jsonPath("$.inactive").value(1));
+    }
+
+    @Test
     void tenantACannotSeeTenantBsProductsInTheUnifiedListing() throws Exception {
         LoginContext ctxA = loginAndSetUp("aurora-all", "marina@aurora.com.br", "11222333000144");
         product(ctxA.tenantId(), ProductType.PRODUCT, "P0001", null);

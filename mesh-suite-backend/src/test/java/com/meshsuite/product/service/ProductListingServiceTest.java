@@ -185,4 +185,25 @@ class ProductListingServiceTest extends AbstractIntegrationTest {
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).sku()).isEqualTo("KIT001");
     }
+
+    @Test
+    void summarizesActiveAndInactiveCountsAcrossAllTypesExcludingChildren() {
+        UUID tenantId = setUpTenant("aurora");
+        simple(tenantId, "P0001", "89.90");
+        kit(tenantId, "KIT001", "150.00");
+        Product parent = variationParent(tenantId, "V0001", "99.90");
+        variationChild(tenantId, parent, "V0001-P", "89.90");
+
+        Product inactiveKit = kit(tenantId, "KIT002", "50.00");
+        inactiveKit.setStatus(ProductStatus.INACTIVE);
+        productRepository.saveAndFlush(inactiveKit);
+
+        var summary = productListingService.summary();
+
+        // 3 active (simple + KIT001 + variation parent) + 1 inactive (KIT002) -- the
+        // variation child is never counted as a standalone row.
+        assertThat(summary.active()).isEqualTo(3);
+        assertThat(summary.inactive()).isEqualTo(1);
+        assertThat(summary.total()).isEqualTo(4);
+    }
 }
