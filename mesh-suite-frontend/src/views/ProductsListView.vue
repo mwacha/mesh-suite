@@ -38,7 +38,11 @@
         </div>
 
         <template v-for="produto in pagina.content" :key="produto.id">
-          <div class="table-grid-row" :data-test="`row-${produto.id}`">
+          <div
+            class="table-grid-row table-grid-row-clickable"
+            :data-test="`row-${produto.id}`"
+            @click="editarProduto(produto)"
+          >
             <div class="table-grid-cell">{{ produto.sku }}</div>
             <div class="table-grid-cell table-grid-cell-nome">
               <span
@@ -46,7 +50,7 @@
                 class="expand-toggle"
                 :class="{ 'expand-toggle-open': isExpanded(produto.id) }"
                 :data-test="`expandir-${produto.id}`"
-                @click="toggleExpanded(produto.id)"
+                @click.stop="toggleExpanded(produto.id)"
               >
                 <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
                   <path d="M2 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -62,7 +66,7 @@
             <div class="table-grid-cell">
               <StatusBadge :label="statusLabel(produto.status)" :color="produto.status === 'ACTIVE' ? 'green' : 'red'" />
             </div>
-            <div class="table-grid-cell">
+            <div class="table-grid-cell" @click.stop>
               <ActionsMenu :items="acoesPara(produto)" :test-id="`btn-acoes-${produto.id}`" />
             </div>
           </div>
@@ -71,8 +75,9 @@
             <div
               v-for="filho in produto.children"
               :key="filho.id"
-              class="table-grid-row table-grid-row-child"
+              class="table-grid-row table-grid-row-child table-grid-row-clickable"
               :data-test="`row-filho-${filho.id}`"
+              @click="editarProduto(produto)"
             >
               <div class="table-grid-cell">{{ filho.sku }}</div>
               <div class="table-grid-cell table-grid-cell-nome">— {{ filho.name }}</div>
@@ -85,7 +90,7 @@
               <div class="table-grid-cell">
                 <StatusBadge :label="statusLabel(produto.status)" :color="produto.status === 'ACTIVE' ? 'green' : 'red'" />
               </div>
-              <div class="table-grid-cell">
+              <div class="table-grid-cell" @click.stop>
                 <ActionsMenu :items="acoesParaFilho(produto)" :test-id="`btn-acoes-${filho.id}`" />
               </div>
             </div>
@@ -380,6 +385,15 @@ onMounted(() => {
 }
 
 .table-grid-row-child {
+  background: var(--pm-bg);
+}
+
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-grid-row-clickable:hover {
   background: var(--pm-bg);
 }
 

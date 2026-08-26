@@ -131,6 +131,51 @@ describe('ProductsListView', () => {
     expect(router.currentRoute.value.params.id).toBe('v1')
   })
 
+  it('navigates to the edit form when the row itself is clicked', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-p1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-editar')
+    expect(router.currentRoute.value.params.id).toBe('p1')
+  })
+
+  it('does not navigate when the expand toggle is clicked', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="expandir-v1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos')
+  })
+
+  it('does not navigate when the Ações menu is opened from the row', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="btn-acoes-p1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos')
+  })
+
+  it('navigates to the parent Variação edit form when a child row is clicked', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="expandir-v1"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-filho-v1-p"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-editar-variacao')
+    expect(router.currentRoute.value.params.id).toBe('v1')
+  })
+
   it('toggles a product status via the Ações menu', async () => {
     vi.mocked(produtosApi.updateProductStatus).mockResolvedValue()
     const { wrapper } = await mountWithRouter()
