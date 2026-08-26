@@ -14,6 +14,8 @@ function mountWithRouter() {
       { path: '/produtos', name: 'produtos', component: ProductsListView },
       { path: '/produtos/novo', name: 'produtos-novo', component: { template: '<div />' } },
       { path: '/produtos/:id/editar', name: 'produtos-editar', component: { template: '<div />' } },
+      { path: '/produtos/:id/editar/kit', name: 'produtos-editar-kit', component: { template: '<div />' } },
+      { path: '/produtos/:id/editar/variacao', name: 'produtos-editar-variacao', component: { template: '<div />' } },
     ],
   })
   router.push('/produtos')
@@ -26,36 +28,48 @@ function mountWithRouter() {
   }))
 }
 
-const produtoBase = {
-  id: 'p1', name: 'Camiseta Polo', sku: 'P0001', brand: 'Marca Alpha',
-  salePrice: 59.9, stockQuantity: 10, status: 'ACTIVE' as const,
+const simples = {
+  id: 'p1', name: 'Camiseta Polo', sku: 'P0001', brand: 'Marca Alpha', type: 'PRODUCT' as const,
+  salePrice: 59.9, stockQuantity: 10, status: 'ACTIVE' as const, children: [],
+}
+const kit = {
+  id: 'k1', name: 'Kit Combo', sku: 'KIT001', brand: '', type: 'PRODUCT_KIT' as const,
+  salePrice: 99.9, stockQuantity: 0, status: 'ACTIVE' as const, children: [],
+}
+const variacaoPai = {
+  id: 'v1', name: 'Camiseta com Variação', sku: 'V0001', brand: 'Marca Alpha', type: 'VARIATION_PARENT' as const,
+  salePrice: 79.9, stockQuantity: 0, status: 'ACTIVE' as const,
+  children: [{ id: 'v1-p', name: 'Camiseta com Variação', sku: 'V0001-P', salePrice: 79.9, stockQuantity: 5 }],
 }
 
 describe('ProductsListView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
-      content: [produtoBase], totalElements: 1, totalPages: 1, number: 0, size: 10,
+    vi.mocked(produtosApi.listAllProducts).mockResolvedValue({
+      content: [simples, kit, variacaoPai], totalElements: 3, totalPages: 1, number: 0, size: 10,
     })
-    vi.mocked(produtosApi.getProductSummary).mockResolvedValue({ total: 1, active: 1, inactive: 0 })
   })
 
-  it('loads and displays the product list on mount', async () => {
+  it('loads and displays the unified product list with a Tipo badge per row', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
     expect(wrapper.text()).toContain('Camiseta Polo')
-    expect(wrapper.text()).toContain('1 produtos cadastrados')
+    expect(wrapper.text()).toContain('Kit Combo')
+    expect(wrapper.text()).toContain('Simples')
+    expect(wrapper.text()).toContain('Kit')
+    expect(wrapper.text()).toContain('Variação')
+    expect(wrapper.text()).toContain('3 produtos cadastrados')
   })
 
-  it('re-fetches with the search term when the busca field changes', async () => {
+  it('re-fetches with the search term when the filter bar search changes', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="busca"]').setValue('camiseta')
+    await wrapper.find('[data-test="filter-bar-search"]').setValue('camiseta')
     await flushPromises()
 
-    expect(produtosApi.listProducts).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'camiseta' }))
+    expect(produtosApi.listAllProducts).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'camiseta' }))
   })
 
   it('navigates to the create form when "+ Novo Produto" is clicked', async () => {
@@ -68,7 +82,7 @@ describe('ProductsListView', () => {
     expect(router.currentRoute.value.name).toBe('produtos-novo')
   })
 
-  it('navigates to the edit form via the Ações menu', async () => {
+  it('routes Editar to the Simples edit form for a type=PRODUCT row', async () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
@@ -80,15 +94,28 @@ describe('ProductsListView', () => {
     expect(router.currentRoute.value.params.id).toBe('p1')
   })
 
-  it('navigates to the edit form when the row itself is clicked', async () => {
+  it('routes Editar to the Kit edit form for a type=PRODUCT_KIT row', async () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="row-p1"]').trigger('click')
+    await wrapper.find('[data-test="btn-acoes-k1"]').trigger('click')
+    await wrapper.find('[data-test="acao-editar"]').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.name).toBe('produtos-editar')
-    expect(router.currentRoute.value.params.id).toBe('p1')
+    expect(router.currentRoute.value.name).toBe('produtos-editar-kit')
+    expect(router.currentRoute.value.params.id).toBe('k1')
+  })
+
+  it('routes Editar to the Variação edit form for a type=VARIATION_PARENT row', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="btn-acoes-v1"]').trigger('click')
+    await wrapper.find('[data-test="acao-editar"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-editar-variacao')
+    expect(router.currentRoute.value.params.id).toBe('v1')
   })
 
   it('toggles a product status via the Ações menu', async () => {
@@ -103,6 +130,32 @@ describe('ProductsListView', () => {
     expect(produtosApi.updateProductStatus).toHaveBeenCalledWith('p1', 'INACTIVE')
   })
 
+  it('deletes a product via the Ações menu after confirmation', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(produtosApi.deleteProduct).mockResolvedValue()
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="btn-acoes-p1"]').trigger('click')
+    await wrapper.find('[data-test="acao-excluir"]').trigger('click')
+    await flushPromises()
+
+    expect(produtosApi.deleteProduct).toHaveBeenCalledWith('p1')
+  })
+
+  it('expands a Variação parent row to reveal its children', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="row-filho-v1-p"]').exists()).toBe(false)
+
+    await wrapper.find('[data-test="expandir-v1"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="row-filho-v1-p"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('V0001-P')
+  })
+
   it('re-fetches with the sort param when a sortable column header is clicked', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
@@ -110,11 +163,11 @@ describe('ProductsListView', () => {
     await wrapper.find('[data-test="col-nome"]').trigger('click')
     await flushPromises()
 
-    expect(produtosApi.listProducts).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'name,asc' }))
+    expect(produtosApi.listAllProducts).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'name,asc' }))
   })
 
   it('shows an error message when loading the product list fails', async () => {
-    vi.mocked(produtosApi.listProducts).mockRejectedValue(new Error('network error'))
+    vi.mocked(produtosApi.listAllProducts).mockRejectedValue(new Error('network error'))
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 

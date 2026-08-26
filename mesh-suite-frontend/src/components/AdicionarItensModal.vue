@@ -1,5 +1,5 @@
 <template>
-  <SlideOver title="Adicionar produtos à tabela de preços" @close="$emit('close')">
+  <SlideOver :title="title" @close="$emit('close')">
     <div class="modal-busca">
       <input
         v-model="busca"
@@ -74,7 +74,10 @@ import ListCard, { type ListCardStat } from './ListCard.vue'
 import Pagination from './Pagination.vue'
 import { listProducts, type ProductListItem, type Page } from '@/api/products'
 
-const props = defineProps<{ itensAdicionadosIds: string[] }>()
+const props = withDefaults(
+  defineProps<{ itensAdicionadosIds: string[]; title?: string }>(),
+  { title: 'Adicionar produtos à tabela de preços' },
+)
 defineEmits<{ add: [produto: ProductListItem]; remove: [produtoId: string]; close: [] }>()
 
 const busca = ref('')

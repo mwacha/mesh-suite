@@ -1,46 +1,30 @@
 <template>
   <AppShell :title="modoEdicao ? 'Editar Produto' : 'Novo Produto'">
     <form class="form" @submit.prevent="salvar">
-      <section class="card">
-        <h2>Informações Gerais</h2>
-        <div class="field-full">
-          <label class="field-label">Nome do Produto *</label>
-          <input v-model="form.name" data-test="nome" />
-          <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
+      <CollapsibleSection title="Tipo de Produto">
+        <SegmentedControl
+          :model-value="'PRODUCT'"
+          :options="tipoOptions"
+          :disabled="modoEdicao"
+          test-id="tipo-produto"
+          @update:model-value="aoMudarTipo"
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Informações Gerais">
+        <TextField v-model="form.name" label="Nome do Produto" required :error="erros.name" test-id="nome" />
+        <div class="grid grid-2">
+          <TextField v-model="form.sku" label="Código SKU" required :error="erros.sku" test-id="sku" />
+          <TextField v-model="form.barcode" label="Código de Barra (EAN/GTIN)" placeholder="7891234567890" />
         </div>
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">Código SKU *</label>
-            <input v-model="form.sku" data-test="sku" />
-            <p v-if="erros.sku" class="field-error">{{ erros.sku }}</p>
-          </div>
-          <div>
-            <label class="field-label">Código de Barra (EAN/GTIN)</label>
-            <input v-model="form.barcode" placeholder="7891234567890" />
-          </div>
-        </div>
-        <div class="grid grid-2">
-          <div>
-            <label class="field-label">Marca</label>
-            <input v-model="form.brand" />
-          </div>
+          <TextField v-model="form.brand" label="Marca" />
           <div>
             <label class="field-label">Categoria</label>
             <select v-model="form.categoryId" data-test="categoria">
               <option :value="null">Sem categoria</option>
               <option v-for="categoria in categorias" :key="categoria.id" :value="categoria.id">
                 {{ categoria.name }}
-              </option>
-            </select>
-          </div>
-        </div>
-        <div class="grid grid-2">
-          <div>
-            <label class="field-label">Cor / Estampa</label>
-            <select v-model="form.colorwayId" data-test="cor-estampa">
-              <option :value="null">Sem cor/estampa</option>
-              <option v-for="corEstampa in coresEstampas" :key="corEstampa.id" :value="corEstampa.id">
-                {{ corEstampa.name }}
               </option>
             </select>
           </div>
@@ -54,6 +38,18 @@
           <div>
             <label class="field-label">Preço de Custo</label>
             <input v-model.number="form.costPrice" type="number" step="0.01" min="0" data-test="preco-custo" />
+          </div>
+        </div>
+        <div class="grid grid-2">
+          <TextField v-model="sizeModel" label="Tamanho" placeholder="Ex: M, 40, Único" test-id="tamanho" />
+          <div>
+            <label class="field-label">Cor / Estampa</label>
+            <select v-model="form.colorwayId" data-test="cor-estampa">
+              <option :value="null">Sem cor/estampa</option>
+              <option v-for="corEstampa in coresEstampas" :key="corEstampa.id" :value="corEstampa.id">
+                {{ corEstampa.name }}
+              </option>
+            </select>
           </div>
         </div>
         <div class="field-full">
@@ -79,11 +75,10 @@
           <label class="field-label">Descrição</label>
           <textarea v-model="form.description" rows="3" placeholder="Descreva o produto..."></textarea>
         </div>
-      </section>
+      </CollapsibleSection>
 
       <div class="grid-cards">
-        <section class="card">
-          <h2>Estoque</h2>
+        <CollapsibleSection title="Estoque">
           <div class="grid grid-2">
             <div>
               <label class="field-label">Qtd. em Estoque</label>
@@ -104,10 +99,9 @@
               <input v-model.number="form.maxStock" type="number" step="1" min="0" />
             </div>
           </div>
-        </section>
+        </CollapsibleSection>
 
-        <section class="card">
-          <h2>Pesos &amp; Dimensões</h2>
+        <CollapsibleSection title="Pesos & Dimensões">
           <div class="grid grid-2">
             <div>
               <label class="field-label">Peso (kg)</label>
@@ -126,15 +120,12 @@
               <input v-model.number="form.height" type="number" step="0.01" min="0" />
             </div>
           </div>
-        </section>
+        </CollapsibleSection>
       </div>
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
 
-      <div class="actions">
-        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
-        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Produto</button>
-      </div>
+      <FormActions :saving="salvando" save-label="Salvar Produto" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
@@ -143,6 +134,10 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import CollapsibleSection from '@/components/CollapsibleSection.vue'
+import TextField from '@/components/TextField.vue'
+import FormActions from '@/components/FormActions.vue'
+import SegmentedControl, { type SegmentedOption } from '@/components/SegmentedControl.vue'
 import {
   getProduct,
   createProduct,
@@ -158,6 +153,12 @@ const UNIDADES: MeasurementUnit[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX
 const STATUS_OPCOES: { value: ProductStatus; label: string }[] = [
   { value: 'ACTIVE', label: 'Ativo' },
   { value: 'INACTIVE', label: 'Inativo' },
+]
+
+const tipoOptions: SegmentedOption[] = [
+  { value: 'PRODUCT', label: 'Simples' },
+  { value: 'PRODUCT_KIT', label: 'Kit' },
+  { value: 'VARIATION_PARENT', label: 'Com Variação' },
 ]
 
 const route = useRoute()
@@ -181,6 +182,7 @@ function novoFormulario(): ProductRequest {
     measurementUnit: 'UN',
     minStock: null,
     maxStock: null,
+    size: null,
     weight: null,
     length: null,
     width: null,
@@ -194,6 +196,23 @@ const erroGeral = ref('')
 const salvando = ref(false)
 const categorias = ref<CategoryResponse[]>([])
 const coresEstampas = ref<ColorwayResponse[]>([])
+
+const sizeModel = computed({
+  get: () => form.size ?? '',
+  set: (valor: string) => {
+    form.size = valor
+  },
+})
+
+// Switching type in create mode discards this form and starts the Kit/Variação
+// one instead -- there's no "convert" operation, so no state to carry over.
+function aoMudarTipo(tipo: string) {
+  if (tipo === 'PRODUCT_KIT') {
+    router.push({ name: 'produtos-novo-kit' })
+  } else if (tipo === 'VARIATION_PARENT') {
+    router.push({ name: 'produtos-novo-variacao' })
+  }
+}
 
 onMounted(async () => {
   try {
@@ -276,6 +295,7 @@ function paraPayload(): ProductRequest {
     stockQuantity: Number(form.stockQuantity) || 0,
     minStock: numeroOuNull(form.minStock),
     maxStock: numeroOuNull(form.maxStock),
+    size: form.size?.trim() || null,
     weight: numeroOuNull(form.weight),
     length: numeroOuNull(form.length),
     width: numeroOuNull(form.width),
@@ -331,22 +351,8 @@ function cancelar() {
   gap: 12px;
 }
 
-.grid-cards .card {
+.grid-cards > * {
   flex: 1;
-}
-
-.card {
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.card h2 {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--pm-text-dark);
-  margin: 0 0 12px;
 }
 
 .grid {
@@ -441,38 +447,5 @@ textarea {
 
 .status-pill--inativo .status-dot {
   background: var(--pm-text-mid);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.btn-primary,
-.btn-secondary {
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border: none;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border: 1px solid var(--pm-border-light);
 }
 </style>
