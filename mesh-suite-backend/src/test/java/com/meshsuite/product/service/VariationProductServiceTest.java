@@ -81,7 +81,7 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
 
     private VariationParentRequest request(String sku, List<VariationChildInput> children) {
         return new VariationParentRequest("Camiseta Polo", sku, "Marca Alpha", null,
-                new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, children, null);
+                new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, children, null, null);
     }
 
     @Test
@@ -117,12 +117,64 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
                 new BigDecimal("2"));
         VariationParentRequest request = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
                 new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, List.of(childInput),
-                new BigDecimal("5"));
+                new BigDecimal("5"), null);
 
         var parent = variationProductService.create(tenantId, request);
 
         assertThat(parent.saleMultiple()).isEqualByComparingTo("5");
         assertThat(parent.children().get(0).saleMultiple()).isEqualByComparingTo("2");
+    }
+
+    @Test
+    void persistsAndReturnsTheVariationAxesThatGeneratedTheMatrix() {
+        UUID tenantId = setUpTenant("aurora");
+        var axes = List.of(
+                new com.meshsuite.product.dto.VariationAxisInput("Tamanho", List.of("P", "M")),
+                new com.meshsuite.product.dto.VariationAxisInput("Cor", List.of("Branco", "Vermelho")));
+        VariationParentRequest request = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
+                new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null,
+                List.of(child(null, "V0001-P", "79.90")), null, axes);
+
+        var created = variationProductService.create(tenantId, request);
+
+        assertThat(created.variationAxes()).hasSize(2);
+        assertThat(created.variationAxes().get(0).name()).isEqualTo("Tamanho");
+        assertThat(created.variationAxes().get(0).values()).containsExactly("P", "M");
+        assertThat(created.variationAxes().get(1).name()).isEqualTo("Cor");
+        assertThat(created.variationAxes().get(1).values()).containsExactly("Branco", "Vermelho");
+
+        var found = variationProductService.findById(created.id());
+        assertThat(found.variationAxes()).isEqualTo(created.variationAxes());
+    }
+
+    @Test
+    void returnsAnEmptyVariationAxesListWhenNoneWereProvided() {
+        UUID tenantId = setUpTenant("aurora");
+
+        var created = variationProductService.create(tenantId, request("V0001", List.of(child(null, "V0001-P", "79.90"))));
+
+        assertThat(created.variationAxes()).isEmpty();
+    }
+
+    @Test
+    void updateReplacesTheStoredVariationAxes() {
+        UUID tenantId = setUpTenant("aurora");
+        var initialAxes = List.of(new com.meshsuite.product.dto.VariationAxisInput("Tamanho", List.of("P")));
+        VariationParentRequest initialRequest = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
+                new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null,
+                List.of(child(null, "V0001-P", "79.90")), null, initialAxes);
+        var created = variationProductService.create(tenantId, initialRequest);
+
+        var novosAxes = List.of(new com.meshsuite.product.dto.VariationAxisInput("Tamanho", List.of("P", "M", "G")));
+        VariationParentRequest updateRequest = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
+                new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null,
+                List.of(child(null, "V0001-P", "79.90"), child(null, "V0001-M", "84.90"), child(null, "V0001-G", "89.90")),
+                null, novosAxes);
+
+        var updated = variationProductService.update(created.id(), updateRequest);
+
+        assertThat(updated.variationAxes()).hasSize(1);
+        assertThat(updated.variationAxes().get(0).values()).containsExactly("P", "M", "G");
     }
 
     @Test
@@ -156,23 +208,31 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void updateReplacesAddsAndRemovesChildrenByid() {
+    void updateWholesaleReplacesEveryChildRegardlessOfId() {
+        // The Tipos de Variação matrix is the source of truth for a Variação's
+        // composition -- update() deletes every existing child and recreates from the
+        // request on every save (same convention as Kit/PriceTable items), rather than
+        // merging by id. Even a child whose sku/price is unchanged still gets a new id.
         UUID tenantId = setUpTenant("aurora");
         var created = variationProductService.create(tenantId, request("V0001",
                 List.of(child(null, "V0001-P", "79.90"), child(null, "V0001-M", "79.90"))));
-        UUID keptChildId = created.children().get(0).id();
-        UUID removedChildId = created.children().get(1).id();
+        UUID originalPId = created.children().get(0).id();
+        UUID originalMId = created.children().get(1).id();
+
+        entityManager.clear();
 
         var updated = variationProductService.update(created.id(), request("V0001", List.of(
-                child(keptChildId, "V0001-P", "84.90"),
+                child(null, "V0001-P", "84.90"),
                 child(null, "V0001-G", "89.90"))));
 
         assertThat(updated.children()).hasSize(2);
         assertThat(updated.children()).extracting("sku").containsExactlyInAnyOrder("V0001-P", "V0001-G");
-        assertThat(productRepository.findById(removedChildId)).isEmpty();
-        assertThat(productRepository.findById(keptChildId)).isPresent();
-        Product kept = productRepository.findById(keptChildId).orElseThrow();
-        assertThat(kept.getSalePrice()).isEqualByComparingTo("84.90");
+        assertThat(productRepository.findById(originalPId)).isEmpty();
+        assertThat(productRepository.findById(originalMId)).isEmpty();
+        Product newP = productRepository.findByIdAndType(
+                updated.children().stream().filter(c -> c.sku().equals("V0001-P")).findFirst().orElseThrow().id(),
+                ProductType.VARIATION_CHILD).orElseThrow();
+        assertThat(newP.getSalePrice()).isEqualByComparingTo("84.90");
     }
 
     @Test

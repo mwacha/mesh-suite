@@ -348,8 +348,11 @@ const novoTipoValorTemp = ref('')
 // Cartesian product of every type's values, e.g. Tamanho:[P,M] x Cor:[Branco] ->
 // [[P,Branco],[M,Branco]]. A type with no values yet is skipped rather than
 // zeroing out every combination -- it just hasn't contributed a dimension yet.
-const combinations = computed<string[][]>(() =>
-  varTypes.value.reduce<string[][]>((acc, vt) => {
+// Also reused (not just the computed below) to figure out, when loading an
+// existing Variação for editing, which combination each already-saved child
+// actually belongs to.
+function combosFor(types: VarType[]): string[][] {
+  return types.reduce<string[][]>((acc, vt) => {
     if (vt.values.length === 0) {
       return acc
     }
@@ -357,8 +360,10 @@ const combinations = computed<string[][]>(() =>
       return vt.values.map((v) => [v])
     }
     return acc.flatMap((combo) => vt.values.map((v) => [...combo, v]))
-  }, []),
-)
+  }, [])
+}
+
+const combinations = computed<string[][]>(() => combosFor(varTypes.value))
 
 function comboKeyFor(combo: string[]) {
   return combo.join('|')
@@ -560,20 +565,47 @@ onMounted(async () => {
       form.description = variacao.description
       form.measurementUnit = variacao.measurementUnit
       form.saleMultiple = variacao.saleMultiple
-      children.value = variacao.children.map((c) => ({
-        id: c.id,
-        sku: c.sku,
-        barcode: c.barcode,
-        salePrice: c.salePrice,
-        costPrice: c.costPrice,
-        stockQuantity: c.stockQuantity,
-        minStock: c.minStock,
-        maxStock: c.maxStock,
-        size: c.size,
-        colorwayId: c.colorwayId,
-        colorwayName: c.colorwayName,
-        saleMultiple: c.saleMultiple,
+
+      // The Tipos de Variação matrix (axis names + values) is now persisted exactly as
+      // defined -- load it as-is instead of guessing it back from the children. Each
+      // child is still only tagged as combo-generated if its own value per axis is
+      // actually derivable (only "Tamanho" maps to a real child field, child.size --
+      // any other axis has no per-child value stored anywhere, e.g. "Cor" is a best-
+      // effort read of child.colorwayName, and a truly custom axis like "Material"
+      // can't be derived at all) AND that combo is covered by the loaded matrix --
+      // otherwise the child is left as a plain row so it's never silently dropped by
+      // the sync watcher below.
+      const tiposCarregados: VarType[] = variacao.variationAxes.map((axis) => ({
+        name: axis.name,
+        values: [...axis.values],
       }))
+      const chavesValidas = new Set(combosFor(tiposCarregados).map((combo) => combo.join('|')))
+
+      children.value = variacao.children.map((c) => {
+        const labels = tiposCarregados.map((vt) =>
+          vt.name.trim().toLowerCase() === 'tamanho' ? c.size : c.colorwayName,
+        )
+        const completo = labels.every((v): v is string => !!v)
+        const key = completo ? labels.join('|') : null
+        const comboLabels = key && chavesValidas.has(key) ? (labels as string[]) : undefined
+        return {
+          id: c.id,
+          sku: c.sku,
+          barcode: c.barcode,
+          salePrice: c.salePrice,
+          costPrice: c.costPrice,
+          stockQuantity: c.stockQuantity,
+          minStock: c.minStock,
+          maxStock: c.maxStock,
+          size: c.size,
+          colorwayId: c.colorwayId,
+          colorwayName: c.colorwayName,
+          saleMultiple: c.saleMultiple,
+          comboKey: comboLabels ? key! : undefined,
+          comboLabels,
+        }
+      })
+      varTypes.value = tiposCarregados
 
       if (
         variacao.categoryId &&
@@ -619,6 +651,7 @@ function paraPayload(): VariationParentRequest {
       saleMultiple: Number(c.saleMultiple) || 1,
     })),
     saleMultiple: Number(form.saleMultiple) || 1,
+    variationAxes: varTypes.value.map((vt) => ({ name: vt.name, values: vt.values })),
   }
 }
 

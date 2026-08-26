@@ -20,5 +20,6 @@ public record VariationParentRequest(
         String description,
         MeasurementUnit measurementUnit,
         @NotEmpty List<@Valid VariationChildInput> children,
-        BigDecimal saleMultiple) {
+        BigDecimal saleMultiple,
+        List<@Valid VariationAxisInput> variationAxes) {
 }

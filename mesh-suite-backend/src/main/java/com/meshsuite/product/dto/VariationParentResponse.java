@@ -18,5 +18,6 @@ public record VariationParentResponse(
         String description,
         MeasurementUnit measurementUnit,
         List<VariationChildResponse> children,
-        BigDecimal saleMultiple) {
+        BigDecimal saleMultiple,
+        List<VariationAxisResponse> variationAxes) {
 }

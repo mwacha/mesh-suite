@@ -121,6 +121,7 @@ describe('ProductVariationFormView', () => {
         sku: 'V0001',
         salePrice: 89.9,
         children: [expect.objectContaining({ sku: 'V0001-P', salePrice: 89.9, size: 'P' })],
+        variationAxes: [{ name: 'Tamanho', values: ['P'] }],
       }),
     )
     expect(router.currentRoute.value.name).toBe('produtos')
@@ -159,6 +160,7 @@ describe('ProductVariationFormView', () => {
       id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [{ id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 }],
+      variationAxes: [{ name: 'Tamanho', values: ['P'] }],
     })
 
     const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
@@ -167,6 +169,57 @@ describe('ProductVariationFormView', () => {
     expect(variationsApi.getVariation).toHaveBeenCalledWith('v-1')
     expect((wrapper.find('[data-test="nome"]').element as HTMLInputElement).value).toBe('Camiseta Polo')
     expect(wrapper.text()).toContain('V0001-P')
+  })
+
+  it('loads the persisted Tamanho type, showing the same matrix that generated the children', async () => {
+    vi.mocked(variationsApi.getVariation).mockResolvedValue({
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [
+        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+      ],
+      variationAxes: [{ name: 'Tamanho', values: ['P', 'M'] }],
+    })
+
+    const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Tamanho')
+    expect(wrapper.text()).toContain('Variantes Geradas (2)')
+    // No rows were dropped or duplicated by the matrix sync watcher reacting to the
+    // reconstructed types -- both original variantes are still exactly there.
+    expect(wrapper.text()).toContain('V0001-P')
+    expect(wrapper.text()).toContain('V0001-M')
+
+    // The reconstructed matrix is fully live: removing the "M" value removes the row.
+    await wrapper.find('[data-test="var-tipo-remover-0"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Variantes Geradas (0)')
+  })
+
+  it('loads both Tamanho and Cor axes from the persisted matrix', async () => {
+    vi.mocked(variationsApi.getVariation).mockResolvedValue({
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [
+        { id: 'c-1', sku: 'V0001-P-BR', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-1', colorwayName: 'Branco', saleMultiple: 1 },
+        { id: 'c-2', sku: 'V0001-P-VM', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-2', colorwayName: 'Vermelho', saleMultiple: 1 },
+        { id: 'c-3', sku: 'V0001-M-BR', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 2, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-1', colorwayName: 'Branco', saleMultiple: 1 },
+        { id: 'c-4', sku: 'V0001-M-VM', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 1, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-2', colorwayName: 'Vermelho', saleMultiple: 1 },
+      ],
+      variationAxes: [
+        { name: 'Tamanho', values: ['P', 'M'] },
+        { name: 'Cor', values: ['Branco', 'Vermelho'] },
+      ],
+    })
+
+    const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Tamanho')
+    expect(wrapper.text()).toContain('Cor')
+    expect(wrapper.text()).toContain('Variantes Geradas (4)')
   })
 
   it('shows an error message when loading variação data fails in edit mode', async () => {
