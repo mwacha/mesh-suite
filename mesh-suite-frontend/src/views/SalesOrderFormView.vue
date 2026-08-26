@@ -94,6 +94,14 @@
               data-test="item-quantity"
             />
           </div>
+          <div>
+            <label class="field-label">Vlr. Produto</label>
+            <div class="item-readonly" data-test="item-unit-price">{{ formatPrice(itemForm.unitPrice) }}</div>
+          </div>
+          <div>
+            <label class="field-label">Total</label>
+            <div class="item-readonly" data-test="item-line-total">{{ formatPrice(itemLineTotal) }}</div>
+          </div>
           <button type="button" class="btn-primary" data-test="item-add" @click="addItem">+ Adicionar</button>
         </div>
         <p v-if="errors.items" class="field-error">{{ errors.items }}</p>
@@ -222,6 +230,10 @@ const productSearchError = ref('')
 // from "this SKU doesn't exist" and impossible to diagnose from the UI.
 const SEARCH_FAILED = 'Não foi possível buscar. Verifique sua conexão e tente novamente.'
 const itemForm = reactive({ productId: '', productName: '', sku: '', quantity: 1, unitPrice: 0 })
+
+// Previews what the row about to be added is worth. v-model.number yields '' for a
+// cleared quantity field, so it is coerced here rather than rendering "R$ NaN".
+const itemLineTotal = computed(() => (Number(itemForm.quantity) || 0) * itemForm.unitPrice)
 
 const subtotal = computed(() => form.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0))
 const total = computed(() => subtotal.value - (Number(form.discount) || 0))
@@ -501,7 +513,7 @@ select {
 
 .item-adicionar {
   display: grid;
-  grid-template-columns: 1fr 76px auto;
+  grid-template-columns: 1fr 76px 110px 110px auto;
   gap: 8px;
   align-items: end;
   margin-bottom: 10px;
@@ -513,6 +525,25 @@ select {
 
 .item-qtd {
   min-width: 0;
+}
+
+/* Derived from the picked product and the quantity -- shown, never typed into. */
+.item-readonly {
+  height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 10px;
+  border: 1px solid var(--pm-border-light);
+  border-radius: 8px;
+  background: var(--pm-bg);
+  color: var(--pm-text-muted);
+  font-size: 13px;
+  font-family: var(--pm-font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Keeps the button's baseline on the inputs' row, not the labels' row above them. */

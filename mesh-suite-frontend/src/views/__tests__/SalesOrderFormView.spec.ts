@@ -169,12 +169,41 @@ describe('SalesOrderFormView', () => {
     expect(wrapper.text()).not.toContain('Camiseta Polo')
   })
 
-  it('has no manual unit-price input -- the price always comes from the selected product, matching the wireframe', async () => {
-    vi.mocked(salesOrdersApi.createSalesOrder).mockResolvedValue({} as any)
+  it('shows Vlr. Produto and Total as read-only, never as editable inputs', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    expect(wrapper.find('[data-test="item-unit-price"]').exists()).toBe(false)
+    const unitPrice = wrapper.find('[data-test="item-unit-price"]')
+    const lineTotal = wrapper.find('[data-test="item-line-total"]')
+    expect(unitPrice.element.tagName).not.toBe('INPUT')
+    expect(lineTotal.element.tagName).not.toBe('INPUT')
+    expect(unitPrice.text()).toContain('0,00')
+
+    await selectProduct(wrapper)
+    await wrapper.find('[data-test="item-quantity"]').setValue('3')
+    await flushPromises()
+
+    expect(unitPrice.text()).toContain('59,90')
+    expect(lineTotal.text()).toContain('179,70')
+  })
+
+  it('resets Vlr. Produto and Total once the pending row is added', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await selectProduct(wrapper)
+    await wrapper.find('[data-test="item-quantity"]').setValue('2')
+    await wrapper.find('[data-test="item-add"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="item-unit-price"]').text()).toContain('0,00')
+    expect(wrapper.find('[data-test="item-line-total"]').text()).toContain('0,00')
+  })
+
+  it('takes the unit price from the selected product, matching the wireframe', async () => {
+    vi.mocked(salesOrdersApi.createSalesOrder).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
 
     await selectCustomer(wrapper)
     await selectSalesperson(wrapper)
