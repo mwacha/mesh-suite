@@ -5,6 +5,7 @@ import com.meshsuite.AbstractIntegrationTest;
 import com.meshsuite.product.domain.Product;
 import com.meshsuite.product.domain.enums.ProductStatus;
 import com.meshsuite.product.domain.enums.MeasurementUnit;
+import com.meshsuite.product.domain.enums.ProductType;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
 import jakarta.persistence.EntityManager;
@@ -20,10 +21,10 @@ class ProductRepositoryTest extends AbstractIntegrationTest {
     @Autowired ProductRepository productRepository;
     @Autowired EntityManager entityManager;
 
-    private Tenant createTenant(String codigo) {
+    private Tenant createTenant(String code) {
         Tenant t = new Tenant();
-        t.setCodigo(codigo);
-        t.setNome(codigo);
+        t.setCodigo(code);
+        t.setNome(code);
         return tenantRepository.saveAndFlush(t);
     }
 
@@ -53,6 +54,33 @@ class ProductRepositoryTest extends AbstractIntegrationTest {
         assertThat(reloaded.getStatus()).isEqualTo(ProductStatus.ACTIVE);
         assertThat(reloaded.getMeasurementUnit()).isEqualTo(MeasurementUnit.UN);
         assertThat(reloaded.getStockQuantity()).isEqualByComparingTo("0");
+        assertThat(reloaded.getType()).isEqualTo(ProductType.PRODUCT);
+    }
+
+    @Test
+    @Transactional
+    void skuUniquenessSpansEveryProductType() {
+        Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+
+        productRepository.saveAndFlush(newProduct(tenant.getId(), "P0001"));
+
+        Product kit = newProduct(tenant.getId(), "P0001");
+        kit.setType(ProductType.PRODUCT_KIT);
+        org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.dao.DataIntegrityViolationException.class,
+                () -> productRepository.saveAndFlush(kit));
+    }
+
+    @Test
+    @Transactional
+    void findByIdAndTypeOnlyMatchesTheGivenType() {
+        Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+        Product saved = productRepository.saveAndFlush(newProduct(tenant.getId(), "P0001"));
+
+        assertThat(productRepository.findByIdAndType(saved.getId(), ProductType.PRODUCT)).isPresent();
+        assertThat(productRepository.findByIdAndType(saved.getId(), ProductType.PRODUCT_KIT)).isEmpty();
     }
 
     @Test
