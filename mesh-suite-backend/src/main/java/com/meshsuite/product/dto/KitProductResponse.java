@@ -15,5 +15,6 @@ public record KitProductResponse(
         ProductStatus status,
         String description,
         List<KitItemResponse> items,
-        BigDecimal totalPrice) {
+        BigDecimal totalPrice,
+        BigDecimal saleMultiple) {
 }

@@ -84,7 +84,7 @@ class KitProductServiceTest extends AbstractIntegrationTest {
     }
 
     private KitProductRequest request(String sku, List<KitItemInput> items) {
-        return new KitProductRequest("Kit Combo", sku, null, null, null, "Kit de teste", items);
+        return new KitProductRequest("Kit Combo", sku, null, null, null, "Kit de teste", items, null);
     }
 
     @Test
@@ -100,6 +100,28 @@ class KitProductServiceTest extends AbstractIntegrationTest {
         // 2*89.90 + 1*149.90 = 329.70
         assertThat(kit.totalPrice()).isEqualByComparingTo("329.70");
         assertThat(kit.items()).hasSize(2);
+    }
+
+    @Test
+    void defaultsSaleMultipleToOneWhenNotProvided() {
+        UUID tenantId = setUpTenant("aurora");
+        Product shirt = component(tenantId, "P0001", "89.90");
+
+        var kit = kitProductService.create(tenantId, request("KIT001", List.of(new KitItemInput(shirt.getId(), BigDecimal.ONE))));
+
+        assertThat(kit.saleMultiple()).isEqualByComparingTo(BigDecimal.ONE);
+    }
+
+    @Test
+    void createsKitWithAnExplicitSaleMultiple() {
+        UUID tenantId = setUpTenant("aurora");
+        Product shirt = component(tenantId, "P0001", "89.90");
+        KitProductRequest request = new KitProductRequest("Kit Combo", "KIT001", null, null, null, "Kit de teste",
+                List.of(new KitItemInput(shirt.getId(), BigDecimal.ONE)), new BigDecimal("3"));
+
+        var kit = kitProductService.create(tenantId, request);
+
+        assertThat(kit.saleMultiple()).isEqualByComparingTo("3");
     }
 
     @Test

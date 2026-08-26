@@ -17,5 +17,7 @@ public record VariationParentResponse(
         ProductStatus status,
         String description,
         MeasurementUnit measurementUnit,
-        List<VariationChildResponse> children) {
+        List<VariationChildResponse> children,
+        BigDecimal saleMultiple,
+        List<VariationAxisResponse> variationAxes) {
 }

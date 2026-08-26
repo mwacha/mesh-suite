@@ -2,9 +2,12 @@ package com.meshsuite.product.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
 import com.meshsuite.product.domain.enums.ProductStatus;
+import com.meshsuite.product.domain.enums.ProductType;
 import com.meshsuite.product.dto.*;
 import com.meshsuite.product.service.KitProductService;
+import com.meshsuite.product.service.ProductListingService;
 import com.meshsuite.product.service.ProductTypeStrategyResolver;
+import com.meshsuite.product.service.SellableProductService;
 import com.meshsuite.product.service.SimpleProductService;
 import com.meshsuite.product.service.VariationProductService;
 import jakarta.validation.Valid;
@@ -24,14 +27,20 @@ public class ProductController {
     private final KitProductService kitProductService;
     private final VariationProductService variationProductService;
     private final ProductTypeStrategyResolver productTypeStrategyResolver;
+    private final ProductListingService productListingService;
+    private final SellableProductService sellableProductService;
 
     public ProductController(SimpleProductService productService, KitProductService kitProductService,
                               VariationProductService variationProductService,
-                              ProductTypeStrategyResolver productTypeStrategyResolver) {
+                              ProductTypeStrategyResolver productTypeStrategyResolver,
+                              ProductListingService productListingService,
+                              SellableProductService sellableProductService) {
         this.productService = productService;
         this.kitProductService = kitProductService;
         this.variationProductService = variationProductService;
         this.productTypeStrategyResolver = productTypeStrategyResolver;
+        this.productListingService = productListingService;
+        this.sellableProductService = sellableProductService;
     }
 
     @GetMapping
@@ -40,6 +49,36 @@ public class ProductController {
             @RequestParam(required = false) ProductStatus status,
             @PageableDefault(size = 10, sort = "name") Pageable pageable) {
         return productService.list(search, status, pageable);
+    }
+
+    // Unified cross-type listing for the Produtos screen (Simples + Kit + Variação parent rows
+    // with a type discriminator, and nested children for Variação) -- deliberately separate from
+    // the type-scoped GET above, which other consumers (e.g. the Tabela de Preço item picker)
+    // depend on returning only type=PRODUCT.
+    @GetMapping("/all")
+    public Page<ProductAllListItemResponse> listAll(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) ProductStatus status,
+            @RequestParam(required = false) ProductType type,
+            @PageableDefault(size = 10, sort = "name") Pageable pageable) {
+        return productListingService.listAll(search, status, type, pageable);
+    }
+
+    @GetMapping("/all/resumo")
+    public ProductSummaryResponse listAllSummary() {
+        return productListingService.summary();
+    }
+
+    // Item picker for order entry (Pedidos, Compras): every orderable row --
+    // Simples, Kit, and Variação children -- flattened into one search, with
+    // the Variação parent itself excluded since it has no price/stock of its own.
+    @GetMapping("/sellable")
+    public Page<SellableProductResponse> listSellable(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) ProductStatus status,
+            @RequestParam(required = false) java.util.List<ProductType> types,
+            @PageableDefault(size = 50, sort = "name") Pageable pageable) {
+        return sellableProductService.list(search, status, types, pageable);
     }
 
     @GetMapping("/resumo")

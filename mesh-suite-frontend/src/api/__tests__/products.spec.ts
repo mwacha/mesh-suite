@@ -26,9 +26,9 @@ describe('api/products', () => {
       data: { content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 },
     })
 
-    await listProducts({ busca: 'camiseta', status: 'ACTIVE' })
+    await listProducts({ search: 'camiseta', status: 'ACTIVE' })
 
-    expect(apiClient.get).toHaveBeenCalledWith('/products', { params: { busca: 'camiseta', status: 'ACTIVE' } })
+    expect(apiClient.get).toHaveBeenCalledWith('/products', { params: { search: 'camiseta', status: 'ACTIVE' } })
   })
 
   it('getProduct calls GET /products/:id', async () => {

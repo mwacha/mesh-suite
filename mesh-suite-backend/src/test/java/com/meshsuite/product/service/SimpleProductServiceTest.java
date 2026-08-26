@@ -82,7 +82,7 @@ class SimpleProductServiceTest extends AbstractIntegrationTest {
                 "Camiseta Polo Masculina", sku, "7891234567890", "Marca Alpha", null, null,
                 salePrice, new BigDecimal("25.00"), ProductStatus.ACTIVE, "Descrição de teste",
                 new BigDecimal("10"), MeasurementUnit.UN, new BigDecimal("2"), new BigDecimal("50"), "M",
-                new BigDecimal("0.300"), new BigDecimal("30"), new BigDecimal("20"), new BigDecimal("2"));
+                new BigDecimal("0.300"), new BigDecimal("30"), new BigDecimal("20"), new BigDecimal("2"), null);
     }
 
     @Test
@@ -95,6 +95,30 @@ class SimpleProductServiceTest extends AbstractIntegrationTest {
         assertThat(found.name()).isEqualTo("Camiseta Polo Masculina");
         assertThat(found.status()).isEqualTo(ProductStatus.ACTIVE);
         assertThat(found.size()).isEqualTo("M");
+    }
+
+    @Test
+    void defaultsSaleMultipleToOneWhenNotProvided() {
+        setUpTenant("aurora");
+
+        var created = productService.create(TenantContext.get(), request("P0001", new BigDecimal("59.90")));
+
+        assertThat(productService.findById(created.id()).saleMultiple()).isEqualByComparingTo(BigDecimal.ONE);
+    }
+
+    @Test
+    void createsProductWithAnExplicitSaleMultiple() {
+        setUpTenant("aurora");
+        ProductRequest request = new ProductRequest(
+                "Camiseta Polo Masculina", "P0001", "7891234567890", "Marca Alpha", null, null,
+                new BigDecimal("59.90"), new BigDecimal("25.00"), ProductStatus.ACTIVE, "Descrição de teste",
+                new BigDecimal("10"), MeasurementUnit.UN, new BigDecimal("2"), new BigDecimal("50"), "M",
+                new BigDecimal("0.300"), new BigDecimal("30"), new BigDecimal("20"), new BigDecimal("2"),
+                new BigDecimal("6"));
+
+        var created = productService.create(TenantContext.get(), request);
+
+        assertThat(productService.findById(created.id()).saleMultiple()).isEqualByComparingTo("6");
     }
 
     @Test

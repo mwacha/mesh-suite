@@ -1,5 +1,5 @@
 <template>
-  <SlideOver title="Adicionar produtos à tabela de preços" @close="$emit('close')">
+  <SlideOver :title="title" @close="$emit('close')">
     <div class="modal-busca">
       <input
         v-model="busca"
@@ -16,6 +16,7 @@
         <div class="produtos-grid-header">
           <div class="produtos-grid-col">Nome do item</div>
           <div class="produtos-grid-col">Código</div>
+          <div class="produtos-grid-col">Tipo</div>
           <div class="produtos-grid-col produtos-grid-col-preco">Preço cadastrado</div>
           <div class="produtos-grid-col"></div>
         </div>
@@ -23,6 +24,9 @@
         <div v-for="produto in pagina.content" :key="produto.id" class="produtos-grid-row" :data-test="`modal-row-${produto.id}`">
           <div class="produtos-grid-cell produtos-grid-cell-nome">{{ produto.name }}</div>
           <div class="produtos-grid-cell">{{ produto.sku }}</div>
+          <div class="produtos-grid-cell">
+            <StatusBadge :label="TIPO_LABEL[produto.type]" :color="TIPO_COR[produto.type]" />
+          </div>
           <div class="produtos-grid-cell produtos-grid-cell-preco">{{ formatarPreco(produto.salePrice) }}</div>
           <div class="produtos-grid-cell produtos-grid-cell-acao">
             <button
@@ -46,7 +50,10 @@
           </div>
         </div>
 
-        <div v-if="!carregando && pagina.content.length === 0" class="produtos-grid-empty">
+        <div v-if="erro" class="produtos-grid-empty produtos-grid-erro" data-test="modal-erro">
+          {{ erro }}
+        </div>
+        <div v-else-if="!carregando && pagina.content.length === 0" class="produtos-grid-empty">
           Nenhum produto encontrado.
         </div>
       </div>
@@ -72,14 +79,34 @@ import { ref, computed, onMounted } from 'vue'
 import SlideOver from './SlideOver.vue'
 import ListCard, { type ListCardStat } from './ListCard.vue'
 import Pagination from './Pagination.vue'
-import { listProducts, type ProductListItem, type Page } from '@/api/products'
+import StatusBadge, { type StatusBadgeColor } from './StatusBadge.vue'
+import { listSellableProducts, type SellableProductItem, type ProductType, type Page } from '@/api/products'
 
-const props = defineProps<{ itensAdicionadosIds: string[] }>()
-defineEmits<{ add: [produto: ProductListItem]; remove: [produtoId: string]; close: [] }>()
+const props = withDefaults(
+  defineProps<{ itensAdicionadosIds: string[]; title?: string; types?: ProductType[] }>(),
+  { title: 'Adicionar produtos à tabela de preços' },
+)
+defineEmits<{ add: [produto: SellableProductItem]; remove: [produtoId: string]; close: [] }>()
+
+// Rows are no longer all one kind, so each says which it is -- otherwise a Kit and a
+// simple product are indistinguishable in a list that now mixes them.
+const TIPO_LABEL: Record<ProductType, string> = {
+  PRODUCT: 'Simples',
+  PRODUCT_KIT: 'Kit',
+  VARIATION_CHILD: 'Variação',
+  VARIATION_PARENT: 'Variação',
+}
+const TIPO_COR: Record<ProductType, StatusBadgeColor> = {
+  PRODUCT: 'gray',
+  PRODUCT_KIT: 'blue',
+  VARIATION_CHILD: 'amber',
+  VARIATION_PARENT: 'amber',
+}
 
 const busca = ref('')
-const pagina = ref<Page<ProductListItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+const pagina = ref<Page<SellableProductItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const carregando = ref(false)
+const erro = ref('')
 
 const adicionadosSet = computed(() => new Set(props.itensAdicionadosIds))
 
@@ -96,17 +123,38 @@ const stats = computed<ListCardStat[]>(() => [
   { value: props.itensAdicionadosIds.length, label: 'Adicionados', color: 'green' },
 ])
 
+// Every keystroke fires a new request with no debounce, so responses can come back
+// out of order (e.g. the broader query for "P" resolving after the narrower "P0001").
+// A sequence guard discards any response that isn't for the most recently issued
+// request, so a slow, stale response can never clobber a newer, more specific one.
+let requestSeq = 0
+
 async function carregar(page: number) {
+  const seq = ++requestSeq
   carregando.value = true
   try {
-    pagina.value = await listProducts({
-      busca: busca.value || undefined,
+    const resultado = await listSellableProducts({
+      search: busca.value || undefined,
       status: 'ACTIVE',
+      types: props.types,
       page,
       size: pagina.value.size,
     })
+    if (seq === requestSeq) {
+      pagina.value = resultado
+      erro.value = ''
+    }
+  } catch {
+    // Without this the rejection escaped unhandled and the grid kept the previous
+    // page, so a failed search looked like a search that simply matched nothing.
+    if (seq === requestSeq) {
+      pagina.value = { content: [], totalElements: 0, totalPages: 0, number: 0, size: pagina.value.size }
+      erro.value = 'Não foi possível carregar os produtos. Tente novamente.'
+    }
   } finally {
-    carregando.value = false
+    if (seq === requestSeq) {
+      carregando.value = false
+    }
   }
 }
 
@@ -144,7 +192,7 @@ onMounted(() => carregar(0))
 .produtos-grid-header,
 .produtos-grid-row {
   display: grid;
-  grid-template-columns: 1fr 110px 130px 120px;
+  grid-template-columns: 1fr 130px 90px 130px 120px;
   gap: 8px;
   align-items: center;
   padding: 8px 12px;
@@ -181,6 +229,10 @@ onMounted(() => carregar(0))
 .produtos-grid-cell-acao {
   display: flex;
   justify-content: flex-end;
+}
+
+.produtos-grid-erro {
+  color: var(--pm-error);
 }
 
 .produtos-grid-empty {

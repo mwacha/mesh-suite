@@ -15,6 +15,8 @@ function mountWithRouter(path = '/produtos/novo') {
     routes: [
       { path: '/produtos', name: 'produtos', component: { template: '<div />' } },
       { path: '/produtos/novo', name: 'produtos-novo', component: ProductFormView },
+      { path: '/produtos/novo/kit', name: 'produtos-novo-kit', component: { template: '<div />' } },
+      { path: '/produtos/novo/variacao', name: 'produtos-novo-variacao', component: { template: '<div />' } },
       { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProductFormView },
     ],
   })
@@ -239,5 +241,70 @@ describe('ProductFormView', () => {
     const select = wrapper.find('[data-test="cor-estampa"]').element as HTMLSelectElement
     expect(select.value).toBe('ce-inactive')
     expect(wrapper.text()).toContain('Floral Descontinuado')
+  })
+
+  it('sends the tamanho field in the payload', async () => {
+    vi.mocked(produtosApi.createProduct).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('P0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
+    await wrapper.find('[data-test="tamanho"]').setValue('M')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const payload = vi.mocked(produtosApi.createProduct).mock.calls[0][0]
+    expect(payload.size).toBe('M')
+  })
+
+  it('lets the user type a múltiplo de venda, sent in the payload', async () => {
+    vi.mocked(produtosApi.createProduct).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('P0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
+    await wrapper.find('[data-test="multiplo-venda"]').setValue('6')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const payload = vi.mocked(produtosApi.createProduct).mock.calls[0][0]
+    expect(payload.saleMultiple).toBe(6)
+  })
+
+  it('navigates to the Kit form when the Tipo de Produto switcher picks Kit', async () => {
+    const { router, wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="tipo-produto-PRODUCT_KIT"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-novo-kit')
+  })
+
+  it('navigates to the Variação form when the Tipo de Produto switcher picks Com Variação', async () => {
+    const { router, wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="tipo-produto-VARIATION_PARENT"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-novo-variacao')
+  })
+
+  it('disables the Tipo de Produto switcher in edit mode', async () => {
+    vi.mocked(produtosApi.getProduct).mockResolvedValue({
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brand: '', categoryId: null,
+      categoryName: null, colorwayId: null, colorwayName: null, salePrice: 59.9, costPrice: null,
+      status: 'ACTIVE', description: '', stockQuantity: 10, measurementUnit: 'UN', minStock: null,
+      maxStock: null, size: null, weight: null, length: null, width: null, height: null,
+    } as any)
+
+    const { router, wrapper } = await mountWithRouter('/produtos/abc-123/editar')
+    await flushPromises()
+
+    await wrapper.find('[data-test="tipo-produto-PRODUCT_KIT"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-editar')
   })
 })

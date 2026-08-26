@@ -4,8 +4,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import SalesOrdersListView from '@/views/SalesOrdersListView.vue'
 import * as salesOrdersApi from '@/api/salesOrders'
+import * as usersApi from '@/api/users'
 
 vi.mock('@/api/salesOrders')
+vi.mock('@/api/users')
 
 function mountWithRouter() {
   const router = createRouter({
@@ -19,9 +21,9 @@ function mountWithRouter() {
   router.push('/pedidos')
   return router.isReady().then(() => ({
     router,
-    // The Ações dropdown is Teleported to <body> so it isn't clipped by the
-    // table card's `overflow: hidden` -- stub it here so it renders in
-    // place instead, keeping the existing wrapper.find() queries working.
+    // The Ações dropdown and the filter panel are Teleported to <body> so they
+    // aren't clipped by ancestor `overflow: hidden` -- stub Teleport here so
+    // they render in place instead, keeping the existing wrapper.find() queries working.
     wrapper: mount(SalesOrdersListView, { global: { plugins: [router], stubs: { teleport: true } } }),
   }))
 }
@@ -51,6 +53,7 @@ describe('SalesOrdersListView', () => {
     vi.mocked(salesOrdersApi.getSalesOrderCounts).mockResolvedValue({
       total: 1, draft: 1, inPreparation: 0, invoiced: 0,
     })
+    vi.mocked(usersApi.listSalesReps).mockResolvedValue([{ id: 'v1', name: 'Carla Vendedora' }])
   })
 
   it('loads and displays the pedido list on mount', async () => {
@@ -65,10 +68,40 @@ describe('SalesOrdersListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="busca"]').setValue('silva')
+    await wrapper.find('[data-test="filter-bar-search"]').setValue('silva')
     await flushPromises()
 
     expect(salesOrdersApi.listSalesOrders).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'silva' }))
+  })
+
+  it('re-fetches with the selected status when a "Mais filtros" value is applied', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="filter-bar-more"]').trigger('click')
+    await wrapper.find('[data-test="filter-cat-Status"]').trigger('click')
+    await wrapper.find('[data-test="filter-value-Em Preparo"]').trigger('click')
+    await wrapper.find('[data-test="filter-bar-apply"]').trigger('click')
+    await flushPromises()
+
+    expect(salesOrdersApi.listSalesOrders).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 'IN_PREPARATION' }),
+    )
+  })
+
+  it('re-fetches with the selected vendedor\'s id when a "Mais filtros" value is applied', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="filter-bar-more"]').trigger('click')
+    await wrapper.find('[data-test="filter-cat-Vendedor"]').trigger('click')
+    await wrapper.find('[data-test="filter-value-Carla Vendedora"]').trigger('click')
+    await wrapper.find('[data-test="filter-bar-apply"]').trigger('click')
+    await flushPromises()
+
+    expect(salesOrdersApi.listSalesOrders).toHaveBeenLastCalledWith(
+      expect.objectContaining({ salespersonId: 'v1' }),
+    )
   })
 
   it('navigates to the create form when "+ Novo Pedido" is clicked', async () => {
@@ -79,6 +112,24 @@ describe('SalesOrdersListView', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('pedidos-novo')
+  })
+
+  it('downloads a CSV of the current page when "Exportar" is clicked', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    const createObjectURL = vi.fn().mockReturnValue('blob:mock')
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL })
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    await wrapper.find('[data-test="export-orders"]').trigger('click')
+
+    expect(createObjectURL).toHaveBeenCalled()
+    expect(clickSpy).toHaveBeenCalled()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock')
+
+    clickSpy.mockRestore()
   })
 
   it('navigates to the edit form via the Ações menu', async () => {

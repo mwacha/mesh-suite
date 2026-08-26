@@ -12,6 +12,8 @@ import FornecedorFormView from '@/views/FornecedorFormView.vue'
 import FornecedorDetailView from '@/views/FornecedorDetailView.vue'
 import ProductFormView from '@/views/ProductFormView.vue'
 import ProductsListView from '@/views/ProductsListView.vue'
+import ProductKitFormView from '@/views/ProductKitFormView.vue'
+import ProductVariationFormView from '@/views/ProductVariationFormView.vue'
 import CategoriesListView from '@/views/CategoriesListView.vue'
 import CategoryFormView from '@/views/CategoryFormView.vue'
 import ColorwaysListView from '@/views/ColorwaysListView.vue'
@@ -48,7 +50,11 @@ const router = createRouter({
     { path: '/fornecedores/:id', name: 'fornecedores-detalhe', component: FornecedorDetailView },
     { path: '/produtos', name: 'produtos', component: ProductsListView },
     { path: '/produtos/novo', name: 'produtos-novo', component: ProductFormView },
+    { path: '/produtos/novo/kit', name: 'produtos-novo-kit', component: ProductKitFormView },
+    { path: '/produtos/novo/variacao', name: 'produtos-novo-variacao', component: ProductVariationFormView },
     { path: '/produtos/:id/editar', name: 'produtos-editar', component: ProductFormView },
+    { path: '/produtos/:id/editar/kit', name: 'produtos-editar-kit', component: ProductKitFormView },
+    { path: '/produtos/:id/editar/variacao', name: 'produtos-editar-variacao', component: ProductVariationFormView },
     { path: '/categorias', name: 'categorias', component: CategoriesListView },
     { path: '/categorias/novo', name: 'categorias-novo', component: CategoryFormView },
     { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoryFormView },

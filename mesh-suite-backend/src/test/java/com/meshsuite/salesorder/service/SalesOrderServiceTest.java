@@ -313,7 +313,7 @@ class SalesOrderServiceTest extends AbstractIntegrationTest {
         var items = List.of(new SalesOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("59.90")));
         var created = salesOrderService.create(tenantId, request(customerId, salespersonId, items, BigDecimal.ZERO));
 
-        var page = salesOrderService.list(String.valueOf(created.number()), null, PageRequest.of(0, 10));
+        var page = salesOrderService.list(String.valueOf(created.number()), null, null, PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements()).isEqualTo(1);
     }
@@ -327,9 +327,32 @@ class SalesOrderServiceTest extends AbstractIntegrationTest {
         var items = List.of(new SalesOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("59.90")));
         salesOrderService.create(tenantId, request(customerId, salespersonId, items, BigDecimal.ZERO));
 
-        var page = salesOrderService.list("mercado silva", null, PageRequest.of(0, 10));
+        var page = salesOrderService.list("mercado silva", null, null, PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void listsWithSalespersonFilter() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID customerId = createCustomer(tenantId, "11222333000144");
+        UUID salespersonId = createSalesperson(tenantId, "marina@aurora.com.br");
+        User otherSalesperson = new User();
+        otherSalesperson.setTenantId(tenantId);
+        otherSalesperson.setName("Carla");
+        otherSalesperson.setEmail("carla@aurora.com.br");
+        otherSalesperson.setPasswordHash("hash");
+        otherSalesperson.setRole(Role.SALES_REP);
+        UUID otherSalespersonId = userRepository.saveAndFlush(otherSalesperson).getId();
+        UUID productId = createProduct(tenantId, "P0001", new BigDecimal("59.90"));
+        var items = List.of(new SalesOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("59.90")));
+        salesOrderService.create(tenantId, request(customerId, salespersonId, items, BigDecimal.ZERO));
+        salesOrderService.create(tenantId, request(customerId, otherSalespersonId, items, BigDecimal.ZERO));
+
+        var page = salesOrderService.list(null, null, salespersonId, PageRequest.of(0, 10));
+
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        assertThat(page.getContent().get(0).salespersonName()).isEqualTo("Marina");
     }
 
     @Test
@@ -369,7 +392,7 @@ class SalesOrderServiceTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         assertThrows(com.meshsuite.auth.exception.PermissionDeniedException.class,
-                () -> salesOrderService.list(null, null, org.springframework.data.domain.PageRequest.of(0, 10)));
+                () -> salesOrderService.list(null, null, null, org.springframework.data.domain.PageRequest.of(0, 10)));
     }
 
     @Test
