@@ -44,9 +44,15 @@
               <span
                 v-if="produto.type === 'VARIATION_PARENT'"
                 class="expand-toggle"
+                :class="{ 'expand-toggle-open': isExpanded(produto.id) }"
                 :data-test="`expandir-${produto.id}`"
                 @click="toggleExpanded(produto.id)"
-              >{{ isExpanded(produto.id) ? '▾' : '▸' }}</span>
+              >
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                  <path d="M2 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span v-else class="expand-toggle-spacer"></span>
               {{ produto.name }}
             </div>
             <div class="table-grid-cell">{{ produto.brand }}</div>
@@ -384,9 +390,36 @@ onMounted(() => {
 }
 
 .expand-toggle {
-  display: inline-block;
-  width: 12px;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-right: 6px;
+  border: 1.5px solid var(--pm-border-light);
+  border-radius: 4px;
+  background: var(--pm-white);
   color: var(--pm-text-muted);
+  cursor: pointer;
+}
+
+.expand-toggle svg {
+  transition: transform 0.15s;
+}
+
+.expand-toggle-open {
+  background: var(--pm-accent-bg);
+  color: var(--pm-accent);
+}
+
+.expand-toggle-open svg {
+  transform: rotate(90deg);
+}
+
+.expand-toggle-spacer {
+  display: inline-block;
+  width: 18px;
+  margin-right: 6px;
 }
 </style>
