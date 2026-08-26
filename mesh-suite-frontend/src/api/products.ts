@@ -17,6 +17,7 @@ export interface ProductRequest {
   description: string
   stockQuantity: number
   measurementUnit: MeasurementUnit
+  saleMultiple: number | null
   minStock: number | null
   maxStock: number | null
   size: string | null

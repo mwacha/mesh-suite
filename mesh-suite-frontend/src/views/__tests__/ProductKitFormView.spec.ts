@@ -115,12 +115,28 @@ describe('ProductKitFormView', () => {
     expect(router.currentRoute.value.name).toBe('produtos')
   })
 
+  it('lets the user type a múltiplo de venda, sent in the payload', async () => {
+    vi.mocked(kitsApi.createKit).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="nome"]').setValue('Kit Combo')
+    await wrapper.find('[data-test="sku"]').setValue('KIT001')
+    await wrapper.find('[data-test="multiplo-venda"]').setValue('3')
+    await adicionarComponenteViaModal(wrapper)
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(kitsApi.createKit).toHaveBeenCalledWith(expect.objectContaining({ saleMultiple: 3 }))
+  })
+
   it('loads existing kit data in edit mode', async () => {
     vi.mocked(kitsApi.getKit).mockResolvedValue({
       id: 'kit-1', name: 'Kit Combo', sku: 'KIT001', barcode: null, measurementUnit: 'UN',
       status: 'ACTIVE', description: '',
       items: [{ componentProductId: 'prod-1', componentName: 'Camiseta Polo', componentSku: 'P0001', quantity: 2, unitPrice: 89.9, totalPrice: 179.8 }],
       totalPrice: 179.8,
+      saleMultiple: 1,
     })
 
     const { wrapper } = await mountWithRouter('/produtos/kit-1/editar/kit')

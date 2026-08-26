@@ -12,6 +12,7 @@ export interface VariationChildInput {
   maxStock: number | null
   size: string | null
   colorwayId: string | null
+  saleMultiple: number | null
 }
 
 export interface VariationChildResponse extends VariationChildInput {
@@ -29,6 +30,7 @@ export interface VariationParentRequest {
   description: string
   measurementUnit: MeasurementUnit
   children: VariationChildInput[]
+  saleMultiple: number | null
 }
 
 export interface VariationParentResponse {
@@ -43,6 +45,7 @@ export interface VariationParentResponse {
   description: string
   measurementUnit: MeasurementUnit
   children: VariationChildResponse[]
+  saleMultiple: number | null
 }
 
 export async function getVariation(id: string): Promise<VariationParentResponse> {

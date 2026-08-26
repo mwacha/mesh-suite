@@ -138,7 +138,7 @@ class CategoryServiceTest extends AbstractIntegrationTest {
         productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Polo", "P0001", null, null, categoria.id(), null,
                 new BigDecimal("59.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
 
         assertThatThrownBy(() -> categoryService.delete(categoria.id()))
                 .isInstanceOf(CategoryInUseException.class);
@@ -167,15 +167,15 @@ class CategoryServiceTest extends AbstractIntegrationTest {
         productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Polo", "P0001", null, null, camisas.id(), null,
                 new BigDecimal("59.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
         productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Regata", "P0002", null, null, camisas.id(), null,
                 new BigDecimal("39.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
         productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Calça Jeans", "P0003", null, null, calcas.id(), null,
                 new BigDecimal("119.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
 
         var pagina = categoryService.list(null, null, PageRequest.of(0, 10));
 

@@ -21,7 +21,7 @@
           </div>
           <div>
             <label class="field-label">Múltiplo de Venda</label>
-            <div class="readonly-field">1</div>
+            <input v-model.number="form.saleMultiple" type="number" step="0.001" min="0.001" data-test="multiplo-venda" />
           </div>
         </div>
         <div class="grid grid-2">
@@ -147,6 +147,7 @@ function novoFormulario() {
     sku: '',
     barcode: '' as string | null,
     measurementUnit: 'UN' as MeasurementUnit,
+    saleMultiple: 1 as number | null,
     status: 'ACTIVE' as ProductStatus,
     description: '',
   }
@@ -210,6 +211,7 @@ onMounted(async () => {
       form.sku = kit.sku
       form.barcode = kit.barcode
       form.measurementUnit = kit.measurementUnit
+      form.saleMultiple = kit.saleMultiple
       form.status = kit.status
       form.description = kit.description
       itens.value = kit.items.map((i) => ({
@@ -241,6 +243,7 @@ function paraPayload(): KitProductRequest {
     status: form.status,
     description: form.description,
     items: itens.value.map((i) => ({ componentProductId: i.componentProductId, quantity: i.quantity })),
+    saleMultiple: Number(form.saleMultiple) || 1,
   }
 }
 
@@ -300,19 +303,6 @@ function cancelar() {
   color: var(--pm-text-dark);
   margin: 0 0 12px;
   font-family: var(--pm-font);
-}
-
-.readonly-field {
-  height: 34px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  background: var(--pm-bg);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  padding: 0 10px;
-  color: var(--pm-text-muted);
-  font-size: 13px;
 }
 
 .grid {

@@ -141,7 +141,7 @@ class ColorwayServiceTest extends AbstractIntegrationTest {
         productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Polo", "P0001", null, null, null, corEstampa.id(),
                 new BigDecimal("59.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
 
         assertThatThrownBy(() -> colorwayService.delete(corEstampa.id()))
                 .isInstanceOf(ColorwayInUseException.class);
@@ -170,15 +170,15 @@ class ColorwayServiceTest extends AbstractIntegrationTest {
         productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Polo", "P0001", null, null, null, azul.id(),
                 new BigDecimal("59.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
         productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Regata", "P0002", null, null, null, azul.id(),
                 new BigDecimal("39.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
         productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Calça Jeans", "P0003", null, null, null, vermelho.id(),
                 new BigDecimal("119.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
 
         var pagina = colorwayService.list(null, null, PageRequest.of(0, 10));
 

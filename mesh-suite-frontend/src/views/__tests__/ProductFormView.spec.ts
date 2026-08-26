@@ -258,6 +258,21 @@ describe('ProductFormView', () => {
     expect(payload.size).toBe('M')
   })
 
+  it('lets the user type a múltiplo de venda, sent in the payload', async () => {
+    vi.mocked(produtosApi.createProduct).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('P0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
+    await wrapper.find('[data-test="multiplo-venda"]').setValue('6')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const payload = vi.mocked(produtosApi.createProduct).mock.calls[0][0]
+    expect(payload.saleMultiple).toBe(6)
+  })
+
   it('navigates to the Kit form when the Tipo de Produto switcher picks Kit', async () => {
     const { router, wrapper } = await mountWithRouter()
 

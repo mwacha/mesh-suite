@@ -76,12 +76,12 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
     }
 
     private VariationChildInput child(UUID id, String sku, String price) {
-        return new VariationChildInput(id, sku, null, new BigDecimal(price), null, new BigDecimal("10"), null, null, "M", null);
+        return new VariationChildInput(id, sku, null, new BigDecimal(price), null, new BigDecimal("10"), null, null, "M", null, null);
     }
 
     private VariationParentRequest request(String sku, List<VariationChildInput> children) {
         return new VariationParentRequest("Camiseta Polo", sku, "Marca Alpha", null,
-                new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, children);
+                new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, children, null);
     }
 
     @Test
@@ -97,6 +97,32 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
             Product childEntity = productRepository.findByIdAndType(childResponse.id(), ProductType.VARIATION_CHILD).orElseThrow();
             assertThat(childEntity.getParentProduct().getId()).isEqualTo(parentEntity.getId());
         }
+    }
+
+    @Test
+    void defaultsSaleMultipleToOneForBothParentAndChildrenWhenNotProvided() {
+        UUID tenantId = setUpTenant("aurora");
+
+        var parent = variationProductService.create(tenantId, request("V0001", List.of(child(null, "V0001-P", "79.90"))));
+
+        assertThat(parent.saleMultiple()).isEqualByComparingTo(BigDecimal.ONE);
+        assertThat(parent.children().get(0).saleMultiple()).isEqualByComparingTo(BigDecimal.ONE);
+    }
+
+    @Test
+    void appliesAnExplicitSaleMultipleToParentAndChildIndependently() {
+        UUID tenantId = setUpTenant("aurora");
+        VariationChildInput childInput = new VariationChildInput(
+                null, "V0001-P", null, new BigDecimal("79.90"), null, new BigDecimal("10"), null, null, "M", null,
+                new BigDecimal("2"));
+        VariationParentRequest request = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
+                new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, List.of(childInput),
+                new BigDecimal("5"));
+
+        var parent = variationProductService.create(tenantId, request);
+
+        assertThat(parent.saleMultiple()).isEqualByComparingTo("5");
+        assertThat(parent.children().get(0).saleMultiple()).isEqualByComparingTo("2");
     }
 
     @Test

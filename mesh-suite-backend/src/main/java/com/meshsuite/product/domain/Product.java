@@ -74,6 +74,9 @@ public class Product {
     @Column(name = "measurement_unit", nullable = false, length = 5)
     private MeasurementUnit measurementUnit = MeasurementUnit.UN;
 
+    @Column(name = "sale_multiple", nullable = false, precision = 12, scale = 3)
+    private BigDecimal saleMultiple = BigDecimal.ONE;
+
     @Column(name = "min_stock", precision = 12, scale = 3)
     private BigDecimal minStock;
 

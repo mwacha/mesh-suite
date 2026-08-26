@@ -158,6 +158,7 @@ public class VariationProductService extends AbstractProductTypeService {
         parent.setStatus(request.status() != null ? request.status() : ProductStatus.ACTIVE);
         parent.setDescription(request.description());
         parent.setMeasurementUnit(request.measurementUnit() != null ? request.measurementUnit() : parent.getMeasurementUnit());
+        parent.setSaleMultiple(request.saleMultiple() != null ? request.saleMultiple() : java.math.BigDecimal.ONE);
     }
 
     private void applyChild(Product child, VariationChildInput input) {
@@ -169,6 +170,7 @@ public class VariationProductService extends AbstractProductTypeService {
         child.setMinStock(input.minStock());
         child.setMaxStock(input.maxStock());
         child.setSize(input.size());
+        child.setSaleMultiple(input.saleMultiple() != null ? input.saleMultiple() : java.math.BigDecimal.ONE);
         child.setColorway(input.colorwayId() != null
                 ? colorwayRepository.findById(input.colorwayId()).orElseThrow(ColorwayNotFoundException::new)
                 : null);
@@ -184,12 +186,12 @@ public class VariationProductService extends AbstractProductTypeService {
                 .map(c -> new VariationChildResponse(c.getId(), c.getSku(), c.getBarcode(), c.getSalePrice(),
                         c.getCostPrice(), c.getStockQuantity(), c.getMinStock(), c.getMaxStock(), c.getSize(),
                         c.getColorway() != null ? c.getColorway().getId() : null,
-                        c.getColorway() != null ? c.getColorway().getName() : null))
+                        c.getColorway() != null ? c.getColorway().getName() : null, c.getSaleMultiple()))
                 .toList();
         return new VariationParentResponse(parent.getId(), parent.getName(), parent.getSku(), parent.getBrand(),
                 parent.getCategory() != null ? parent.getCategory().getId() : null,
                 parent.getCategory() != null ? parent.getCategory().getName() : null,
                 parent.getSalePrice(), parent.getStatus(), parent.getDescription(), parent.getMeasurementUnit(),
-                childResponses);
+                childResponses, parent.getSaleMultiple());
     }
 }

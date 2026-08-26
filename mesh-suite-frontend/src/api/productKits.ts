@@ -21,6 +21,7 @@ export interface KitProductRequest {
   status: ProductStatus
   description: string
   items: KitItemInput[]
+  saleMultiple: number | null
 }
 
 export interface KitProductResponse {
@@ -33,6 +34,7 @@ export interface KitProductResponse {
   description: string
   items: KitItemResponse[]
   totalPrice: number
+  saleMultiple: number | null
 }
 
 export async function getKit(id: string): Promise<KitProductResponse> {

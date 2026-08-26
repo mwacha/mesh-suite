@@ -28,5 +28,6 @@ public record ProductResponse(
         BigDecimal weight,
         BigDecimal length,
         BigDecimal width,
-        BigDecimal height) {
+        BigDecimal height,
+        BigDecimal saleMultiple) {
 }

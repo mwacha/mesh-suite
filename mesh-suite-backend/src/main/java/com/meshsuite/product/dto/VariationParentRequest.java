@@ -19,5 +19,6 @@ public record VariationParentRequest(
         ProductStatus status,
         String description,
         MeasurementUnit measurementUnit,
-        @NotEmpty List<@Valid VariationChildInput> children) {
+        @NotEmpty List<@Valid VariationChildInput> children,
+        BigDecimal saleMultiple) {
 }

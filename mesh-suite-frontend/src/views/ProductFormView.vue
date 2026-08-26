@@ -95,7 +95,7 @@
             </div>
             <div>
               <label class="field-label">Múltiplo de Venda</label>
-              <div class="readonly-field">1</div>
+              <input v-model.number="form.saleMultiple" type="number" step="0.001" min="0.001" data-test="multiplo-venda" />
             </div>
           </div>
         </CollapsibleSection>
@@ -173,6 +173,7 @@ function novoFormulario(): ProductRequest {
     description: '',
     stockQuantity: 0,
     measurementUnit: 'UN',
+    saleMultiple: 1,
     minStock: null,
     maxStock: null,
     size: null,
@@ -286,6 +287,7 @@ function paraPayload(): ProductRequest {
     salePrice: Number(form.salePrice) || 0,
     costPrice: numeroOuNull(form.costPrice),
     stockQuantity: Number(form.stockQuantity) || 0,
+    saleMultiple: Number(form.saleMultiple) || 1,
     minStock: numeroOuNull(form.minStock),
     maxStock: numeroOuNull(form.maxStock),
     size: form.size?.trim() || null,
@@ -361,19 +363,6 @@ function cancelar() {
   color: var(--pm-text-dark);
   margin: 0 0 12px;
   font-family: var(--pm-font);
-}
-
-.readonly-field {
-  height: 34px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  background: var(--pm-bg);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  padding: 0 10px;
-  color: var(--pm-text-muted);
-  font-size: 13px;
 }
 
 .grid {

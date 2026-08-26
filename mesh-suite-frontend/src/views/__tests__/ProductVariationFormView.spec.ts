@@ -126,11 +126,39 @@ describe('ProductVariationFormView', () => {
     expect(router.currentRoute.value.name).toBe('produtos')
   })
 
+  it('lets the user type a múltiplo de venda for the parent and for each variante', async () => {
+    vi.mocked(variationsApi.createVariation).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('V0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('89.90')
+    await wrapper.find('[data-test="multiplo-venda"]').setValue('4')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P'])
+
+    await wrapper.find('[data-test="variante-editar-0"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="variante-multiplo-venda"]').setValue('2')
+    await wrapper.find('[data-test="variante-salvar"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(variationsApi.createVariation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        saleMultiple: 4,
+        children: [expect.objectContaining({ sku: 'V0001-P', saleMultiple: 2 })],
+      }),
+    )
+  })
+
   it('loads existing variação data in edit mode', async () => {
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
       id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
-      salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN',
-      children: [{ id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null }],
+      salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [{ id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 }],
     })
 
     const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
