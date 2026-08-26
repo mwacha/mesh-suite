@@ -99,17 +99,29 @@ const stats = computed<ListCardStat[]>(() => [
   { value: props.itensAdicionadosIds.length, label: 'Adicionados', color: 'green' },
 ])
 
+// Every keystroke fires a new request with no debounce, so responses can come back
+// out of order (e.g. the broader query for "P" resolving after the narrower "P0001").
+// A sequence guard discards any response that isn't for the most recently issued
+// request, so a slow, stale response can never clobber a newer, more specific one.
+let requestSeq = 0
+
 async function carregar(page: number) {
+  const seq = ++requestSeq
   carregando.value = true
   try {
-    pagina.value = await listProducts({
+    const resultado = await listProducts({
       search: busca.value || undefined,
       status: 'ACTIVE',
       page,
       size: pagina.value.size,
     })
+    if (seq === requestSeq) {
+      pagina.value = resultado
+    }
   } finally {
-    carregando.value = false
+    if (seq === requestSeq) {
+      carregando.value = false
+    }
   }
 }
 
