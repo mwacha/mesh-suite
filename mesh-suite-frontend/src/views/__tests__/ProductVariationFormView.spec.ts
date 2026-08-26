@@ -150,7 +150,8 @@ describe('ProductVariationFormView', () => {
     expect(variationsApi.createVariation).toHaveBeenCalledWith(
       expect.objectContaining({
         saleMultiple: 4,
-        children: [expect.objectContaining({ sku: 'V0001-P', saleMultiple: 2 })],
+        // Editing a variante in the panel keeps the combination it was generated for.
+        children: [expect.objectContaining({ sku: 'V0001-P', saleMultiple: 2, variationValues: ['P'] })],
       }),
     )
   })
@@ -159,7 +160,7 @@ describe('ProductVariationFormView', () => {
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
       id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
-      children: [{ id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 }],
+      children: [{ id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] }],
       variationAxes: [{ name: 'Tamanho', values: ['P'] }],
     })
 
@@ -179,8 +180,8 @@ describe('ProductVariationFormView', () => {
       id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
       salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
-        { id: 'c-1', sku: '2408-P', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-2', sku: '2408-M', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-1', sku: '2408-P', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-2', sku: '2408-M', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
       ],
       variationAxes: [],
     })
@@ -204,8 +205,8 @@ describe('ProductVariationFormView', () => {
       id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
-        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
       ],
       variationAxes: [{ name: 'Tamanho', values: ['P', 'M'] }],
     })
@@ -231,10 +232,10 @@ describe('ProductVariationFormView', () => {
       id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
-        { id: 'c-1', sku: 'V0001-P-BR', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-1', colorwayName: 'Branco', saleMultiple: 1 },
-        { id: 'c-2', sku: 'V0001-P-VM', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-2', colorwayName: 'Vermelho', saleMultiple: 1 },
-        { id: 'c-3', sku: 'V0001-M-BR', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 2, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-1', colorwayName: 'Branco', saleMultiple: 1 },
-        { id: 'c-4', sku: 'V0001-M-VM', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 1, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-2', colorwayName: 'Vermelho', saleMultiple: 1 },
+        { id: 'c-1', sku: 'V0001-P-BR', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-1', colorwayName: 'Branco', saleMultiple: 1, variationValues: [] },
+        { id: 'c-2', sku: 'V0001-P-VM', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-2', colorwayName: 'Vermelho', saleMultiple: 1, variationValues: [] },
+        { id: 'c-3', sku: 'V0001-M-BR', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 2, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-1', colorwayName: 'Branco', saleMultiple: 1, variationValues: [] },
+        { id: 'c-4', sku: 'V0001-M-VM', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 1, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-2', colorwayName: 'Vermelho', saleMultiple: 1, variationValues: [] },
       ],
       variationAxes: [
         { name: 'Tamanho', values: ['P', 'M'] },
@@ -258,8 +259,8 @@ describe('ProductVariationFormView', () => {
       id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
-        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
       ],
       variationAxes: [{ name: 'Tamanho', values: ['P', 'M'] }],
     })
@@ -282,8 +283,8 @@ describe('ProductVariationFormView', () => {
       id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
-        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
       ],
       variationAxes: [{ name: 'Tamanho', values: ['P', 'M'] }],
     })
@@ -304,7 +305,86 @@ describe('ProductVariationFormView', () => {
     expect(wrapper.text()).toContain('V0001-GG')
   })
 
-  it('drops orphan legacy children (no colorwayName) once a matrix-changing action re-syncs the Variação', async () => {
+  it('does not duplicate rows when a saved child\'s axis value is not backed by a cadastro', async () => {
+    // Real "CALCINHA CONFORTO" state: a COR axis whose values are free text, so the
+    // children have colorway_id NULL and the value survives only inside the SKU.
+    // Each child must still be matched back to its combination -- otherwise the
+    // matrix generates a second row for every combination on top of the saved ones.
+    vi.mocked(variationsApi.getVariation).mockResolvedValue({
+      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
+      salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [
+        { id: 'c-1', sku: '2408-40-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 7, minStock: null, maxStock: null, size: '40', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: ['40', 'VERMELHA'] },
+        { id: 'c-2', sku: '2408-40-AZUL', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: '40', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: ['40', 'AZUL'] },
+        { id: 'c-3', sku: '2408-42-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: '42', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: ['42', 'VERMELHA'] },
+        { id: 'c-4', sku: '2408-42-AZUL', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: '42', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: ['42', 'AZUL'] },
+      ],
+      variationAxes: [
+        { name: 'Tamanho', values: ['40', '42'] },
+        { name: 'COR', values: ['VERMELHA', 'AZUL'] },
+      ],
+    })
+
+    const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Variantes Geradas (4)')
+    // The saved rows are reused, not regenerated -- stock survives the round trip.
+    expect(wrapper.findAll('.itens-grid-cell-nome').map((n) => n.text())).toEqual([
+      '2408-40-VERMELHA', '2408-40-AZUL', '2408-42-VERMELHA', '2408-42-AZUL',
+    ])
+    expect(wrapper.text()).toContain('7')
+  })
+
+  it('matches legacy children with no persisted variationValues by position', async () => {
+    // Saved before the variationValues column existed: nothing identifies which
+    // combination each row belongs to, but children are created in the same order
+    // the matrix generates them, so position recovers it without losing their data.
+    vi.mocked(variationsApi.getVariation).mockResolvedValue({
+      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
+      salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [
+        { id: 'c-1', sku: '2408-40-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 7, minStock: null, maxStock: null, size: null, colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-2', sku: '2408-40-AZUL', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: null, colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-3', sku: '2408-42-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: null, colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-4', sku: '2408-42-AZUL', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: null, colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+      ],
+      variationAxes: [
+        { name: 'Tamanho', values: ['40', '42'] },
+        { name: 'COR', values: ['VERMELHA', 'AZUL'] },
+      ],
+    })
+
+    const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Variantes Geradas (4)')
+    expect(wrapper.findAll('.itens-grid-cell-nome').map((n) => n.text())).toEqual([
+      '2408-40-VERMELHA', '2408-40-AZUL', '2408-42-VERMELHA', '2408-42-AZUL',
+    ])
+  })
+
+  it('sends each variante\'s own combination back on save', async () => {
+    vi.mocked(variationsApi.createVariation).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="nome"]').setValue('Calcinha Conforto')
+    await wrapper.find('[data-test="sku"]').setValue('2408')
+    await wrapper.find('[data-test="preco-venda"]').setValue('28.25')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['40'])
+    await adicionarTipoDeVariacao(wrapper, 'COR', ['VERMELHA'])
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(variationsApi.createVariation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        children: [expect.objectContaining({ variationValues: ['40', 'VERMELHA'] })],
+      }),
+    )
+  })
+
+  it('drops orphan children left behind by an earlier bad save, keeping one row per combination', async () => {
     // Real reported scenario: a pre-existing Variação already has 6 legacy
     // children whose color was only ever embedded in free-text SKUs (never a
     // real colorwayId/colorwayName link), alongside 6 properly-linked children
@@ -317,18 +397,18 @@ describe('ProductVariationFormView', () => {
       id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
       salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
-        { id: 'c-1', sku: '2408-PP-VE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-2', sku: '2408-PP-CH', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-3', sku: '2408-P-VER', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-4', sku: '2408-P-CHO', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-5', sku: '2408-M-VER', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-6', sku: '2408-M-CH', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
-        { id: 'c-7', sku: '2408-PP-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1 },
-        { id: 'c-8', sku: '2408-PP-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1 },
-        { id: 'c-9', sku: '2408-P-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1 },
-        { id: 'c-10', sku: '2408-P-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1 },
-        { id: 'c-11', sku: '2408-M-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1 },
-        { id: 'c-12', sku: '2408-M-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1 },
+        { id: 'c-1', sku: '2408-PP-VE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-2', sku: '2408-PP-CH', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-3', sku: '2408-P-VER', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-4', sku: '2408-P-CHO', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-5', sku: '2408-M-VER', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-6', sku: '2408-M-CH', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
+        { id: 'c-7', sku: '2408-PP-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1, variationValues: [] },
+        { id: 'c-8', sku: '2408-PP-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1, variationValues: [] },
+        { id: 'c-9', sku: '2408-P-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1, variationValues: [] },
+        { id: 'c-10', sku: '2408-P-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1, variationValues: [] },
+        { id: 'c-11', sku: '2408-M-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-1', colorwayName: 'Vermelha', saleMultiple: 1, variationValues: [] },
+        { id: 'c-12', sku: '2408-M-CHOCOLATE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: 'co-2', colorwayName: 'Chocolate', saleMultiple: 1, variationValues: [] },
       ],
       variationAxes: [
         { name: 'Tamanho', values: ['PP', 'P', 'M'] },
@@ -339,11 +419,16 @@ describe('ProductVariationFormView', () => {
     const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
     await flushPromises()
 
-    // Merely opening the form must not silently discard the 6 legacy rows.
-    expect(wrapper.text()).toContain('Variantes Geradas (12)')
+    // The 6 duplicated orphans are dropped on load: the matrix has 6 combinations,
+    // so the product has exactly 6 variantes -- the ones that match them.
+    expect(wrapper.text()).toContain('Variantes Geradas (6)')
+    expect(wrapper.findAll('.itens-grid-cell-nome').map((n) => n.text())).toEqual([
+      '2408-PP-VERMELHA', '2408-PP-CHOCOLATE', '2408-P-VERMELHA',
+      '2408-P-CHOCOLATE', '2408-M-VERMELHA', '2408-M-CHOCOLATE',
+    ])
 
-    // Adding a new axis is a composition change -- everything is swept away,
-    // including the legacy rows, and rebuilt as a fresh cartesian product.
+    // Adding a new axis is a composition change -- everything is swept away and
+    // rebuilt as a fresh cartesian product.
     await adicionarTipoDeVariacao(wrapper, 'Estampa', ['Lisa'])
 
     expect(wrapper.text()).toContain('Variantes Geradas (6)')

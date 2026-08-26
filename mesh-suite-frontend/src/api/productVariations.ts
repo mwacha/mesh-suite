@@ -13,6 +13,11 @@ export interface VariationChildInput {
   size: string | null
   colorwayId: string | null
   saleMultiple: number | null
+  // This variante's own coordinate in the parent's Tipos de Variação matrix,
+  // e.g. ["40","VERMELHA"], in the same order as variationAxes. Only "Tamanho"
+  // maps to a real field (size), so without this any other axis value would be
+  // lost on reload and the row could not be matched back to its combination.
+  variationValues: string[]
 }
 
 export interface VariationChildResponse extends VariationChildInput {

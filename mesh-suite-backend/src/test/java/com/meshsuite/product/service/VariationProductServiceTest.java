@@ -76,7 +76,7 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
     }
 
     private VariationChildInput child(UUID id, String sku, String price) {
-        return new VariationChildInput(id, sku, null, new BigDecimal(price), null, new BigDecimal("10"), null, null, "M", null, null);
+        return new VariationChildInput(id, sku, null, new BigDecimal(price), null, new BigDecimal("10"), null, null, "M", null, null, null);
     }
 
     private VariationParentRequest request(String sku, List<VariationChildInput> children) {
@@ -114,7 +114,7 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
         UUID tenantId = setUpTenant("aurora");
         VariationChildInput childInput = new VariationChildInput(
                 null, "V0001-P", null, new BigDecimal("79.90"), null, new BigDecimal("10"), null, null, "M", null,
-                new BigDecimal("2"));
+                new BigDecimal("2"), null);
         VariationParentRequest request = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
                 new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, List.of(childInput),
                 new BigDecimal("5"), null);
@@ -145,6 +145,40 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
 
         var found = variationProductService.findById(created.id());
         assertThat(found.variationAxes()).isEqualTo(created.variationAxes());
+    }
+
+    @Test
+    void persistsEachChildsOwnCombinationOfAxisValues() {
+        // Only "Tamanho" has a column of its own (size); a value like "VERMELHA" on a
+        // COR axis is not a colorway cadastro, so without variationValues it would be
+        // unrecoverable on reload and the child could not be matched back to the
+        // combination that generated it.
+        UUID tenantId = setUpTenant("aurora");
+        var axes = List.of(
+                new com.meshsuite.product.dto.VariationAxisInput("Tamanho", List.of("40")),
+                new com.meshsuite.product.dto.VariationAxisInput("COR", List.of("VERMELHA")));
+        VariationChildInput childInput = new VariationChildInput(null, "2408-40-VERMELHA", null,
+                new BigDecimal("28.25"), null, new BigDecimal("10"), null, null, "40", null, null,
+                List.of("40", "VERMELHA"));
+        VariationParentRequest request = new VariationParentRequest("Calcinha Conforto", "2408", "Linda Brasil", null,
+                new BigDecimal("28.25"), ProductStatus.ACTIVE, "Descrição", null, List.of(childInput), null, axes);
+
+        var created = variationProductService.create(tenantId, request);
+
+        assertThat(created.children()).hasSize(1);
+        assertThat(created.children().get(0).variationValues()).containsExactly("40", "VERMELHA");
+
+        var found = variationProductService.findById(created.id());
+        assertThat(found.children().get(0).variationValues()).containsExactly("40", "VERMELHA");
+    }
+
+    @Test
+    void returnsAnEmptyVariationValuesListWhenTheChildHasNoStoredCombination() {
+        UUID tenantId = setUpTenant("aurora");
+        var created = variationProductService.create(tenantId,
+                request("V0001", List.of(child(null, "V0001-P", "79.90"))));
+
+        assertThat(created.children().get(0).variationValues()).isEmpty();
     }
 
     @Test

@@ -66,7 +66,7 @@ public class VariationProductService extends AbstractProductTypeService {
     @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
     public VariationParentResponse findById(UUID id) {
         Product parent = findEntityByType(id);
-        return toResponse(parent, productRepository.findByParentProductId(id));
+        return toResponse(parent, productRepository.findByParentProductIdOrderByCreatedAtAscIdAsc(id));
     }
 
     @Transactional
@@ -98,7 +98,7 @@ public class VariationProductService extends AbstractProductTypeService {
         // set -- delete every existing child and recreate from the request rather than
         // trying to merge by id. flush() first so the deletes actually reach Postgres
         // before the inserts below reuse the same SKUs.
-        productRepository.deleteAll(productRepository.findByParentProductId(id));
+        productRepository.deleteAll(productRepository.findByParentProductIdOrderByCreatedAtAscIdAsc(id));
         productRepository.flush();
 
         List<Product> children = createChildren(parent, request.children());
@@ -175,6 +175,29 @@ public class VariationProductService extends AbstractProductTypeService {
         }
     }
 
+    private String serializeValues(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(values);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Falha ao serializar a combinação da variante", e);
+        }
+    }
+
+    private List<String> deserializeValues(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Falha ao interpretar a combinação salva da variante", e);
+        }
+    }
+
     private void applyChild(Product child, VariationChildInput input) {
         child.setSku(input.sku());
         child.setBarcode(input.barcode());
@@ -185,6 +208,7 @@ public class VariationProductService extends AbstractProductTypeService {
         child.setMaxStock(input.maxStock());
         child.setSize(input.size());
         child.setSaleMultiple(input.saleMultiple() != null ? input.saleMultiple() : java.math.BigDecimal.ONE);
+        child.setVariationValuesJson(serializeValues(input.variationValues()));
         child.setColorway(input.colorwayId() != null
                 ? colorwayRepository.findById(input.colorwayId()).orElseThrow(ColorwayNotFoundException::new)
                 : null);
@@ -200,7 +224,8 @@ public class VariationProductService extends AbstractProductTypeService {
                 .map(c -> new VariationChildResponse(c.getId(), c.getSku(), c.getBarcode(), c.getSalePrice(),
                         c.getCostPrice(), c.getStockQuantity(), c.getMinStock(), c.getMaxStock(), c.getSize(),
                         c.getColorway() != null ? c.getColorway().getId() : null,
-                        c.getColorway() != null ? c.getColorway().getName() : null, c.getSaleMultiple()))
+                        c.getColorway() != null ? c.getColorway().getName() : null, c.getSaleMultiple(),
+                        deserializeValues(c.getVariationValuesJson())))
                 .toList();
         return new VariationParentResponse(parent.getId(), parent.getName(), parent.getSku(), parent.getBrand(),
                 parent.getCategory() != null ? parent.getCategory().getId() : null,
