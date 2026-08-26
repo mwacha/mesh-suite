@@ -198,7 +198,7 @@ async function searchProducts() {
     return
   }
   try {
-    const page = await listProducts({ busca: productSearch.value, size: 5 })
+    const page = await listProducts({ search: productSearch.value, size: 5 })
     productResults.value = page.content
   } catch {
     productResults.value = []

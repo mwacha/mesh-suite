@@ -103,7 +103,7 @@ async function carregar(page: number) {
   carregando.value = true
   try {
     pagina.value = await listProducts({
-      busca: busca.value || undefined,
+      search: busca.value || undefined,
       status: 'ACTIVE',
       page,
       size: pagina.value.size,

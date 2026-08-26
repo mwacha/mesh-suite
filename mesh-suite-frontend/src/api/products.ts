@@ -52,7 +52,7 @@ export interface Page<T> {
 }
 
 export interface ListProductsParams {
-  busca?: string
+  search?: string
   status?: ProductStatus
   page?: number
   size?: number

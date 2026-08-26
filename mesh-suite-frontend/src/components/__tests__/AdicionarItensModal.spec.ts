@@ -36,7 +36,7 @@ describe('AdicionarItensModal', () => {
     busca.dispatchEvent(new Event('input'))
     await flushPromises()
 
-    expect(produtosApi.listProducts).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'Camiseta', page: 0 }))
+    expect(produtosApi.listProducts).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'Camiseta', page: 0 }))
     wrapper.unmount()
   })
 
