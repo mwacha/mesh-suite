@@ -32,9 +32,9 @@
         <div class="grid grid-2">
           <div>
             <label class="field-label">Perfil de Acesso *</label>
-            <select v-model="form.profile" data-test="profile" @change="applyDefaultPermissions">
+            <select v-model="form.permissionProfileId" data-test="profile" @change="applyProfilePermissions">
               <option value="">Selecione...</option>
-              <option v-for="p in PROFILES" :key="p" :value="p">{{ PROFILE_LABELS[p] }}</option>
+              <option v-for="p in perfis" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
             <p v-if="erros.profile" class="field-error">{{ erros.profile }}</p>
           </div>
@@ -111,11 +111,11 @@ import {
   updateUser,
   type UserRequest,
   type Role,
-  type Profile,
   type ModuleName,
   type ActionName,
   type Permission,
 } from '@/api/users'
+import { listPermissionProfiles, getPermissionProfile, type PermissionProfileSummary } from '@/api/permissionProfiles'
 
 const ROLES: Role[] = ['ADMINISTRATIVE', 'SALES_REP', 'PRODUCTION', 'OUTSOURCED', 'ADMIN']
 const ROLE_LABELS: Record<Role, string> = {
@@ -125,20 +125,14 @@ const ROLE_LABELS: Record<Role, string> = {
   OUTSOURCED: 'Terceirizado',
   ADMIN: 'Administrador',
 }
-const PROFILES: Profile[] = ['ADMIN', 'MANAGER', 'SALES', 'VIEWER']
-const PROFILE_LABELS: Record<Profile, string> = {
-  ADMIN: 'Admin',
-  MANAGER: 'Gerente',
-  SALES: 'Vendedor',
-  VIEWER: 'Visualizador',
-}
-const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER', 'PURCHASE', 'PAYABLE', 'SALE', 'PURCHASE_INVOICE']
+const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER', 'PURCHASE', 'STOCK', 'PAYABLE', 'SALE', 'PURCHASE_INVOICE']
 const MODULE_LABELS: Record<ModuleName, string> = {
   CUSTOMER: 'Clientes',
   PRODUCT: 'Produtos',
   ORDER: 'Pedidos',
   USER: 'Usuários',
   PURCHASE: 'Compras',
+  STOCK: 'Estoque',
   PAYABLE: 'Contas a Pagar',
   SALE: 'Vendas',
   PURCHASE_INVOICE: 'Notas de Entrada',
@@ -149,44 +143,6 @@ const ACTION_LABELS: Record<ActionName, string> = {
   CREATE: 'Criar',
   EDIT: 'Editar',
   DELETE: 'Excluir',
-}
-
-// Business-judgment default matrix, not confirmed by PRD or prototype -- see the
-// plan's Task 6 note. Only used to pre-check the grid on Perfil selection; the
-// backend never recomputes this, it persists whatever is checked at submit time.
-const DEFAULT_MATRIX: Record<Profile, Permission[]> = {
-  ADMIN: [
-    ...MODULES.flatMap((m) => ACTIONS.filter((a) =>
-      !(m === 'USER' && a === 'DELETE') && !(m === 'PAYABLE' && (a === 'CREATE' || a === 'DELETE'))
-        && !(m === 'SALE' && (a === 'EDIT' || a === 'DELETE'))
-        && !(m === 'PURCHASE_INVOICE' && (a === 'EDIT' || a === 'DELETE')),
-    ).map((a) => ({ module: m, action: a }))),
-  ],
-  MANAGER: [
-    { module: 'CUSTOMER', action: 'VIEW' }, { module: 'CUSTOMER', action: 'CREATE' }, { module: 'CUSTOMER', action: 'EDIT' },
-    { module: 'PRODUCT', action: 'VIEW' }, { module: 'PRODUCT', action: 'CREATE' }, { module: 'PRODUCT', action: 'EDIT' },
-    { module: 'ORDER', action: 'VIEW' }, { module: 'ORDER', action: 'CREATE' }, { module: 'ORDER', action: 'EDIT' },
-    { module: 'PURCHASE', action: 'VIEW' }, { module: 'PURCHASE', action: 'CREATE' }, { module: 'PURCHASE', action: 'EDIT' },
-    { module: 'PAYABLE', action: 'VIEW' }, { module: 'PAYABLE', action: 'EDIT' },
-    { module: 'SALE', action: 'VIEW' }, { module: 'SALE', action: 'CREATE' },
-    { module: 'PURCHASE_INVOICE', action: 'VIEW' }, { module: 'PURCHASE_INVOICE', action: 'CREATE' },
-    { module: 'USER', action: 'VIEW' },
-  ],
-  SALES: [
-    { module: 'CUSTOMER', action: 'VIEW' }, { module: 'CUSTOMER', action: 'CREATE' }, { module: 'CUSTOMER', action: 'EDIT' },
-    { module: 'PRODUCT', action: 'VIEW' },
-    { module: 'ORDER', action: 'VIEW' }, { module: 'ORDER', action: 'CREATE' }, { module: 'ORDER', action: 'EDIT' },
-    { module: 'SALE', action: 'VIEW' }, { module: 'SALE', action: 'CREATE' },
-  ],
-  VIEWER: [
-    { module: 'CUSTOMER', action: 'VIEW' },
-    { module: 'PRODUCT', action: 'VIEW' },
-    { module: 'ORDER', action: 'VIEW' },
-    { module: 'PURCHASE', action: 'VIEW' },
-    { module: 'PAYABLE', action: 'VIEW' },
-    { module: 'SALE', action: 'VIEW' },
-    { module: 'PURCHASE_INVOICE', action: 'VIEW' },
-  ],
 }
 
 const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
@@ -201,7 +157,7 @@ interface FormState {
   email: string
   phone: string
   role: Role | ''
-  profile: Profile | ''
+  permissionProfileId: string
   active: boolean
   password: string
   confirmPassword: string
@@ -214,7 +170,7 @@ function novoFormulario(): FormState {
     email: '',
     phone: '',
     role: '',
-    profile: '',
+    permissionProfileId: '',
     active: true,
     password: '',
     confirmPassword: '',
@@ -223,6 +179,7 @@ function novoFormulario(): FormState {
 }
 
 const form = reactive<FormState>(novoFormulario())
+const perfis = ref<PermissionProfileSummary[]>([])
 const erros = reactive<{ name?: string; email?: string; role?: string; profile?: string; password?: string; confirmPassword?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
@@ -240,13 +197,26 @@ function togglePermission(module: ModuleName, action: ActionName) {
   }
 }
 
-function applyDefaultPermissions() {
-  if (form.profile) {
-    form.permissions = [...DEFAULT_MATRIX[form.profile]]
+async function applyProfilePermissions() {
+  if (!form.permissionProfileId) {
+    return
+  }
+  try {
+    const perfil = await getPermissionProfile(form.permissionProfileId)
+    form.permissions = [...perfil.grants]
+  } catch {
+    erroGeral.value = 'Não foi possível carregar as permissões padrão deste perfil.'
   }
 }
 
 onMounted(async () => {
+  try {
+    const pagina = await listPermissionProfiles({ size: 100 })
+    perfis.value = pagina.content
+  } catch {
+    perfis.value = []
+  }
+
   const id = route.params.id
   if (typeof id === 'string') {
     try {
@@ -255,7 +225,7 @@ onMounted(async () => {
       form.email = user.email
       form.phone = user.phone ?? ''
       form.role = user.role
-      form.profile = user.profile
+      form.permissionProfileId = user.permissionProfileId ?? ''
       form.active = user.active
       form.permissions = [...user.permissions]
     } catch {
@@ -268,7 +238,7 @@ function validar(): boolean {
   erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
   erros.email = form.email.trim() ? undefined : 'Campo obrigatório'
   erros.role = form.role ? undefined : 'Campo obrigatório'
-  erros.profile = form.profile ? undefined : 'Campo obrigatório'
+  erros.profile = form.permissionProfileId ? undefined : 'Campo obrigatório'
   erros.password = !modoEdicao.value && !form.password ? 'Campo obrigatório' : undefined
   if (form.password) {
     if (form.password !== form.confirmPassword) {
@@ -290,11 +260,11 @@ function paraPayload(): UserRequest {
     email: form.email,
     phone: form.phone,
     role: form.role as Role,
-    profile: form.profile as Profile,
     active: form.active,
     password: form.password,
     confirmPassword: form.confirmPassword,
     permissions: form.permissions,
+    permissionProfileId: form.permissionProfileId || null,
   }
 }
 

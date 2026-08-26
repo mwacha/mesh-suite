@@ -21,8 +21,7 @@ export async function listBuyers(): Promise<Buyer[]> {
 }
 
 export type Role = 'ADMINISTRATIVE' | 'SALES_REP' | 'PRODUCTION' | 'OUTSOURCED' | 'ADMIN'
-export type Profile = 'ADMIN' | 'MANAGER' | 'SALES' | 'VIEWER'
-export type ModuleName = 'CUSTOMER' | 'PRODUCT' | 'ORDER' | 'USER' | 'PURCHASE' | 'PAYABLE' | 'SALE' | 'PURCHASE_INVOICE'
+export type ModuleName = 'CUSTOMER' | 'PRODUCT' | 'ORDER' | 'USER' | 'PURCHASE' | 'STOCK' | 'PAYABLE' | 'SALE' | 'PURCHASE_INVOICE'
 export type ActionName = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE'
 
 export interface Permission {
@@ -35,11 +34,11 @@ export interface UserRequest {
   email: string
   phone: string
   role: Role
-  profile: Profile
   active: boolean
   password: string
   confirmPassword: string
   permissions: Permission[]
+  permissionProfileId: string | null
 }
 
 export interface UserResponse {
@@ -48,17 +47,19 @@ export interface UserResponse {
   email: string
   phone: string
   role: Role
-  profile: Profile
   active: boolean
   permissions: Permission[]
+  permissionProfileId: string | null
+  permissionProfileName: string | null
 }
 
 export interface UserListItem {
   id: string
   name: string
   email: string
-  profile: Profile
   active: boolean
+  permissionProfileId: string | null
+  permissionProfileName: string | null
 }
 
 export interface Page<T> {
@@ -71,7 +72,6 @@ export interface Page<T> {
 
 export interface ListUsersParams {
   search?: string
-  profile?: Profile
   active?: boolean
   page?: number
   size?: number

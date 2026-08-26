@@ -23,7 +23,10 @@ function mountWithRouter() {
   }))
 }
 
-const userBase = { id: 'u1', name: 'Carla Vendedora', email: 'carla@aurora.com.br', profile: 'SALES' as const, active: true }
+const userBase = {
+  id: 'u1', name: 'Carla Vendedora', email: 'carla@aurora.com.br', active: true,
+  permissionProfileId: 'pp-vendedor', permissionProfileName: 'Vendedor',
+}
 
 describe('UsersListView', () => {
   beforeEach(() => {
