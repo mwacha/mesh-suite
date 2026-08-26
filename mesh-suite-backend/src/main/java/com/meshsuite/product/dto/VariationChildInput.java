@@ -16,5 +16,6 @@ public record VariationChildInput(
         BigDecimal minStock,
         BigDecimal maxStock,
         String size,
-        UUID colorwayId) {
+        UUID colorwayId,
+        BigDecimal saleMultiple) {
 }

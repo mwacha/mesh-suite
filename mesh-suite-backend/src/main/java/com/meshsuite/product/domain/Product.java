@@ -74,6 +74,9 @@ public class Product {
     @Column(name = "measurement_unit", nullable = false, length = 5)
     private MeasurementUnit measurementUnit = MeasurementUnit.UN;
 
+    @Column(name = "sale_multiple", nullable = false, precision = 12, scale = 3)
+    private BigDecimal saleMultiple = BigDecimal.ONE;
+
     @Column(name = "min_stock", precision = 12, scale = 3)
     private BigDecimal minStock;
 
@@ -106,6 +109,14 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_product_id")
     private Product parentProduct;
+
+    // Set only on VARIATION_PARENT rows -- the Tipos de Variação matrix (axis name +
+    // its values, e.g. [{"name":"Tamanho","values":["P","M"]}]) that generated this
+    // parent's children, serialized as JSON. Stored as plain TEXT (not a native JSONB
+    // mapping) to match this codebase's existing conventions -- serialization happens
+    // in VariationProductService via Jackson, not at the entity/column level.
+    @Column(name = "variation_axes", columnDefinition = "TEXT")
+    private String variationAxesJson;
 
     // Owned only by PRODUCT_KIT rows -- see ProductKitItem. Cleared and rebuilt
     // wholesale on every save, same convention as PriceTable/PurchaseOrder items.

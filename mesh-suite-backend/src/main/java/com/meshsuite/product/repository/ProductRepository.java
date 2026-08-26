@@ -21,6 +21,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
     long countByColorwayId(UUID colorwayId);
     Optional<Product> findByIdAndType(UUID id, ProductType type);
     List<Product> findByParentProductId(UUID parentProductId);
+    List<Product> findByParentProductIdIn(Collection<UUID> parentProductIds);
 
     @Query("SELECT p.category.id AS categoryId, COUNT(p) AS total FROM Product p " +
             "WHERE p.category.id IN :categoryIds GROUP BY p.category.id")

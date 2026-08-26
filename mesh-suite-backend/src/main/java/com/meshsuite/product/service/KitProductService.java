@@ -83,6 +83,7 @@ public class KitProductService extends AbstractProductTypeService {
         kit.setSku(request.sku());
         kit.setBarcode(request.barcode());
         kit.setMeasurementUnit(request.measurementUnit() != null ? request.measurementUnit() : kit.getMeasurementUnit());
+        kit.setSaleMultiple(request.saleMultiple() != null ? request.saleMultiple() : BigDecimal.ONE);
         kit.setStatus(request.status() != null ? request.status() : ProductStatus.ACTIVE);
         kit.setDescription(request.description());
 
@@ -114,6 +115,7 @@ public class KitProductService extends AbstractProductTypeService {
                         i.getComponentProduct().getSalePrice().multiply(i.getQuantity())))
                 .toList();
         return new KitProductResponse(kit.getId(), kit.getName(), kit.getSku(), kit.getBarcode(),
-                kit.getMeasurementUnit(), kit.getStatus(), kit.getDescription(), items, kit.getSalePrice());
+                kit.getMeasurementUnit(), kit.getStatus(), kit.getDescription(), items, kit.getSalePrice(),
+                kit.getSaleMultiple());
     }
 }

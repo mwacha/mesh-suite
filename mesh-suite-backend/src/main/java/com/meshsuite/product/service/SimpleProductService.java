@@ -122,6 +122,7 @@ public class SimpleProductService extends AbstractProductTypeService {
         product.setDescription(request.description());
         product.setStockQuantity(request.stockQuantity() != null ? request.stockQuantity() : BigDecimal.ZERO);
         product.setMeasurementUnit(request.measurementUnit() != null ? request.measurementUnit() : MeasurementUnit.UN);
+        product.setSaleMultiple(request.saleMultiple() != null ? request.saleMultiple() : BigDecimal.ONE);
         product.setMinStock(request.minStock());
         product.setMaxStock(request.maxStock());
         product.setSize(request.size());
@@ -145,6 +146,6 @@ public class SimpleProductService extends AbstractProductTypeService {
                 p.getColorway() != null ? p.getColorway().getName() : null,
                 p.getSalePrice(), p.getCostPrice(), p.getStatus(), p.getDescription(), p.getStockQuantity(),
                 p.getMeasurementUnit(), p.getMinStock(), p.getMaxStock(), p.getSize(), p.getWeight(), p.getLength(),
-                p.getWidth(), p.getHeight());
+                p.getWidth(), p.getHeight(), p.getSaleMultiple());
     }
 }

@@ -36,7 +36,43 @@ describe('AdicionarItensModal', () => {
     busca.dispatchEvent(new Event('input'))
     await flushPromises()
 
-    expect(produtosApi.listProducts).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'Camiseta', page: 0 }))
+    expect(produtosApi.listProducts).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'Camiseta', page: 0 }))
+    wrapper.unmount()
+  })
+
+  it('discards a stale response that resolves after a newer, more specific request', async () => {
+    // Regression test: every keystroke fires a new request with no debounce, so an
+    // earlier, broader query (e.g. "P") can resolve AFTER a later, narrower one
+    // (e.g. "P0001") if the network happens to reorder them. Without a sequence
+    // guard, that stale response would clobber the correct, narrower result and
+    // the list would look like it "isn't filtering" even though search works.
+    let resolveBroad!: (value: unknown) => void
+    let resolveNarrow!: (value: unknown) => void
+    const broad = new Promise((resolve) => { resolveBroad = resolve })
+    const narrow = new Promise((resolve) => { resolveNarrow = resolve })
+
+    vi.mocked(produtosApi.listProducts)
+      .mockResolvedValueOnce({ content: [produto], totalElements: 1, totalPages: 1, number: 0, size: 10 })
+      .mockReturnValueOnce(broad as any)
+      .mockReturnValueOnce(narrow as any)
+
+    const wrapper = mount(AdicionarItensModal, { props: { itensAdicionadosIds: [] }, attachTo: document.body })
+    await flushPromises()
+
+    const busca = document.querySelector('[data-test="modal-busca"]') as HTMLInputElement
+    busca.value = 'P'
+    busca.dispatchEvent(new Event('input'))
+    busca.value = 'P0001'
+    busca.dispatchEvent(new Event('input'))
+
+    // The narrower, later request resolves first...
+    resolveNarrow({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
+    await flushPromises()
+    // ...then the stale broader request resolves after it and must be ignored.
+    resolveBroad({ content: [produto], totalElements: 1, totalPages: 1, number: 0, size: 10 })
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('Nenhum produto encontrado')
     wrapper.unmount()
   })
 

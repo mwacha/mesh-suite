@@ -1,5 +1,8 @@
 package com.meshsuite.product.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
@@ -10,6 +13,8 @@ import com.meshsuite.colorway.repository.ColorwayRepository;
 import com.meshsuite.product.domain.Product;
 import com.meshsuite.product.domain.enums.ProductStatus;
 import com.meshsuite.product.domain.enums.ProductType;
+import com.meshsuite.product.dto.VariationAxisInput;
+import com.meshsuite.product.dto.VariationAxisResponse;
 import com.meshsuite.product.dto.VariationChildInput;
 import com.meshsuite.product.dto.VariationChildResponse;
 import com.meshsuite.product.dto.VariationParentRequest;
@@ -18,10 +23,8 @@ import com.meshsuite.product.exception.DuplicateSkuException;
 import com.meshsuite.product.exception.ProductValidationException;
 import com.meshsuite.product.repository.ProductRepository;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -31,7 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link ProductTypeStrategy} for {@link ProductType#VARIATION_PARENT} -- MVP scope:
  * the client sends the parent plus the final, already-priced list of children (own
  * SKU/price/stock/size/colorway each). The wireframe's dynamic Tamanho×Cor combinator
- * that auto-generates children isn't built here; it's a separate, larger feature.
+ * that auto-generates children isn't built here (it lives entirely on the frontend,
+ * driven by variationAxes below); this service just persists whatever the client sends.
  *
  * Barcode and costPrice are deliberately absent from the parent DTO -- the wireframe
  * shows them locked ("por variante") at the parent level, defined per child instead.
@@ -42,13 +46,15 @@ public class VariationProductService extends AbstractProductTypeService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ColorwayRepository colorwayRepository;
+    private final ObjectMapper objectMapper;
 
     public VariationProductService(ProductRepository productRepository, CategoryRepository categoryRepository,
-                                    ColorwayRepository colorwayRepository) {
+                                    ColorwayRepository colorwayRepository, ObjectMapper objectMapper) {
         super(productRepository);
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.colorwayRepository = colorwayRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -74,20 +80,7 @@ public class VariationProductService extends AbstractProductTypeService {
         applyParent(parent, request);
         productRepository.saveAndFlush(parent);
 
-        List<Product> children = new ArrayList<>();
-        Set<String> skusInRequest = new HashSet<>();
-        for (VariationChildInput childInput : request.children()) {
-            requireSkuNotRepeatedInRequest(skusInRequest, childInput.sku());
-            validateSku(childInput.sku(), null);
-
-            Product child = new Product();
-            child.setTenantId(tenantId);
-            child.setType(ProductType.VARIATION_CHILD);
-            child.setParentProduct(parent);
-            applyChild(child, childInput);
-            children.add(productRepository.saveAndFlush(child));
-        }
-
+        List<Product> children = createChildren(parent, request.children());
         return toResponse(parent, children);
     }
 
@@ -99,37 +92,34 @@ public class VariationProductService extends AbstractProductTypeService {
         Product parent = findEntityByType(id);
         applyParent(parent, request);
 
-        // Regenerate the child list on every save -- update matching by id, insert new,
-        // delete whatever was dropped from the request. Same "regenerate everything"
-        // convention as PriceTable/Kit items, just keyed by id instead of wholesale clear.
-        Map<UUID, Product> existingChildrenById = new HashMap<>();
-        for (Product existing : productRepository.findByParentProductId(id)) {
-            existingChildrenById.put(existing.getId(), existing);
-        }
+        // Wholesale replace, same convention as Kit/PriceTable items: the Tipos de
+        // Variação matrix is the single source of truth for a Variação's composition,
+        // so any edit to it (add/remove a value or axis) can reshape the whole children
+        // set -- delete every existing child and recreate from the request rather than
+        // trying to merge by id. flush() first so the deletes actually reach Postgres
+        // before the inserts below reuse the same SKUs.
+        productRepository.deleteAll(productRepository.findByParentProductId(id));
+        productRepository.flush();
 
-        List<Product> resultChildren = new ArrayList<>();
+        List<Product> children = createChildren(parent, request.children());
+        return toResponse(parent, children);
+    }
+
+    private List<Product> createChildren(Product parent, List<VariationChildInput> childInputs) {
+        List<Product> children = new ArrayList<>();
         Set<String> skusInRequest = new HashSet<>();
-        for (VariationChildInput childInput : request.children()) {
+        for (VariationChildInput childInput : childInputs) {
             requireSkuNotRepeatedInRequest(skusInRequest, childInput.sku());
+            validateSku(childInput.sku(), null);
 
-            Product child = childInput.id() != null ? existingChildrenById.remove(childInput.id()) : null;
-            if (child == null) {
-                child = new Product();
-                child.setTenantId(parent.getTenantId());
-                child.setType(ProductType.VARIATION_CHILD);
-                child.setParentProduct(parent);
-                validateSku(childInput.sku(), null);
-            } else {
-                validateSku(childInput.sku(), child.getId());
-            }
+            Product child = new Product();
+            child.setTenantId(parent.getTenantId());
+            child.setType(ProductType.VARIATION_CHILD);
+            child.setParentProduct(parent);
             applyChild(child, childInput);
-            resultChildren.add(productRepository.saveAndFlush(child));
+            children.add(productRepository.saveAndFlush(child));
         }
-
-        // Whatever remains was dropped from the request.
-        productRepository.deleteAll(existingChildrenById.values());
-
-        return toResponse(parent, resultChildren);
+        return children;
     }
 
     private void requireSkuNotRepeatedInRequest(Set<String> skusInRequest, String sku) {
@@ -158,6 +148,31 @@ public class VariationProductService extends AbstractProductTypeService {
         parent.setStatus(request.status() != null ? request.status() : ProductStatus.ACTIVE);
         parent.setDescription(request.description());
         parent.setMeasurementUnit(request.measurementUnit() != null ? request.measurementUnit() : parent.getMeasurementUnit());
+        parent.setSaleMultiple(request.saleMultiple() != null ? request.saleMultiple() : java.math.BigDecimal.ONE);
+        parent.setVariationAxesJson(serializeAxes(request.variationAxes()));
+    }
+
+    private String serializeAxes(List<VariationAxisInput> axes) {
+        if (axes == null || axes.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(axes);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Falha ao serializar os tipos de variação", e);
+        }
+    }
+
+    private List<VariationAxisResponse> deserializeAxes(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<VariationAxisResponse>>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Falha ao interpretar os tipos de variação salvos", e);
+        }
     }
 
     private void applyChild(Product child, VariationChildInput input) {
@@ -169,6 +184,7 @@ public class VariationProductService extends AbstractProductTypeService {
         child.setMinStock(input.minStock());
         child.setMaxStock(input.maxStock());
         child.setSize(input.size());
+        child.setSaleMultiple(input.saleMultiple() != null ? input.saleMultiple() : java.math.BigDecimal.ONE);
         child.setColorway(input.colorwayId() != null
                 ? colorwayRepository.findById(input.colorwayId()).orElseThrow(ColorwayNotFoundException::new)
                 : null);
@@ -184,12 +200,12 @@ public class VariationProductService extends AbstractProductTypeService {
                 .map(c -> new VariationChildResponse(c.getId(), c.getSku(), c.getBarcode(), c.getSalePrice(),
                         c.getCostPrice(), c.getStockQuantity(), c.getMinStock(), c.getMaxStock(), c.getSize(),
                         c.getColorway() != null ? c.getColorway().getId() : null,
-                        c.getColorway() != null ? c.getColorway().getName() : null))
+                        c.getColorway() != null ? c.getColorway().getName() : null, c.getSaleMultiple()))
                 .toList();
         return new VariationParentResponse(parent.getId(), parent.getName(), parent.getSku(), parent.getBrand(),
                 parent.getCategory() != null ? parent.getCategory().getId() : null,
                 parent.getCategory() != null ? parent.getCategory().getName() : null,
                 parent.getSalePrice(), parent.getStatus(), parent.getDescription(), parent.getMeasurementUnit(),
-                childResponses);
+                childResponses, parent.getSaleMultiple(), deserializeAxes(parent.getVariationAxesJson()));
     }
 }

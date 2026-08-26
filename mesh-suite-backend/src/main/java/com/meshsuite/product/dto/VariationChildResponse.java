@@ -14,5 +14,6 @@ public record VariationChildResponse(
         BigDecimal maxStock,
         String size,
         UUID colorwayId,
-        String colorwayName) {
+        String colorwayName,
+        BigDecimal saleMultiple) {
 }

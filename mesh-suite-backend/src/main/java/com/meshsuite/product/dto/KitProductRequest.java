@@ -5,6 +5,7 @@ import com.meshsuite.product.domain.enums.ProductStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.math.BigDecimal;
 import java.util.List;
 
 public record KitProductRequest(
@@ -14,5 +15,6 @@ public record KitProductRequest(
         MeasurementUnit measurementUnit,
         ProductStatus status,
         String description,
-        @NotEmpty List<@Valid KitItemInput> items) {
+        @NotEmpty List<@Valid KitItemInput> items,
+        BigDecimal saleMultiple) {
 }
