@@ -27,7 +27,7 @@ function mountWithRouter(path = '/produtos/novo/kit') {
   }))
 }
 
-const componente = { id: 'prod-1', name: 'Camiseta Polo', sku: 'P0001', brand: '', salePrice: 89.9, stockQuantity: 10, status: 'ACTIVE' as const }
+const componente = { id: 'prod-1', name: 'Camiseta Polo', sku: 'P0001', type: 'PRODUCT' as const, salePrice: 89.9, stockQuantity: 10, status: 'ACTIVE' as const, size: null, colorwayName: null }
 
 async function adicionarComponenteViaModal(wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper']) {
   await wrapper.find('[data-test="adicionar-itens"]').trigger('click')
@@ -42,7 +42,7 @@ describe('ProductKitFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [componente], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
   })

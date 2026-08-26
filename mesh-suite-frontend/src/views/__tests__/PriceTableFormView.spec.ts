@@ -25,7 +25,7 @@ function mountWithRouter(path = '/tabelas-preco/novo') {
   }))
 }
 
-const produtoAtivo = { id: 'prod-1', name: 'Camiseta Polo', sku: 'P0001', brand: '', salePrice: 100, stockQuantity: 10, status: 'ACTIVE' as const }
+const produtoAtivo = { id: 'prod-1', name: 'Camiseta Polo', sku: 'P0001', type: 'PRODUCT' as const, salePrice: 100, stockQuantity: 10, status: 'ACTIVE' as const, size: null, colorwayName: null }
 
 async function adicionarProdutoViaModal(wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper']) {
   await wrapper.find('[data-test="adicionar-itens"]').trigger('click')
@@ -43,7 +43,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('shows required-field errors when nome/inicioVigencia are blank on submit', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -59,7 +59,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('populates items from all active produtos in TODOS_PRODUTOS mode, with live-calculated prices', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -75,7 +75,7 @@ describe('PriceTableFormView', () => {
     // Per spec §5 ("recalcula sempre que a regra muda"): TODOS_PRODUTOS items stay
     // fully rule-driven, so a manually typed price is overwritten the next time a
     // rule field changes -- this is deliberate, not a bug.
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -90,7 +90,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('disables the Manual method while in TODOS_PRODUTOS mode', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -101,7 +101,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('starts empty in SELECIONAR_PRODUTOS mode and adds an item via the modal', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -111,7 +111,7 @@ describe('PriceTableFormView', () => {
     await flushPromises()
     expect(wrapper.find('.itens-grid').exists()).toBe(false)
 
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
     await adicionarProdutoViaModal(wrapper)
@@ -120,7 +120,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('does not auto-recalculate SELECIONAR_PRODUTOS items when the rule changes, but the reset button does', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -129,7 +129,7 @@ describe('PriceTableFormView', () => {
     await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
     await flushPromises()
 
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
     await adicionarProdutoViaModal(wrapper)
@@ -149,7 +149,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('removing an item in the modal removes it from the tabela', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -158,7 +158,7 @@ describe('PriceTableFormView', () => {
     await wrapper.find('[data-test="modo-selecao"]').setValue('SELECT_PRODUCTS')
     await flushPromises()
 
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [produtoAtivo], totalElements: 1, totalPages: 1, number: 0, size: 10,
     })
     await wrapper.find('[data-test="adicionar-itens"]').trigger('click')
@@ -176,7 +176,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('filters the item list by Preenchido/Pendente', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     const { wrapper } = await mountWithRouter()
@@ -191,7 +191,7 @@ describe('PriceTableFormView', () => {
     await flushPromises()
 
     const bermuda = { ...produtoAtivo, id: 'prod-2', name: 'Bermuda', sku: 'P0002' }
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [produtoAtivo, bermuda], totalElements: 2, totalPages: 1, number: 0, size: 10,
     })
     await wrapper.find('[data-test="adicionar-itens"]').trigger('click')
@@ -217,7 +217,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('submits the form and navigates to the list on success', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     vi.mocked(tabelasPrecoApi.createPriceTable).mockResolvedValue({} as any)
@@ -236,7 +236,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('shows a conflict message on duplicate nome (409)', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     vi.mocked(tabelasPrecoApi.createPriceTable).mockRejectedValue({ response: { status: 409 } })
@@ -252,7 +252,7 @@ describe('PriceTableFormView', () => {
   })
 
   it('loads existing tabela data in edit mode', async () => {
-    vi.mocked(produtosApi.listProducts).mockResolvedValue({
+    vi.mocked(produtosApi.listSellableProducts).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 1000,
     })
     vi.mocked(tabelasPrecoApi.getPriceTable).mockResolvedValue({

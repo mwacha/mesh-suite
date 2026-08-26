@@ -38,9 +38,20 @@ public class SellableProductService {
 
     @Transactional(readOnly = true)
     @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
-    public Page<SellableProductResponse> list(String search, ProductStatus status, Pageable pageable) {
+    public Page<SellableProductResponse> list(String search, ProductStatus status, List<ProductType> types,
+                                                Pageable pageable) {
+        // Intersected rather than trusted: a caller may narrow the set (the Kit composer
+        // asks for PRODUCT + VARIATION_CHILD, since a kit can contain neither another kit
+        // nor a variação-pai) but can never widen it back to a non-sellable type.
+        List<ProductType> requested = types == null || types.isEmpty()
+                ? SELLABLE_TYPES
+                : types.stream().filter(SELLABLE_TYPES::contains).toList();
+        if (requested.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
         Specification<Product> spec = Specification.allOf(
-                ProductSpecifications.hasTypeIn(SELLABLE_TYPES),
+                ProductSpecifications.hasTypeIn(requested),
                 ProductSpecifications.hasSearch(search),
                 ProductSpecifications.hasStatus(status));
         return productRepository.findAll(spec, pageable).map(this::toSummary);

@@ -186,7 +186,7 @@ import {
   type PriceTableRequest,
   type PriceTableItemInput,
 } from '@/api/priceTables'
-import { listProducts, type ProductListItem } from '@/api/products'
+import { listSellableProducts, type SellableProductItem } from '@/api/products'
 import { calculateAdjustedPrice, type AdjustmentRule } from '@/utils/priceCalculation'
 import { useToast } from '@/composables/useToast'
 
@@ -301,7 +301,7 @@ watch(
 
 async function popularTodosOsProdutos() {
   try {
-    const pagina = await listProducts({ status: 'ACTIVE', size: 1000 })
+    const pagina = await listSellableProducts({ status: 'ACTIVE', size: 1000 })
     itens.value = pagina.content.map((p) => ({
       productId: p.id,
       productName: p.name,
@@ -326,7 +326,7 @@ function aoMudarModoSelecao() {
   }
 }
 
-function aoAdicionarProduto(produto: ProductListItem) {
+function aoAdicionarProduto(produto: SellableProductItem) {
   itens.value.push({
     productId: produto.id,
     productName: produto.name,

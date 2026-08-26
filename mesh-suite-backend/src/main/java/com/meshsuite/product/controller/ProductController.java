@@ -76,8 +76,9 @@ public class ProductController {
     public Page<SellableProductResponse> listSellable(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) ProductStatus status,
+            @RequestParam(required = false) java.util.List<ProductType> types,
             @PageableDefault(size = 50, sort = "name") Pageable pageable) {
-        return sellableProductService.list(search, status, pageable);
+        return sellableProductService.list(search, status, types, pageable);
     }
 
     @GetMapping("/resumo")

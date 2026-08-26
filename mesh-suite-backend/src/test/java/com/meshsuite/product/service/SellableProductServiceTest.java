@@ -117,7 +117,7 @@ class SellableProductServiceTest extends AbstractIntegrationTest {
         Product parent = variationParent(tenantId, "V0001", "99.90");
         variationChild(tenantId, parent, "V0001-P", "89.90");
 
-        Page<SellableProductResponse> page = sellableProductService.list(null, null, PageRequest.of(0, 10));
+        Page<SellableProductResponse> page = sellableProductService.list(null, null, null, PageRequest.of(0, 10));
 
         assertThat(page.getContent()).extracting(SellableProductResponse::sku)
                 .containsExactlyInAnyOrder("P0001", "KIT001", "V0001-P");
@@ -129,7 +129,7 @@ class SellableProductServiceTest extends AbstractIntegrationTest {
         Product parent = variationParent(tenantId, "V0001", "99.90");
         variationChild(tenantId, parent, "V0001-P", "89.90");
 
-        Page<SellableProductResponse> page = sellableProductService.list(null, null, PageRequest.of(0, 10));
+        Page<SellableProductResponse> page = sellableProductService.list(null, null, null, PageRequest.of(0, 10));
 
         assertThat(page.getContent()).extracting(SellableProductResponse::sku)
                 .containsExactly("V0001-P");
@@ -144,7 +144,7 @@ class SellableProductServiceTest extends AbstractIntegrationTest {
         child.setSize("P");
         productRepository.saveAndFlush(child);
 
-        Page<SellableProductResponse> page = sellableProductService.list(null, null, PageRequest.of(0, 10));
+        Page<SellableProductResponse> page = sellableProductService.list(null, null, null, PageRequest.of(0, 10));
 
         SellableProductResponse childRow = page.getContent().stream()
                 .filter(r -> r.sku().equals("V0001-P-AZ")).findFirst().orElseThrow();
@@ -157,6 +157,45 @@ class SellableProductServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void narrowsToTheRequestedTypesForTheKitComposer() {
+        UUID tenantId = setUpTenant("aurora");
+        simple(tenantId, "P0001", "89.90");
+        kit(tenantId, "KIT001", "150.00");
+        Product parent = variationParent(tenantId, "V0001", "99.90");
+        variationChild(tenantId, parent, "V0001-P", "89.90");
+
+        Page<SellableProductResponse> page = sellableProductService.list(null, null,
+                List.of(ProductType.PRODUCT, ProductType.VARIATION_CHILD), PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).extracting(SellableProductResponse::sku)
+                .containsExactlyInAnyOrder("P0001", "V0001-P");
+    }
+
+    @Test
+    void cannotWidenTheScopeBackToANonSellableType() {
+        UUID tenantId = setUpTenant("aurora");
+        simple(tenantId, "P0001", "89.90");
+        variationParent(tenantId, "V0001", "99.90");
+
+        Page<SellableProductResponse> page = sellableProductService.list(null, null,
+                List.of(ProductType.VARIATION_PARENT, ProductType.PRODUCT), PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).extracting(SellableProductResponse::sku).containsExactly("P0001");
+    }
+
+    @Test
+    void returnsNothingWhenOnlyNonSellableTypesAreAskedFor() {
+        UUID tenantId = setUpTenant("aurora");
+        simple(tenantId, "P0001", "89.90");
+        variationParent(tenantId, "V0001", "99.90");
+
+        Page<SellableProductResponse> page = sellableProductService.list(null, null,
+                List.of(ProductType.VARIATION_PARENT), PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).isEmpty();
+    }
+
+    @Test
     void filtersBySearchAndStatus() {
         UUID tenantId = setUpTenant("aurora");
         simple(tenantId, "P0001", "89.90");
@@ -165,7 +204,7 @@ class SellableProductServiceTest extends AbstractIntegrationTest {
         productRepository.saveAndFlush(inactiveKit);
 
         Page<SellableProductResponse> page =
-                sellableProductService.list("kit", ProductStatus.INACTIVE, PageRequest.of(0, 10));
+                sellableProductService.list("kit", ProductStatus.INACTIVE, null, PageRequest.of(0, 10));
 
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).sku()).isEqualTo("KIT001");
@@ -193,6 +232,6 @@ class SellableProductServiceTest extends AbstractIntegrationTest {
                 new UsernamePasswordAuthenticationToken(principal, null, List.of()));
 
         org.junit.jupiter.api.Assertions.assertThrows(com.meshsuite.auth.exception.PermissionDeniedException.class,
-                () -> sellableProductService.list(null, null, PageRequest.of(0, 10)));
+                () -> sellableProductService.list(null, null, null, PageRequest.of(0, 10)));
     }
 }
