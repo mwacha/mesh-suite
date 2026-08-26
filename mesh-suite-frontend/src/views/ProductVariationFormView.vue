@@ -3,13 +3,7 @@
     <form class="form" @submit.prevent="salvar">
       <section class="card">
         <h2>Tipo de Produto</h2>
-        <SegmentedControl
-          :model-value="'VARIATION_PARENT'"
-          :options="tipoOptions"
-          :disabled="modoEdicao"
-          test-id="tipo-produto"
-          @update:model-value="aoMudarTipo"
-        />
+        <ProductTypeSelector model-value="VARIATION_PARENT" :disabled="modoEdicao" @update:model-value="aoMudarTipo" />
       </section>
 
       <CollapsibleSection title="Informações Gerais">
@@ -88,7 +82,64 @@
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Variantes">
+      <CollapsibleSection title="Tipos de Variação">
+        <div class="tipos-variacao-header">
+          <span class="tipos-variacao-hint">Os valores definem as combinações da tabela abaixo</span>
+        </div>
+
+        <div v-for="(vt, vtIndex) in varTypes" :key="vt.name" class="var-type-box">
+          <div class="var-type-header">
+            <span class="var-type-name">{{ vt.name }}</span>
+            <span class="var-type-remove" :data-test="`var-tipo-remover-${vtIndex}`" @click="removerTipo(vtIndex)">Remover tipo</span>
+          </div>
+          <div class="var-type-values">
+            <span v-for="(val, valIndex) in vt.values" :key="val" class="var-value-chip">
+              {{ val }}
+              <span class="var-value-remove" @click="removerValor(vtIndex, valIndex)">✕</span>
+            </span>
+            <template v-if="addingValueTo === vtIndex">
+              <input
+                v-model="novoValor"
+                class="var-value-input"
+                placeholder="Ex: XG"
+                :data-test="`var-tipo-valor-input-${vtIndex}`"
+                @keyup.enter="confirmarValor(vtIndex)"
+              />
+              <span class="var-value-confirm" :data-test="`var-tipo-valor-confirmar-${vtIndex}`" @click="confirmarValor(vtIndex)">✓</span>
+              <span class="var-value-cancel" @click="cancelarValor">✕</span>
+            </template>
+            <span v-else class="var-value-add" :data-test="`var-tipo-adicionar-valor-${vtIndex}`" @click="abrirAdicionarValor(vtIndex)">+ Valor</span>
+          </div>
+        </div>
+
+        <div v-if="addingType" class="var-type-new">
+          <div class="var-type-new-title">Novo Tipo de Variação</div>
+          <TextField v-model="novoTipoNome" label="Nome do tipo" placeholder="Ex: Material, Voltagem, Estilo..." test-id="var-novo-tipo-nome" />
+          <label class="field-label">Valores</label>
+          <div class="var-type-values var-type-values-new">
+            <span v-for="(val, i) in novoTipoValores" :key="val" class="var-value-chip">
+              {{ val }} <span class="var-value-remove" @click="novoTipoValores.splice(i, 1)">✕</span>
+            </span>
+            <input
+              v-model="novoTipoValorTemp"
+              class="var-value-input"
+              placeholder="Ex: Algodão"
+              data-test="var-novo-tipo-valor-input"
+              @keyup.enter="adicionarValorAoNovoTipo"
+            />
+            <span class="var-value-confirm" data-test="var-novo-tipo-valor-confirmar" @click="adicionarValorAoNovoTipo">✓</span>
+          </div>
+          <div class="var-type-new-actions">
+            <button type="button" class="btn-secondary" @click="cancelarNovoTipo">Cancelar</button>
+            <button type="button" class="btn-primary" data-test="var-novo-tipo-confirmar" @click="confirmarNovoTipo">Confirmar Tipo</button>
+          </div>
+        </div>
+        <div v-else class="btn-add-tipo" data-test="adicionar-tipo-variacao" @click="addingType = true">
+          + Adicionar Tipo de Variação
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection :title="`Variantes Geradas (${children.length})`">
         <div class="itens-toolbar">
           <button type="button" class="btn-add-itens" data-test="adicionar-variante" @click="abrirNovaVariante">
             + Adicionar Variante
@@ -97,17 +148,26 @@
 
         <div v-if="children.length" class="itens-grid">
           <div class="itens-grid-header">
+            <div>Variante</div>
             <div>SKU</div>
-            <div>Tamanho</div>
-            <div>Cor</div>
-            <div class="itens-grid-col-preco">Preço</div>
+            <div>Código de Barra</div>
+            <div class="itens-grid-col-preco">Valor de Venda</div>
             <div class="itens-grid-col-centro">Estoque</div>
             <div></div>
           </div>
           <div v-for="(filho, index) in children" :key="filho.id ?? index" class="itens-grid-row">
+            <div class="itens-grid-cell-combo">
+              <template v-if="filho.comboLabels && filho.comboLabels.length">
+                <StatusBadge v-for="label in filho.comboLabels" :key="label" :label="label" color="gray" />
+              </template>
+              <template v-else>
+                <StatusBadge v-if="filho.size" :label="filho.size" color="gray" />
+                <StatusBadge v-if="filho.colorwayName" :label="filho.colorwayName" color="gray" />
+                <span v-if="!filho.size && !filho.colorwayName">—</span>
+              </template>
+            </div>
             <div class="itens-grid-cell-nome">{{ filho.sku }}</div>
-            <div>{{ filho.size || '—' }}</div>
-            <div>{{ filho.colorwayName || '—' }}</div>
+            <div>{{ filho.barcode || '—' }}</div>
             <div class="itens-grid-col-preco">{{ formatarPreco(filho.salePrice) }}</div>
             <div class="itens-grid-col-centro">{{ filho.stockQuantity ?? 0 }}</div>
             <div class="itens-grid-col-acao">
@@ -118,8 +178,8 @@
           </div>
         </div>
         <div v-else class="itens-vazio">
-          <div class="itens-vazio-titulo">Nenhuma variante adicionada</div>
-          <div class="itens-vazio-texto">Use "+ Adicionar Variante" para cadastrar cada variação (tamanho, cor etc.).</div>
+          <div class="itens-vazio-titulo">Nenhuma variante gerada</div>
+          <div class="itens-vazio-texto">Defina os Tipos de Variação acima para gerar as combinações automaticamente.</div>
         </div>
         <p v-if="erros.children" class="field-error">{{ erros.children }}</p>
       </CollapsibleSection>
@@ -129,7 +189,7 @@
       <FormActions :saving="salvando" save-label="Salvar Produto" @cancel="cancelar" />
     </form>
 
-    <SlideOver v-if="painelAberto" title="Editar Variante" width="488px" @close="fecharPainel">
+    <SlideOver v-if="painelAberto" :title="painelTitle" width="488px" @close="fecharPainel">
       <CollapsibleSection title="Identificação">
         <TextField v-model="draft.sku" label="Código SKU" required :error="errosDraft.sku" test-id="variante-sku" />
         <TextField v-model="barcodeDraftModel" label="Código de Barra (EAN/GTIN)" placeholder="7891234567890" />
@@ -192,14 +252,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import TextField from '@/components/TextField.vue'
 import FormActions from '@/components/FormActions.vue'
-import SegmentedControl, { type SegmentedOption } from '@/components/SegmentedControl.vue'
+import ProductTypeSelector from '@/components/ProductTypeSelector.vue'
 import SlideOver from '@/components/SlideOver.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import { getVariation, createVariation, updateVariation, type VariationParentRequest } from '@/api/productVariations'
 import type { MeasurementUnit, ProductStatus } from '@/api/products'
 import { listCategories, type CategoryResponse } from '@/api/categories'
@@ -209,12 +270,6 @@ const UNIDADES: MeasurementUnit[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX
 const STATUS_OPCOES: { value: ProductStatus; label: string }[] = [
   { value: 'ACTIVE', label: 'Ativo' },
   { value: 'INACTIVE', label: 'Inativo' },
-]
-
-const tipoOptions: SegmentedOption[] = [
-  { value: 'PRODUCT', label: 'Simples' },
-  { value: 'PRODUCT_KIT', label: 'Kit' },
-  { value: 'VARIATION_PARENT', label: 'Com Variação' },
 ]
 
 interface ChildForm {
@@ -229,10 +284,22 @@ interface ChildForm {
   size: string | null
   colorwayId: string | null
   colorwayName?: string | null
+  // Frontend-only bookkeeping for rows generated by the Tipos de Variação matrix
+  // below -- never sent to the backend (VariationChildInput has no such field).
+  // Rows added manually via "+ Adicionar Variante" leave these undefined, which
+  // is what keeps the combinations watcher below from ever touching them.
+  comboKey?: string
+  comboLabels?: string[]
+}
+
+interface VarType {
+  name: string
+  values: string[]
 }
 
 function novoDraft(): ChildForm {
   return {
+    id: undefined,
     sku: '',
     barcode: null,
     salePrice: 0,
@@ -242,6 +309,12 @@ function novoDraft(): ChildForm {
     maxStock: null,
     size: null,
     colorwayId: null,
+    // Explicitly cleared (not just omitted) so Object.assign(draft, novoDraft())
+    // in abrirNovaVariante() wipes any comboKey/comboLabels left over in `draft`
+    // from a previously-opened combo-generated row -- otherwise the reused
+    // reactive `draft` object would keep stale values Object.assign can't remove.
+    comboKey: undefined,
+    comboLabels: undefined,
   }
 }
 
@@ -271,6 +344,139 @@ const salvando = ref(false)
 const categorias = ref<CategoryResponse[]>([])
 const coresEstampas = ref<ColorwayResponse[]>([])
 
+const varTypes = ref<VarType[]>([])
+const addingValueTo = ref<number | null>(null)
+const novoValor = ref('')
+const addingType = ref(false)
+const novoTipoNome = ref('')
+const novoTipoValores = ref<string[]>([])
+const novoTipoValorTemp = ref('')
+
+// Cartesian product of every type's values, e.g. Tamanho:[P,M] x Cor:[Branco] ->
+// [[P,Branco],[M,Branco]]. A type with no values yet is skipped rather than
+// zeroing out every combination -- it just hasn't contributed a dimension yet.
+const combinations = computed<string[][]>(() =>
+  varTypes.value.reduce<string[][]>((acc, vt) => {
+    if (vt.values.length === 0) {
+      return acc
+    }
+    if (acc.length === 0) {
+      return vt.values.map((v) => [v])
+    }
+    return acc.flatMap((combo) => vt.values.map((v) => [...combo, v]))
+  }, []),
+)
+
+function comboKeyFor(combo: string[]) {
+  return combo.join('|')
+}
+
+// "Tamanho" is the one dimension the backend actually models (VariationChildInput.size);
+// any other type (Cor, Material, ...) is combinator bookkeeping only -- its value shows
+// as a badge in the Variantes Geradas table, but real colorway linking still happens
+// per-row via the Editar panel, since a colorway is a linked entity, not free text.
+function sizeFromCombo(combo: string[]): string | null {
+  const idx = varTypes.value.findIndex((vt) => vt.name.trim().toLowerCase() === 'tamanho')
+  return idx !== -1 ? (combo[idx] ?? null) : null
+}
+
+function sanitizeSkuPart(value: string) {
+  const semAcentos = value
+    .normalize('NFD')
+    .split('')
+    .filter((ch) => {
+      const code = ch.charCodeAt(0)
+      return code < 0x0300 || code > 0x036f
+    })
+    .join('')
+  return semAcentos.toUpperCase().replace(/[^A-Z0-9]+/g, '')
+}
+
+// Keeps `children` in sync with the matrix: adds a default row for every new
+// combination, removes rows whose combination no longer exists. Rows without a
+// comboKey (added via "+ Adicionar Variante") are never touched here.
+watch(
+  combinations,
+  (novasCombinacoes) => {
+    const chaves = new Set(novasCombinacoes.map(comboKeyFor))
+    children.value = children.value.filter((c) => !c.comboKey || chaves.has(c.comboKey))
+
+    const existentes = new Set(children.value.map((c) => c.comboKey).filter(Boolean))
+    for (const combo of novasCombinacoes) {
+      const key = comboKeyFor(combo)
+      if (existentes.has(key)) {
+        continue
+      }
+      const sufixo = combo.map(sanitizeSkuPart).join('-')
+      children.value.push({
+        sku: form.sku ? `${form.sku}-${sufixo}` : sufixo,
+        barcode: null,
+        salePrice: Number(form.salePrice) || 0,
+        costPrice: null,
+        stockQuantity: 0,
+        minStock: null,
+        maxStock: null,
+        size: sizeFromCombo(combo),
+        colorwayId: null,
+        comboKey: key,
+        comboLabels: combo,
+      })
+    }
+  },
+  { deep: true },
+)
+
+function removerTipo(index: number) {
+  varTypes.value.splice(index, 1)
+}
+
+function abrirAdicionarValor(index: number) {
+  addingValueTo.value = index
+  novoValor.value = ''
+}
+
+function confirmarValor(index: number) {
+  const valor = novoValor.value.trim()
+  if (valor && !varTypes.value[index].values.includes(valor)) {
+    varTypes.value[index].values.push(valor)
+  }
+  addingValueTo.value = null
+  novoValor.value = ''
+}
+
+function cancelarValor() {
+  addingValueTo.value = null
+  novoValor.value = ''
+}
+
+function removerValor(vtIndex: number, valIndex: number) {
+  varTypes.value[vtIndex].values.splice(valIndex, 1)
+}
+
+function adicionarValorAoNovoTipo() {
+  const valor = novoTipoValorTemp.value.trim()
+  if (valor && !novoTipoValores.value.includes(valor)) {
+    novoTipoValores.value.push(valor)
+  }
+  novoTipoValorTemp.value = ''
+}
+
+function confirmarNovoTipo() {
+  const nome = novoTipoNome.value.trim()
+  if (!nome || novoTipoValores.value.length === 0) {
+    return
+  }
+  varTypes.value.push({ name: nome, values: [...novoTipoValores.value] })
+  cancelarNovoTipo()
+}
+
+function cancelarNovoTipo() {
+  addingType.value = false
+  novoTipoNome.value = ''
+  novoTipoValores.value = []
+  novoTipoValorTemp.value = ''
+}
+
 const painelAberto = ref(false)
 const editingIndex = ref<number | null>(null)
 const draft = reactive<ChildForm>(novoDraft())
@@ -287,6 +493,13 @@ const sizeDraftModel = computed({
   set: (valor: string) => {
     draft.size = valor
   },
+})
+
+const painelTitle = computed(() => {
+  if (draft.comboLabels && draft.comboLabels.length) {
+    return `Editar Variante — ${draft.comboLabels.join(', ')}`
+  }
+  return 'Editar Variante'
 })
 
 function formatarPreco(valor: number) {
@@ -677,6 +890,155 @@ input:disabled {
 .itens-grid-col-acao {
   display: flex;
   justify-content: center;
+}
+
+.itens-grid-cell-combo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Tipos de Variação */
+.tipos-variacao-header {
+  margin-bottom: 12px;
+}
+
+.tipos-variacao-hint {
+  font-size: 11px;
+  color: var(--pm-text-muted);
+}
+
+.var-type-box {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: var(--pm-bg);
+  border-radius: 6px;
+  border: 1.5px solid var(--pm-border-light);
+}
+
+.var-type-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.var-type-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pm-text-dark);
+}
+
+.var-type-remove {
+  font-size: 11px;
+  color: var(--pm-error);
+  cursor: pointer;
+}
+
+.var-type-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.var-value-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--pm-white);
+  border: 1.5px solid var(--pm-border-light);
+  border-radius: 16px;
+  font-size: 12px;
+  color: var(--pm-text-dark);
+}
+
+.var-value-remove {
+  font-size: 10px;
+  color: var(--pm-text-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.var-value-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1.5px dashed var(--pm-text-muted);
+  border-radius: 16px;
+  font-size: 12px;
+  color: var(--pm-text-muted);
+  cursor: pointer;
+}
+
+.var-value-input {
+  width: 90px;
+  height: 28px;
+  border: 1.5px solid var(--pm-accent);
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--pm-text-dark);
+}
+
+.var-value-confirm,
+.var-value-cancel {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.var-value-confirm {
+  background: var(--pm-accent);
+  color: var(--pm-white);
+}
+
+.var-value-cancel {
+  background: var(--pm-bg);
+  color: var(--pm-text-muted);
+}
+
+.var-type-new {
+  padding: 14px;
+  background: var(--pm-accent-bg);
+  border: 2px solid var(--pm-accent);
+  border-radius: 6px;
+}
+
+.var-type-new-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pm-text-dark);
+  margin-bottom: 12px;
+}
+
+.var-type-values-new {
+  margin-bottom: 14px;
+}
+
+.var-type-new-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-add-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1.5px dashed var(--pm-accent);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--pm-accent);
+  cursor: pointer;
 }
 
 .btn-editar-item {

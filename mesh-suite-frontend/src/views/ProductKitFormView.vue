@@ -3,13 +3,7 @@
     <form class="form" @submit.prevent="salvar">
       <section class="card">
         <h2>Tipo de Produto</h2>
-        <SegmentedControl
-          :model-value="'PRODUCT_KIT'"
-          :options="tipoOptions"
-          :disabled="modoEdicao"
-          test-id="tipo-produto"
-          @update:model-value="aoMudarTipo"
-        />
+        <ProductTypeSelector model-value="PRODUCT_KIT" :disabled="modoEdicao" @update:model-value="aoMudarTipo" />
       </section>
 
       <CollapsibleSection title="Informações Gerais">
@@ -123,7 +117,7 @@ import AppShell from '@/components/AppShell.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import TextField from '@/components/TextField.vue'
 import FormActions from '@/components/FormActions.vue'
-import SegmentedControl, { type SegmentedOption } from '@/components/SegmentedControl.vue'
+import ProductTypeSelector from '@/components/ProductTypeSelector.vue'
 import AdicionarItensModal from '@/components/AdicionarItensModal.vue'
 import { getKit, createKit, updateKit, type KitProductRequest } from '@/api/productKits'
 import type { ProductListItem, MeasurementUnit, ProductStatus } from '@/api/products'
@@ -132,12 +126,6 @@ const UNIDADES: MeasurementUnit[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX
 const STATUS_OPCOES: { value: ProductStatus; label: string }[] = [
   { value: 'ACTIVE', label: 'Ativo' },
   { value: 'INACTIVE', label: 'Inativo' },
-]
-
-const tipoOptions: SegmentedOption[] = [
-  { value: 'PRODUCT', label: 'Simples' },
-  { value: 'PRODUCT_KIT', label: 'Kit' },
-  { value: 'VARIATION_PARENT', label: 'Com Variação' },
 ]
 
 interface ItemForm {

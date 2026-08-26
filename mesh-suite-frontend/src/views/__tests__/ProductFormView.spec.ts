@@ -284,10 +284,12 @@ describe('ProductFormView', () => {
       maxStock: null, size: null, weight: null, length: null, width: null, height: null,
     } as any)
 
-    const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')
+    const { router, wrapper } = await mountWithRouter('/produtos/abc-123/editar')
     await flushPromises()
 
-    const button = wrapper.find('[data-test="tipo-produto-PRODUCT_KIT"]').element as HTMLButtonElement
-    expect(button.disabled).toBe(true)
+    await wrapper.find('[data-test="tipo-produto-PRODUCT_KIT"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('produtos-editar')
   })
 })

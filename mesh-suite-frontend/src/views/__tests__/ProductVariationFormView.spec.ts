@@ -38,6 +38,22 @@ async function adicionarVariante(wrapper: Awaited<ReturnType<typeof mountWithRou
   await flushPromises()
 }
 
+async function adicionarTipoDeVariacao(
+  wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper'],
+  nome: string,
+  valores: string[],
+) {
+  await wrapper.find('[data-test="adicionar-tipo-variacao"]').trigger('click')
+  await flushPromises()
+  await wrapper.find('[data-test="var-novo-tipo-nome"]').setValue(nome)
+  for (const valor of valores) {
+    await wrapper.find('[data-test="var-novo-tipo-valor-input"]').setValue(valor)
+    await wrapper.find('[data-test="var-novo-tipo-valor-confirmar"]').trigger('click')
+  }
+  await wrapper.find('[data-test="var-novo-tipo-confirmar"]').trigger('click')
+  await flushPromises()
+}
+
 describe('ProductVariationFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -140,6 +156,80 @@ describe('ProductVariationFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Não foi possível carregar os dados do produto.')
+  })
+
+  it('generates a row per value when a single Tipo de Variação is defined', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="sku"]').setValue('V0001')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P', 'M'])
+
+    expect(wrapper.text()).toContain('Variantes Geradas (2)')
+    expect(wrapper.text()).toContain('V0001-P')
+    expect(wrapper.text()).toContain('V0001-M')
+  })
+
+  it('generates the cartesian product across two Tipos de Variação', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="sku"]').setValue('V0001')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P', 'M'])
+    await adicionarTipoDeVariacao(wrapper, 'Cor', ['Branco', 'Vermelho'])
+
+    expect(wrapper.text()).toContain('Variantes Geradas (4)')
+    expect(wrapper.text()).toContain('V0001-P-BRANCO')
+    expect(wrapper.text()).toContain('V0001-M-VERMELHO')
+  })
+
+  it('maps the Tamanho type onto the generated child\'s size field', async () => {
+    vi.mocked(variationsApi.createVariation).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('V0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('89.90')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P'])
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(variationsApi.createVariation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        children: [expect.objectContaining({ sku: 'V0001-P', size: 'P' })],
+      }),
+    )
+  })
+
+  it('removes the generated rows when a value is removed from its type', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P', 'M'])
+    expect(wrapper.text()).toContain('Variantes Geradas (2)')
+
+    await wrapper.find('[data-test="var-tipo-remover-0"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Variantes Geradas (0)')
+  })
+
+  it('does not affect a manually-added variante when the matrix changes', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await adicionarVariante(wrapper, 'MANUAL-001', '50.00')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P'])
+
+    expect(wrapper.text()).toContain('Variantes Geradas (2)')
+    expect(wrapper.text()).toContain('MANUAL-001')
+
+    await wrapper.find('[data-test="var-tipo-remover-0"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Variantes Geradas (1)')
+    expect(wrapper.text()).toContain('MANUAL-001')
   })
 
   it('navigates to the Kit form when the Tipo de Produto switcher picks Kit', async () => {

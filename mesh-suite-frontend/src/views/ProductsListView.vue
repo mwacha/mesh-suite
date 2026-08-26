@@ -39,16 +39,16 @@
 
         <template v-for="produto in pagina.content" :key="produto.id">
           <div class="table-grid-row" :data-test="`row-${produto.id}`">
-            <div class="table-grid-cell">
+            <div class="table-grid-cell">{{ produto.sku }}</div>
+            <div class="table-grid-cell table-grid-cell-nome">
               <span
                 v-if="produto.type === 'VARIATION_PARENT'"
                 class="expand-toggle"
                 :data-test="`expandir-${produto.id}`"
                 @click="toggleExpanded(produto.id)"
               >{{ isExpanded(produto.id) ? '▾' : '▸' }}</span>
-              {{ produto.sku }}
+              {{ produto.name }}
             </div>
-            <div class="table-grid-cell table-grid-cell-nome">{{ produto.name }}</div>
             <div class="table-grid-cell">{{ produto.brand }}</div>
             <div class="table-grid-cell">{{ tipoLabel(produto.type) }}</div>
             <div class="table-grid-cell">{{ formatarPreco(produto.salePrice) }}</div>
