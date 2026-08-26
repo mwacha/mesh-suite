@@ -250,6 +250,60 @@ describe('ProductVariationFormView', () => {
     expect(wrapper.text()).toContain('Variantes Geradas (4)')
   })
 
+  it('deletes stale children and generates the new matrix when an axis is added to an already-loaded Variação', async () => {
+    // Reported bug: editing a Variação that only had "Tamanho" (P, M), then adding
+    // "Cor" live, must wipe the now-lower-dimensional P/M rows and regenerate the
+    // full Tamanho x Cor cartesian product -- not keep the old rows alongside the new ones.
+    vi.mocked(variationsApi.getVariation).mockResolvedValue({
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [
+        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+      ],
+      variationAxes: [{ name: 'Tamanho', values: ['P', 'M'] }],
+    })
+
+    const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Variantes Geradas (2)')
+
+    await adicionarTipoDeVariacao(wrapper, 'Cor', ['Branco'])
+
+    expect(wrapper.text()).toContain('Variantes Geradas (2)')
+    expect(wrapper.text()).toContain('V0001-P-BRANCO')
+    expect(wrapper.text()).toContain('V0001-M-BRANCO')
+  })
+
+  it('only adds the incremental child when a value is added to an already-loaded axis, leaving existing rows untouched', async () => {
+    // Contrasting case: adding "GG" to an existing "Tamanho: P, M" must NOT touch
+    // the already-generated P/M rows -- only the new GG combination is created.
+    vi.mocked(variationsApi.getVariation).mockResolvedValue({
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [
+        { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-2', sku: 'V0001-M', barcode: null, salePrice: 84.9, costPrice: null, stockQuantity: 3, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+      ],
+      variationAxes: [{ name: 'Tamanho', values: ['P', 'M'] }],
+    })
+
+    const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Variantes Geradas (2)')
+
+    await wrapper.find('[data-test="var-tipo-adicionar-valor-0"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="var-tipo-valor-input-0"]').setValue('GG')
+    await wrapper.find('[data-test="var-tipo-valor-confirmar-0"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Variantes Geradas (3)')
+    expect(wrapper.text()).toContain('V0001-P')
+    expect(wrapper.text()).toContain('V0001-M')
+    expect(wrapper.text()).toContain('V0001-GG')
+  })
+
   it('shows an error message when loading variação data fails in edit mode', async () => {
     vi.mocked(variationsApi.getVariation).mockRejectedValue(new Error('network error'))
 
