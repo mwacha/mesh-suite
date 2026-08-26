@@ -29,15 +29,6 @@ function mountWithRouter(path = '/produtos/novo/variacao') {
   }))
 }
 
-async function adicionarVariante(wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper'], sku: string, preco: string) {
-  await wrapper.find('[data-test="adicionar-variante"]').trigger('click')
-  await flushPromises()
-  await wrapper.find('[data-test="variante-sku"]').setValue(sku)
-  await wrapper.find('[data-test="variante-preco-venda"]').setValue(preco)
-  await wrapper.find('[data-test="variante-salvar"]').trigger('click')
-  await flushPromises()
-}
-
 async function adicionarTipoDeVariacao(
   wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper'],
   nome: string,
@@ -74,21 +65,22 @@ describe('ProductVariationFormView', () => {
     expect(variationsApi.createVariation).not.toHaveBeenCalled()
   })
 
-  it('adds a variante via the slide-over panel', async () => {
+  it('has no manual "add variante" affordance -- rows only come from the matrix', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await adicionarVariante(wrapper, 'V0001-P', '79.90')
-
-    expect(wrapper.text()).toContain('V0001-P')
+    expect(wrapper.find('[data-test="adicionar-variante"]').exists()).toBe(false)
   })
 
   it('validates required fields inside the variante panel before saving', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="adicionar-variante"]').trigger('click')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P'])
+    await wrapper.find('[data-test="variante-editar-0"]').trigger('click')
     await flushPromises()
+    await wrapper.find('[data-test="variante-sku"]').setValue('')
+    await wrapper.find('[data-test="variante-preco-venda"]').setValue('0')
     await wrapper.find('[data-test="variante-salvar"]').trigger('click')
     await flushPromises()
 
@@ -96,11 +88,11 @@ describe('ProductVariationFormView', () => {
     expect(wrapper.text()).toContain('Informe um preço maior que zero')
   })
 
-  it('edits an existing variante row', async () => {
+  it('edits a matrix-generated variante row', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await adicionarVariante(wrapper, 'V0001-P', '79.90')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P'])
     await wrapper.find('[data-test="variante-editar-0"]').trigger('click')
     await flushPromises()
 
@@ -108,10 +100,10 @@ describe('ProductVariationFormView', () => {
     await wrapper.find('[data-test="variante-salvar"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('R$ 84,90')
+    expect(wrapper.text()).toContain('84,90')
   })
 
-  it('submits the form with parent fields and children, navigating to the list', async () => {
+  it('submits the form with parent fields and matrix-generated children, navigating to the list', async () => {
     vi.mocked(variationsApi.createVariation).mockResolvedValue({} as any)
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
@@ -119,7 +111,7 @@ describe('ProductVariationFormView', () => {
     await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
     await wrapper.find('[data-test="sku"]').setValue('V0001')
     await wrapper.find('[data-test="preco-venda"]').setValue('89.90')
-    await adicionarVariante(wrapper, 'V0001-P', '79.90')
+    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P'])
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
@@ -128,7 +120,7 @@ describe('ProductVariationFormView', () => {
         name: 'Camiseta Polo',
         sku: 'V0001',
         salePrice: 89.9,
-        children: [expect.objectContaining({ sku: 'V0001-P', salePrice: 79.9 })],
+        children: [expect.objectContaining({ sku: 'V0001-P', salePrice: 89.9, size: 'P' })],
       }),
     )
     expect(router.currentRoute.value.name).toBe('produtos')
@@ -213,23 +205,6 @@ describe('ProductVariationFormView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Variantes Geradas (0)')
-  })
-
-  it('does not affect a manually-added variante when the matrix changes', async () => {
-    const { wrapper } = await mountWithRouter()
-    await flushPromises()
-
-    await adicionarVariante(wrapper, 'MANUAL-001', '50.00')
-    await adicionarTipoDeVariacao(wrapper, 'Tamanho', ['P'])
-
-    expect(wrapper.text()).toContain('Variantes Geradas (2)')
-    expect(wrapper.text()).toContain('MANUAL-001')
-
-    await wrapper.find('[data-test="var-tipo-remover-0"]').trigger('click')
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('Variantes Geradas (1)')
-    expect(wrapper.text()).toContain('MANUAL-001')
   })
 
   it('navigates to the Kit form when the Tipo de Produto switcher picks Kit', async () => {

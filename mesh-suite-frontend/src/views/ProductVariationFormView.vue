@@ -140,12 +140,6 @@
       </CollapsibleSection>
 
       <CollapsibleSection :title="`Variantes Geradas (${children.length})`">
-        <div class="itens-toolbar">
-          <button type="button" class="btn-add-itens" data-test="adicionar-variante" @click="abrirNovaVariante">
-            + Adicionar Variante
-          </button>
-        </div>
-
         <div v-if="children.length" class="itens-grid">
           <div class="itens-grid-header">
             <div>Variante</div>
@@ -309,10 +303,6 @@ function novoDraft(): ChildForm {
     maxStock: null,
     size: null,
     colorwayId: null,
-    // Explicitly cleared (not just omitted) so Object.assign(draft, novoDraft())
-    // in abrirNovaVariante() wipes any comboKey/comboLabels left over in `draft`
-    // from a previously-opened combo-generated row -- otherwise the reused
-    // reactive `draft` object would keep stale values Object.assign can't remove.
     comboKey: undefined,
     comboLabels: undefined,
   }
@@ -478,7 +468,7 @@ function cancelarNovoTipo() {
 }
 
 const painelAberto = ref(false)
-const editingIndex = ref<number | null>(null)
+const editingIndex = ref(0)
 const draft = reactive<ChildForm>(novoDraft())
 const errosDraft = reactive<{ sku?: string; salePrice?: string }>({})
 
@@ -514,14 +504,6 @@ function aoMudarTipo(tipo: string) {
   }
 }
 
-function abrirNovaVariante() {
-  editingIndex.value = null
-  Object.assign(draft, novoDraft())
-  errosDraft.sku = undefined
-  errosDraft.salePrice = undefined
-  painelAberto.value = true
-}
-
 function abrirEdicaoVariante(index: number) {
   editingIndex.value = index
   Object.assign(draft, children.value[index])
@@ -541,12 +523,7 @@ function salvarVariante() {
     return
   }
   const colorway = coresEstampas.value.find((c) => c.id === draft.colorwayId)
-  const registro: ChildForm = { ...draft, colorwayName: colorway?.name ?? null }
-  if (editingIndex.value === null) {
-    children.value.push(registro)
-  } else {
-    children.value[editingIndex.value] = registro
-  }
+  children.value[editingIndex.value] = { ...draft, colorwayName: colorway?.name ?? null }
   painelAberto.value = false
 }
 
@@ -828,21 +805,6 @@ input:disabled {
 }
 
 /* Variantes */
-.itens-toolbar {
-  margin-bottom: 12px;
-}
-
-.btn-add-itens {
-  background: none;
-  border: 1.5px dashed var(--pm-accent);
-  color: var(--pm-accent);
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
 .itens-grid {
   border: 1px solid var(--pm-border-light);
   border-radius: 6px;
