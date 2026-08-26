@@ -4,6 +4,13 @@ export interface DropdownPosition {
   top?: string
   bottom?: string
   left: string
+  width?: string
+}
+
+export interface UseDropdownPositionOptions {
+  /** Size the dropdown to the trigger's own width (falling back to `minWidth` when narrower). */
+  matchTriggerWidth?: boolean
+  minWidth?: number
 }
 
 /**
@@ -19,6 +26,7 @@ export function useDropdownPosition(
   triggerRef: Ref<HTMLElement | null>,
   menuRef: Ref<HTMLElement | null>,
   estimatedHeight = 150,
+  options: UseDropdownPositionOptions = {},
 ) {
   const open = ref(false)
   const position = ref<DropdownPosition>({ top: '0px', left: '0px' })
@@ -36,10 +44,14 @@ export function useDropdownPosition(
       const rect = triggerRef.value.getBoundingClientRect()
       const viewportHeight = document.documentElement.clientHeight
       const spaceBelow = viewportHeight - rect.bottom
-      position.value =
-        spaceBelow > estimatedHeight
-          ? { top: `${rect.bottom + 4}px`, left: `${rect.left}px` }
-          : { bottom: `${viewportHeight - rect.top + 4}px`, left: `${rect.left}px` }
+      const width = options.matchTriggerWidth ? `${Math.max(rect.width, options.minWidth ?? 0)}px` : undefined
+      position.value = {
+        ...(spaceBelow > estimatedHeight
+          ? { top: `${rect.bottom + 4}px` }
+          : { bottom: `${viewportHeight - rect.top + 4}px` }),
+        left: `${rect.left}px`,
+        width,
+      }
     }
     open.value = true
   }
