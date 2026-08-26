@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface PermissionProfileRepository
         extends JpaRepository<PermissionProfile, UUID>, JpaSpecificationExecutor<PermissionProfile> {
-    boolean existsByName(String name);
-    boolean existsByNameAndIdNot(String name, UUID id);
+    boolean existsByTenantIdAndName(UUID tenantId, String name);
+    boolean existsByTenantIdAndNameAndIdNot(UUID tenantId, String name, UUID id);
     long countByTenantId(UUID tenantId);
 }

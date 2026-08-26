@@ -85,9 +85,10 @@ public class PermissionProfileService {
     }
 
     private void validateName(String name, UUID currentId) {
+        UUID tenantId = TenantContext.get();
         boolean duplicate = currentId == null
-                ? permissionProfileRepository.existsByName(name)
-                : permissionProfileRepository.existsByNameAndIdNot(name, currentId);
+                ? permissionProfileRepository.existsByTenantIdAndName(tenantId, name)
+                : permissionProfileRepository.existsByTenantIdAndNameAndIdNot(tenantId, name, currentId);
         if (duplicate) {
             throw new DuplicatePermissionProfileNameException();
         }
@@ -109,9 +110,16 @@ public class PermissionProfileService {
     // 409 by the same handler duplicate names already get.
     private void ensureDefaultsSeeded() {
         UUID tenantId = TenantContext.get();
-        if (permissionProfileRepository.countByTenantId(tenantId) > 0) {
-            return;
+        // Check if all system defaults exist, not just any profile
+        for (String defaultName : defaultMatrix().keySet()) {
+            if (!permissionProfileRepository.existsByTenantIdAndName(tenantId, defaultName)) {
+                seedDefaults(tenantId);
+                return;
+            }
         }
+    }
+
+    private void seedDefaults(UUID tenantId) {
         for (Map.Entry<String, List<UserPermissionGrant>> entry : defaultMatrix().entrySet()) {
             PermissionProfile profile = new PermissionProfile();
             profile.setTenantId(tenantId);
