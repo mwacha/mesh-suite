@@ -85,10 +85,9 @@ public class PermissionProfileService {
     }
 
     private void validateName(String name, UUID currentId) {
-        UUID tenantId = TenantContext.get();
         boolean duplicate = currentId == null
-                ? permissionProfileRepository.existsByTenantIdAndName(tenantId, name)
-                : permissionProfileRepository.existsByTenantIdAndNameAndIdNot(tenantId, name, currentId);
+                ? permissionProfileRepository.existsByName(name)
+                : permissionProfileRepository.existsByNameAndIdNot(name, currentId);
         if (duplicate) {
             throw new DuplicatePermissionProfileNameException();
         }
@@ -110,23 +109,15 @@ public class PermissionProfileService {
     // 409 by the same handler duplicate names already get.
     private void ensureDefaultsSeeded() {
         UUID tenantId = TenantContext.get();
-        // Check if all system defaults exist, not just any profile
-        for (String defaultName : defaultMatrix().keySet()) {
-            if (!permissionProfileRepository.existsByTenantIdAndName(tenantId, defaultName)) {
-                seedDefaults(tenantId);
-                return;
-            }
-        }
-    }
-
-    private void seedDefaults(UUID tenantId) {
         for (Map.Entry<String, List<UserPermissionGrant>> entry : defaultMatrix().entrySet()) {
-            PermissionProfile profile = new PermissionProfile();
-            profile.setTenantId(tenantId);
-            profile.setName(entry.getKey());
-            profile.setIsSystem(true);
-            profile.getGrants().addAll(entry.getValue());
-            permissionProfileRepository.saveAndFlush(profile);
+            if (!permissionProfileRepository.existsByName(entry.getKey())) {
+                PermissionProfile profile = new PermissionProfile();
+                profile.setTenantId(tenantId);
+                profile.setName(entry.getKey());
+                profile.setIsSystem(true);
+                profile.getGrants().addAll(entry.getValue());
+                permissionProfileRepository.saveAndFlush(profile);
+            }
         }
     }
 
