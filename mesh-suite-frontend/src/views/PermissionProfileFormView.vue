@@ -60,7 +60,6 @@ import {
   createPermissionProfile,
   updatePermissionProfile,
   type PermissionProfileRequest,
-  type PermissionGrant,
   type ModuleName,
   type ActionName,
 } from '@/api/permissionProfiles'
