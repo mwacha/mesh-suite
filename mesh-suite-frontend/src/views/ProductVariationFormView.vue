@@ -566,19 +566,38 @@ onMounted(async () => {
       form.measurementUnit = variacao.measurementUnit
       form.saleMultiple = variacao.saleMultiple
 
-      // The Tipos de Variação matrix (axis names + values) is now persisted exactly as
-      // defined -- load it as-is instead of guessing it back from the children. Each
-      // child is still only tagged as combo-generated if its own value per axis is
+      // The Tipos de Variação matrix (axis names + values) is persisted exactly as
+      // defined -- load it as-is instead of guessing it back from the children.
+      let tiposCarregados: VarType[]
+      if (variacao.variationAxes.length > 0) {
+        tiposCarregados = variacao.variationAxes.map((axis) => ({ name: axis.name, values: [...axis.values] }))
+      } else {
+        // Legacy fallback: this Variação was created before variationAxes existed on
+        // the backend, so nothing was ever persisted for it -- best-effort reconstruct
+        // a Tamanho/Cor matrix from the children's own values instead of showing a
+        // blank one. Saving afterwards persists the (re)defined matrix going forward.
+        const tamanhos = Array.from(new Set(
+          variacao.children.map((c) => c.size).filter((v): v is string => !!v),
+        ))
+        const cores = Array.from(new Set(
+          variacao.children.map((c) => c.colorwayName).filter((v): v is string => !!v),
+        ))
+        tiposCarregados = []
+        if (tamanhos.length > 0) {
+          tiposCarregados.push({ name: 'Tamanho', values: tamanhos })
+        }
+        if (cores.length > 0) {
+          tiposCarregados.push({ name: 'Cor', values: cores })
+        }
+      }
+
+      // Each child is only tagged as combo-generated if its own value per axis is
       // actually derivable (only "Tamanho" maps to a real child field, child.size --
       // any other axis has no per-child value stored anywhere, e.g. "Cor" is a best-
       // effort read of child.colorwayName, and a truly custom axis like "Material"
       // can't be derived at all) AND that combo is covered by the loaded matrix --
       // otherwise the child is left as a plain row so it's never silently dropped by
       // the sync watcher below.
-      const tiposCarregados: VarType[] = variacao.variationAxes.map((axis) => ({
-        name: axis.name,
-        values: [...axis.values],
-      }))
       const chavesValidas = new Set(combosFor(tiposCarregados).map((combo) => combo.join('|')))
 
       children.value = variacao.children.map((c) => {

@@ -171,6 +171,34 @@ describe('ProductVariationFormView', () => {
     expect(wrapper.text()).toContain('V0001-P')
   })
 
+  it('falls back to reconstructing Tamanho from children when a legacy Variação has no persisted axes', async () => {
+    // Variações created before variationAxes existed on the backend have nothing
+    // persisted -- the API returns an empty list, not null/undefined -- so the form
+    // must still show a usable matrix instead of leaving the user with a blank one.
+    vi.mocked(variationsApi.getVariation).mockResolvedValue({
+      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
+      salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
+      children: [
+        { id: 'c-1', sku: '2408-P', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+        { id: 'c-2', sku: '2408-M', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'M', colorwayId: null, colorwayName: null, saleMultiple: 1 },
+      ],
+      variationAxes: [],
+    })
+
+    const { wrapper } = await mountWithRouter('/produtos/v-1/editar/variacao')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Tamanho')
+    expect(wrapper.text()).toContain('Variantes Geradas (2)')
+    expect(wrapper.text()).toContain('2408-P')
+    expect(wrapper.text()).toContain('2408-M')
+
+    // The reconstructed matrix is fully live, same as a persisted one.
+    await wrapper.find('[data-test="var-tipo-remover-0"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Variantes Geradas (0)')
+  })
+
   it('loads the persisted Tamanho type, showing the same matrix that generated the children', async () => {
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
       id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
