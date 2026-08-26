@@ -7,6 +7,7 @@ import com.meshsuite.product.dto.*;
 import com.meshsuite.product.service.KitProductService;
 import com.meshsuite.product.service.ProductListingService;
 import com.meshsuite.product.service.ProductTypeStrategyResolver;
+import com.meshsuite.product.service.SellableProductService;
 import com.meshsuite.product.service.SimpleProductService;
 import com.meshsuite.product.service.VariationProductService;
 import jakarta.validation.Valid;
@@ -27,16 +28,19 @@ public class ProductController {
     private final VariationProductService variationProductService;
     private final ProductTypeStrategyResolver productTypeStrategyResolver;
     private final ProductListingService productListingService;
+    private final SellableProductService sellableProductService;
 
     public ProductController(SimpleProductService productService, KitProductService kitProductService,
                               VariationProductService variationProductService,
                               ProductTypeStrategyResolver productTypeStrategyResolver,
-                              ProductListingService productListingService) {
+                              ProductListingService productListingService,
+                              SellableProductService sellableProductService) {
         this.productService = productService;
         this.kitProductService = kitProductService;
         this.variationProductService = variationProductService;
         this.productTypeStrategyResolver = productTypeStrategyResolver;
         this.productListingService = productListingService;
+        this.sellableProductService = sellableProductService;
     }
 
     @GetMapping
@@ -63,6 +67,17 @@ public class ProductController {
     @GetMapping("/all/resumo")
     public ProductSummaryResponse listAllSummary() {
         return productListingService.summary();
+    }
+
+    // Item picker for order entry (Pedidos, Compras): every orderable row --
+    // Simples, Kit, and Variação children -- flattened into one search, with
+    // the Variação parent itself excluded since it has no price/stock of its own.
+    @GetMapping("/sellable")
+    public Page<SellableProductResponse> listSellable(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) ProductStatus status,
+            @PageableDefault(size = 50, sort = "name") Pageable pageable) {
+        return sellableProductService.list(search, status, pageable);
     }
 
     @GetMapping("/resumo")
