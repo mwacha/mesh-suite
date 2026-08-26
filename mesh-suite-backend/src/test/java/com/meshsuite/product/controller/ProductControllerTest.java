@@ -34,17 +34,17 @@ class ProductControllerTest extends AbstractIntegrationTest {
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired EntityManager entityManager;
 
-    private String loginAndGetCookie(String codigo, String email, String companyCnpj) throws Exception {
+    private String loginAndGetCookie(String code, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
-        tenant.setCodigo(codigo);
-        tenant.setNome(codigo);
+        tenant.setCodigo(code);
+        tenant.setNome(code);
         tenantRepository.saveAndFlush(tenant);
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
         Company company = new Company();
         company.setTenantId(tenant.getId());
-        company.setLegalName(codigo + " Ltda");
+        company.setLegalName(code + " Ltda");
         company.setCnpj(companyCnpj);
         companyRepository.saveAndFlush(company);
 
@@ -72,17 +72,17 @@ class ProductControllerTest extends AbstractIntegrationTest {
         return cookieHeader.split("mesh_token=")[1].split(";")[0];
     }
 
-    private String loginWithoutProductPermission(String codigo, String email, String companyCnpj) throws Exception {
+    private String loginWithoutProductPermission(String code, String email, String companyCnpj) throws Exception {
         Tenant tenant = new Tenant();
-        tenant.setCodigo(codigo);
-        tenant.setNome(codigo);
+        tenant.setCodigo(code);
+        tenant.setNome(code);
         tenantRepository.saveAndFlush(tenant);
 
         entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
 
         Company company = new Company();
         company.setTenantId(tenant.getId());
-        company.setLegalName(codigo + " Ltda");
+        company.setLegalName(code + " Ltda");
         company.setCnpj(companyCnpj);
         companyRepository.saveAndFlush(company);
 
@@ -106,7 +106,7 @@ class ProductControllerTest extends AbstractIntegrationTest {
         return cookieHeader.split("mesh_token=")[1].split(";")[0];
     }
 
-    private String produtoPayload(String sku) {
+    private String productPayload(String sku) {
         return """
                 {
                   "name": "Camiseta Polo Masculina",
@@ -125,7 +125,7 @@ class ProductControllerTest extends AbstractIntegrationTest {
 
         String created = mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(produtoPayload("P0001")))
+                        .content(productPayload("P0001")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Camiseta Polo Masculina"))
                 .andReturn().getResponse().getContentAsString();
@@ -153,6 +153,9 @@ class ProductControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(patch("/api/products/" + id + "/status").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"INACTIVE\"}"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/products/" + id).cookie(cookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("INACTIVE"));
 
@@ -170,12 +173,12 @@ class ProductControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(produtoPayload("P0001")))
+                        .content(productPayload("P0001")))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/products").cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(produtoPayload("P0001")))
+                        .content(productPayload("P0001")))
                 .andExpect(status().isConflict());
     }
 
@@ -202,7 +205,7 @@ class ProductControllerTest extends AbstractIntegrationTest {
 
         String body = mockMvc.perform(post("/api/products").cookie(cookieA)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(produtoPayload("P0001")))
+                        .content(productPayload("P0001")))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String id = com.jayway.jsonpath.JsonPath.read(body, "$.id");

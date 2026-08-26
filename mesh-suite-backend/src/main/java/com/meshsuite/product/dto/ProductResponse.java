@@ -24,6 +24,7 @@ public record ProductResponse(
         MeasurementUnit measurementUnit,
         BigDecimal minStock,
         BigDecimal maxStock,
+        String size,
         BigDecimal weight,
         BigDecimal length,
         BigDecimal width,

@@ -76,6 +76,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
     }
 
+    @ExceptionHandler(com.meshsuite.product.exception.ProductValidationException.class)
+    public ResponseEntity<Map<String, String>> handleProductValidation(
+            com.meshsuite.product.exception.ProductValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
+
     @ExceptionHandler(com.meshsuite.salesorder.exception.SalesOrderNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleSalesOrderNotFound(
             com.meshsuite.salesorder.exception.SalesOrderNotFoundException e) {

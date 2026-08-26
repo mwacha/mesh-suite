@@ -5,9 +5,12 @@ import com.meshsuite.colorway.domain.Colorway;
 import com.meshsuite.fiscal.domain.FiscalRegistration;
 import com.meshsuite.product.domain.enums.ProductStatus;
 import com.meshsuite.product.domain.enums.MeasurementUnit;
+import com.meshsuite.product.domain.enums.ProductType;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +29,10 @@ public class Product {
 
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ProductType type = ProductType.PRODUCT;
 
     @Column(nullable = false)
     private String name;
@@ -73,6 +80,9 @@ public class Product {
     @Column(name = "max_stock", precision = 12, scale = 3)
     private BigDecimal maxStock;
 
+    @Column(length = 50)
+    private String size;
+
     @Column(precision = 10, scale = 3)
     private BigDecimal weight;
 
@@ -91,4 +101,14 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fiscal_registration_id")
     private FiscalRegistration fiscalRegistration;
+
+    // Set only on VARIATION_CHILD rows, pointing back to their VARIATION_PARENT.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_product_id")
+    private Product parentProduct;
+
+    // Owned only by PRODUCT_KIT rows -- see ProductKitItem. Cleared and rebuilt
+    // wholesale on every save, same convention as PriceTable/PurchaseOrder items.
+    @OneToMany(mappedBy = "kitProduct", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductKitItem> kitItems = new ArrayList<>();
 }
