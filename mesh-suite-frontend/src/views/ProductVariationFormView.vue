@@ -16,7 +16,15 @@
           </div>
         </div>
         <div class="grid grid-2">
-          <TextField v-model="form.brand" label="Marca" />
+          <div>
+            <label class="field-label">Marca</label>
+            <select v-model="form.brandId" data-test="marca">
+              <option :value="null">Sem marca</option>
+              <option v-for="marca in marcas" :key="marca.id" :value="marca.id">
+                {{ marca.name }}
+              </option>
+            </select>
+          </div>
           <div>
             <label class="field-label">Categoria</label>
             <select v-model="form.categoryId" data-test="categoria">
@@ -259,6 +267,7 @@ import { getVariation, createVariation, updateVariation, type VariationParentReq
 import type { MeasurementUnit, ProductStatus } from '@/api/products'
 import { listCategories, type CategoryResponse } from '@/api/categories'
 import { listColorways, type ColorwayResponse } from '@/api/colorways'
+import { listBrands, type BrandResponse } from '@/api/brands'
 
 const UNIDADES: MeasurementUnit[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
 const STATUS_OPCOES: { value: ProductStatus; label: string }[] = [
@@ -319,7 +328,7 @@ function novoFormulario() {
   return {
     name: '',
     sku: '',
-    brand: '',
+    brandId: null as string | null,
     categoryId: null as string | null,
     salePrice: 0,
     status: 'ACTIVE' as ProductStatus,
@@ -336,6 +345,7 @@ const erroGeral = ref('')
 const salvando = ref(false)
 const categorias = ref<CategoryResponse[]>([])
 const coresEstampas = ref<ColorwayResponse[]>([])
+const marcas = ref<BrandResponse[]>([])
 
 const varTypes = ref<VarType[]>([])
 const addingValueTo = ref<number | null>(null)
@@ -582,13 +592,20 @@ onMounted(async () => {
     // Same reasoning as categorias above.
   }
 
+  try {
+    const pagina = await listBrands({ ativo: true, size: 100 })
+    marcas.value = pagina.content
+  } catch {
+    // Same reasoning as categorias above.
+  }
+
   const id = route.params.id
   if (typeof id === 'string') {
     try {
       const variacao = await getVariation(id)
       form.name = variacao.name
       form.sku = variacao.sku
-      form.brand = variacao.brand
+      form.brandId = variacao.brandId
       form.categoryId = variacao.categoryId
       form.salePrice = variacao.salePrice
       form.status = variacao.status
@@ -695,6 +712,13 @@ onMounted(async () => {
       ) {
         categorias.value = [...categorias.value, { id: variacao.categoryId, name: variacao.categoryName ?? '' } as CategoryResponse]
       }
+
+      if (
+        variacao.brandId &&
+        !marcas.value.some((marca) => marca.id === variacao.brandId)
+      ) {
+        marcas.value = [...marcas.value, { id: variacao.brandId, name: variacao.brandName ?? '' } as BrandResponse]
+      }
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados do produto.'
     }
@@ -713,7 +737,7 @@ function paraPayload(): VariationParentRequest {
   return {
     name: form.name,
     sku: form.sku,
-    brand: form.brand,
+    brandId: form.brandId,
     categoryId: form.categoryId,
     salePrice: Number(form.salePrice) || 0,
     status: form.status,

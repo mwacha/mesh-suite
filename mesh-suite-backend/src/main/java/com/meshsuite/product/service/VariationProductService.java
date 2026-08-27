@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
+import com.meshsuite.brand.exception.BrandNotFoundException;
+import com.meshsuite.brand.repository.BrandRepository;
 import com.meshsuite.category.exception.CategoryNotFoundException;
 import com.meshsuite.category.repository.CategoryRepository;
 import com.meshsuite.colorway.exception.ColorwayNotFoundException;
@@ -46,14 +48,17 @@ public class VariationProductService extends AbstractProductTypeService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ColorwayRepository colorwayRepository;
+    private final BrandRepository brandRepository;
     private final ObjectMapper objectMapper;
 
     public VariationProductService(ProductRepository productRepository, CategoryRepository categoryRepository,
-                                    ColorwayRepository colorwayRepository, ObjectMapper objectMapper) {
+                                    ColorwayRepository colorwayRepository, BrandRepository brandRepository,
+                                    ObjectMapper objectMapper) {
         super(productRepository);
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.colorwayRepository = colorwayRepository;
+        this.brandRepository = brandRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -140,7 +145,9 @@ public class VariationProductService extends AbstractProductTypeService {
     private void applyParent(Product parent, VariationParentRequest request) {
         parent.setName(request.name());
         parent.setSku(request.sku());
-        parent.setBrand(request.brand());
+        parent.setBrand(request.brandId() != null
+                ? brandRepository.findById(request.brandId()).orElseThrow(BrandNotFoundException::new)
+                : null);
         parent.setCategory(request.categoryId() != null
                 ? categoryRepository.findById(request.categoryId()).orElseThrow(CategoryNotFoundException::new)
                 : null);
@@ -227,7 +234,9 @@ public class VariationProductService extends AbstractProductTypeService {
                         c.getColorway() != null ? c.getColorway().getName() : null, c.getSaleMultiple(),
                         deserializeValues(c.getVariationValuesJson())))
                 .toList();
-        return new VariationParentResponse(parent.getId(), parent.getName(), parent.getSku(), parent.getBrand(),
+        return new VariationParentResponse(parent.getId(), parent.getName(), parent.getSku(),
+                parent.getBrand() != null ? parent.getBrand().getId() : null,
+                parent.getBrand() != null ? parent.getBrand().getName() : null,
                 parent.getCategory() != null ? parent.getCategory().getId() : null,
                 parent.getCategory() != null ? parent.getCategory().getName() : null,
                 parent.getSalePrice(), parent.getStatus(), parent.getDescription(), parent.getMeasurementUnit(),

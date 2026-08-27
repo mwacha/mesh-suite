@@ -8,7 +8,7 @@ export interface ProductRequest {
   name: string
   sku: string
   barcode: string
-  brand: string
+  brandId: string | null
   categoryId: string | null
   colorwayId: string | null
   salePrice: number
@@ -29,6 +29,7 @@ export interface ProductRequest {
 
 export interface ProductResponse extends ProductRequest {
   id: string
+  brandName: string | null
   categoryName: string | null
   colorwayName: string | null
 }
@@ -37,7 +38,7 @@ export interface ProductListItem {
   id: string
   name: string
   sku: string
-  brand: string
+  brandName: string | null
   salePrice: number
   stockQuantity: number
   status: ProductStatus
@@ -77,7 +78,7 @@ export interface ProductAllListItem {
   id: string
   name: string
   sku: string
-  brand: string
+  brandName: string | null
   type: ProductType
   salePrice: number
   stockQuantity: number

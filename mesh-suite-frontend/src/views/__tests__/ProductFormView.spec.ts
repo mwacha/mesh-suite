@@ -8,6 +8,7 @@ import * as produtosApi from '@/api/products'
 vi.mock('@/api/products')
 vi.mock('@/api/categories')
 vi.mock('@/api/colorways')
+vi.mock('@/api/brands')
 
 function mountWithRouter(path = '/produtos/novo') {
   const router = createRouter({
@@ -122,7 +123,7 @@ describe('ProductFormView', () => {
 
   it('loads existing produto data in edit mode', async () => {
     vi.mocked(produtosApi.getProduct).mockResolvedValue({
-      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brand: '', categoryId: null,
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brandId: null, brandName: null, categoryId: null,
       categoryName: null, colorwayId: null, colorwayName: null, salePrice: 59.9, costPrice: null,
       status: 'ACTIVE', description: '', stockQuantity: 10, measurementUnit: 'UN', minStock: null,
       maxStock: null, weight: null, length: null, width: null, height: null,
@@ -178,7 +179,7 @@ describe('ProductFormView', () => {
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
     vi.mocked(produtosApi.getProduct).mockResolvedValue({
-      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brand: '',
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brandId: null, brandName: null,
       categoryId: 'cat-inactive', categoryName: 'Descontinuados', colorwayId: null, colorwayName: null,
       salePrice: 59.9, costPrice: null, status: 'ACTIVE', description: '', stockQuantity: 10,
       measurementUnit: 'UN', minStock: null, maxStock: null, weight: null, length: null,
@@ -227,7 +228,7 @@ describe('ProductFormView', () => {
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
     vi.mocked(produtosApi.getProduct).mockResolvedValue({
-      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brand: '',
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brandId: null, brandName: null,
       categoryId: null, categoryName: null,
       colorwayId: 'ce-inactive', colorwayName: 'Floral Descontinuado',
       salePrice: 59.9, costPrice: null, status: 'ACTIVE', description: '', stockQuantity: 10,
@@ -241,6 +242,56 @@ describe('ProductFormView', () => {
     const select = wrapper.find('[data-test="cor-estampa"]').element as HTMLSelectElement
     expect(select.value).toBe('ce-inactive')
     expect(wrapper.text()).toContain('Floral Descontinuado')
+  })
+
+  it('loads marcas into the dropdown and lets the user pick one', async () => {
+    const marcasApi = await import('@/api/brands')
+    vi.mocked(marcasApi.listBrands).mockResolvedValue({
+      content: [
+        { id: 'brand-1', name: 'Marca Alpha', active: true, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
+      ],
+      totalElements: 1, totalPages: 1, number: 0, size: 100,
+    })
+    vi.mocked(produtosApi.createProduct).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="nome"]').setValue('Camiseta Polo')
+    await wrapper.find('[data-test="sku"]').setValue('P0001')
+    await wrapper.find('[data-test="preco-venda"]').setValue('59.90')
+    await wrapper.find('[data-test="marca"]').setValue('brand-1')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const payload = vi.mocked(produtosApi.createProduct).mock.calls[0][0]
+    expect(payload.brandId).toBe('brand-1')
+  })
+
+  it('keeps an inactive-but-linked marca selected in the dropdown when editing', async () => {
+    const marcasApi = await import('@/api/brands')
+    // The active-only marca list does NOT include this produto's marca
+    // (simulating it having been deactivated after the produto was linked to it).
+    vi.mocked(marcasApi.listBrands).mockResolvedValue({
+      content: [
+        { id: 'brand-active', name: 'Marca Beta', active: true, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
+      ],
+      totalElements: 1, totalPages: 1, number: 0, size: 100,
+    })
+    vi.mocked(produtosApi.getProduct).mockResolvedValue({
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '',
+      brandId: 'brand-inactive', brandName: 'Marca Descontinuada',
+      categoryId: null, categoryName: null, colorwayId: null, colorwayName: null,
+      salePrice: 59.9, costPrice: null, status: 'ACTIVE', description: '', stockQuantity: 10,
+      measurementUnit: 'UN', minStock: null, maxStock: null, weight: null, length: null,
+      width: null, height: null,
+    } as any)
+
+    const { wrapper } = await mountWithRouter('/produtos/abc-123/editar')
+    await flushPromises()
+
+    const select = wrapper.find('[data-test="marca"]').element as HTMLSelectElement
+    expect(select.value).toBe('brand-inactive')
+    expect(wrapper.text()).toContain('Marca Descontinuada')
   })
 
   it('sends the tamanho field in the payload', async () => {
@@ -293,7 +344,7 @@ describe('ProductFormView', () => {
 
   it('disables the Tipo de Produto switcher in edit mode', async () => {
     vi.mocked(produtosApi.getProduct).mockResolvedValue({
-      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brand: '', categoryId: null,
+      id: 'abc-123', name: 'Camiseta Polo', sku: 'P0001', barcode: '', brandId: null, brandName: null, categoryId: null,
       categoryName: null, colorwayId: null, colorwayName: null, salePrice: 59.9, costPrice: null,
       status: 'ACTIVE', description: '', stockQuantity: 10, measurementUnit: 'UN', minStock: null,
       maxStock: null, size: null, weight: null, length: null, width: null, height: null,

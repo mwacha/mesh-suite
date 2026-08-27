@@ -13,7 +13,7 @@ public record ProductRequest(
         @NotBlank String name,
         @NotBlank String sku,
         String barcode,
-        String brand,
+        UUID brandId,
         UUID categoryId,
         UUID colorwayId,
         @NotNull @DecimalMin(value = "0.01") BigDecimal salePrice,

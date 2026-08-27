@@ -59,7 +59,7 @@
               <span v-else class="expand-toggle-spacer"></span>
               {{ produto.name }}
             </div>
-            <div class="table-grid-cell">{{ produto.brand }}</div>
+            <div class="table-grid-cell">{{ produto.brandName }}</div>
             <div class="table-grid-cell">{{ tipoLabel(produto.type) }}</div>
             <div class="table-grid-cell">{{ formatarPreco(produto.salePrice) }}</div>
             <div class="table-grid-cell">{{ produto.stockQuantity }}</div>

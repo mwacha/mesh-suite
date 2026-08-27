@@ -6,10 +6,12 @@ import ProductVariationFormView from '@/views/ProductVariationFormView.vue'
 import * as variationsApi from '@/api/productVariations'
 import * as categoriesApi from '@/api/categories'
 import * as colorwaysApi from '@/api/colorways'
+import * as brandsApi from '@/api/brands'
 
 vi.mock('@/api/productVariations')
 vi.mock('@/api/categories')
 vi.mock('@/api/colorways')
+vi.mock('@/api/brands')
 
 function mountWithRouter(path = '/produtos/novo/variacao') {
   const router = createRouter({
@@ -51,6 +53,7 @@ describe('ProductVariationFormView', () => {
     vi.clearAllMocks()
     vi.mocked(categoriesApi.listCategories).mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 100 })
     vi.mocked(colorwaysApi.listColorways).mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 100 })
+    vi.mocked(brandsApi.listBrands).mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 100 })
   })
 
   it('shows required-field errors when nome/sku/preço/children are missing on submit', async () => {
@@ -158,7 +161,7 @@ describe('ProductVariationFormView', () => {
 
   it('loads existing variação data in edit mode', async () => {
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brandId: 'brand-1', brandName: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [{ id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] }],
       variationAxes: [{ name: 'Tamanho', values: ['P'] }],
@@ -177,7 +180,7 @@ describe('ProductVariationFormView', () => {
     // persisted -- the API returns an empty list, not null/undefined -- so the form
     // must still show a usable matrix instead of leaving the user with a blank one.
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brandId: 'brand-2', brandName: 'Linda Brasil', categoryId: null, categoryName: null,
       salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
         { id: 'c-1', sku: '2408-P', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
@@ -202,7 +205,7 @@ describe('ProductVariationFormView', () => {
 
   it('loads the persisted Tamanho type, showing the same matrix that generated the children', async () => {
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brandId: 'brand-1', brandName: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
         { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
@@ -229,7 +232,7 @@ describe('ProductVariationFormView', () => {
 
   it('loads both Tamanho and Cor axes from the persisted matrix', async () => {
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brandId: 'brand-1', brandName: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
         { id: 'c-1', sku: 'V0001-P-BR', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: 'co-1', colorwayName: 'Branco', saleMultiple: 1, variationValues: [] },
@@ -256,7 +259,7 @@ describe('ProductVariationFormView', () => {
     // "Cor" live, must wipe the now-lower-dimensional P/M rows and regenerate the
     // full Tamanho x Cor cartesian product -- not keep the old rows alongside the new ones.
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brandId: 'brand-1', brandName: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
         { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
@@ -280,7 +283,7 @@ describe('ProductVariationFormView', () => {
     // Contrasting case: adding "GG" to an existing "Tamanho: P, M" must NOT touch
     // the already-generated P/M rows -- only the new GG combination is created.
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brand: 'Marca Alpha', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Camiseta Polo', sku: 'V0001', brandId: 'brand-1', brandName: 'Marca Alpha', categoryId: null, categoryName: null,
       salePrice: 89.9, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
         { id: 'c-1', sku: 'V0001-P', barcode: null, salePrice: 79.9, costPrice: null, stockQuantity: 5, minStock: null, maxStock: null, size: 'P', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
@@ -311,7 +314,7 @@ describe('ProductVariationFormView', () => {
     // Each child must still be matched back to its combination -- otherwise the
     // matrix generates a second row for every combination on top of the saved ones.
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brandId: 'brand-2', brandName: 'Linda Brasil', categoryId: null, categoryName: null,
       salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
         { id: 'c-1', sku: '2408-40-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 7, minStock: null, maxStock: null, size: '40', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: ['40', 'VERMELHA'] },
@@ -341,7 +344,7 @@ describe('ProductVariationFormView', () => {
     // combination each row belongs to, but children are created in the same order
     // the matrix generates them, so position recovers it without losing their data.
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brandId: 'brand-2', brandName: 'Linda Brasil', categoryId: null, categoryName: null,
       salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
         { id: 'c-1', sku: '2408-40-VERMELHA', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 7, minStock: null, maxStock: null, size: null, colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },
@@ -394,7 +397,7 @@ describe('ProductVariationFormView', () => {
     // again, they must be swept away along with everything else and replaced
     // by a fresh cartesian product, since they can never legitimately fit it.
     vi.mocked(variationsApi.getVariation).mockResolvedValue({
-      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brand: 'Linda Brasil', categoryId: null, categoryName: null,
+      id: 'v-1', name: 'Calcinha Conforto', sku: '2408', brandId: 'brand-2', brandName: 'Linda Brasil', categoryId: null, categoryName: null,
       salePrice: 28.25, status: 'ACTIVE', description: '', measurementUnit: 'UN', saleMultiple: 1,
       children: [
         { id: 'c-1', sku: '2408-PP-VE', barcode: null, salePrice: 28.25, costPrice: null, stockQuantity: 0, minStock: null, maxStock: null, size: 'PP', colorwayId: null, colorwayName: null, saleMultiple: 1, variationValues: [] },

@@ -13,7 +13,15 @@
           <TextField v-model="form.barcode" label="Código de Barra (EAN/GTIN)" placeholder="7891234567890" />
         </div>
         <div class="grid grid-2">
-          <TextField v-model="form.brand" label="Marca" />
+          <div>
+            <label class="field-label">Marca</label>
+            <select v-model="form.brandId" data-test="marca">
+              <option :value="null">Sem marca</option>
+              <option v-for="marca in marcas" :key="marca.id" :value="marca.id">
+                {{ marca.name }}
+              </option>
+            </select>
+          </div>
           <div>
             <label class="field-label">Categoria</label>
             <select v-model="form.categoryId" data-test="categoria">
@@ -147,6 +155,7 @@ import {
 } from '@/api/products'
 import { listCategories, type CategoryResponse } from '@/api/categories'
 import { listColorways, type ColorwayResponse } from '@/api/colorways'
+import { listBrands, type BrandResponse } from '@/api/brands'
 
 const UNIDADES: MeasurementUnit[] = ['UN', 'KG', 'G', 'L', 'ML', 'MT', 'CM', 'CX', 'PC', 'PAR', 'DZ']
 const STATUS_OPCOES: { value: ProductStatus; label: string }[] = [
@@ -164,7 +173,7 @@ function novoFormulario(): ProductRequest {
     name: '',
     sku: '',
     barcode: '',
-    brand: '',
+    brandId: null,
     categoryId: null,
     colorwayId: null,
     salePrice: 0,
@@ -190,6 +199,7 @@ const erroGeral = ref('')
 const salvando = ref(false)
 const categorias = ref<CategoryResponse[]>([])
 const coresEstampas = ref<ColorwayResponse[]>([])
+const marcas = ref<BrandResponse[]>([])
 
 const sizeModel = computed({
   get: () => form.size ?? '',
@@ -221,6 +231,13 @@ onMounted(async () => {
   try {
     const pagina = await listColorways({ ativo: true, size: 100 })
     coresEstampas.value = pagina.content
+  } catch {
+    // Same convenience-dropdown reasoning as categorias above.
+  }
+
+  try {
+    const pagina = await listBrands({ ativo: true, size: 100 })
+    marcas.value = pagina.content
   } catch {
     // Same convenience-dropdown reasoning as categorias above.
   }
@@ -262,6 +279,20 @@ onMounted(async () => {
             id: produto.colorwayId,
             name: produto.colorwayName ?? '',
           } as ColorwayResponse,
+        ]
+      }
+
+      // Same reasoning as the categoria splice above, mirrored for marca.
+      if (
+        produto.brandId &&
+        !marcas.value.some((marca) => marca.id === produto.brandId)
+      ) {
+        marcas.value = [
+          ...marcas.value,
+          {
+            id: produto.brandId,
+            name: produto.brandName ?? '',
+          } as BrandResponse,
         ]
       }
     } catch {

@@ -13,7 +13,7 @@ import java.util.UUID;
 public record VariationParentRequest(
         @NotBlank String name,
         @NotBlank String sku,
-        String brand,
+        UUID brandId,
         UUID categoryId,
         @NotNull BigDecimal salePrice,
         ProductStatus status,

@@ -81,7 +81,8 @@ public class ProductListingService {
 
     private ProductAllListItemResponse toListItem(Product p, List<VariationChildSummaryResponse> children) {
         return new ProductAllListItemResponse(
-                p.getId(), p.getName(), p.getSku(), p.getBrand(), p.getType(),
+                p.getId(), p.getName(), p.getSku(),
+                p.getBrand() != null ? p.getBrand().getName() : null, p.getType(),
                 p.getSalePrice(), p.getStockQuantity(), p.getStatus(), children);
     }
 

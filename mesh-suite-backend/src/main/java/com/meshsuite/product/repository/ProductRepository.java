@@ -19,6 +19,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
     long countByStatusAndType(ProductStatus status, ProductType type);
     long countByCategoryId(UUID categoryId);
     long countByColorwayId(UUID colorwayId);
+    long countByBrandId(UUID brandId);
     Optional<Product> findByIdAndType(UUID id, ProductType type);
     // Ordered by creation so the children come back in the same order the Tipos de
     // Variação matrix generated them. Rows saved before variation_values existed
@@ -35,6 +36,10 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
             "WHERE p.colorway.id IN :colorwayIds GROUP BY p.colorway.id")
     List<ColorwayProductCount> countByColorwayIdIn(@Param("colorwayIds") Collection<UUID> colorwayIds);
 
+    @Query("SELECT p.brand.id AS brandId, COUNT(p) AS total FROM Product p " +
+            "WHERE p.brand.id IN :brandIds GROUP BY p.brand.id")
+    List<BrandProductCount> countByBrandIdIn(@Param("brandIds") Collection<UUID> brandIds);
+
     interface CategoryProductCount {
         UUID getCategoryId();
         Long getTotal();
@@ -42,6 +47,11 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
 
     interface ColorwayProductCount {
         UUID getColorwayId();
+        Long getTotal();
+    }
+
+    interface BrandProductCount {
+        UUID getBrandId();
         Long getTotal();
     }
 }
