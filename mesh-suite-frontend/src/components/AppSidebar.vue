@@ -93,7 +93,8 @@ const navGroups: NavGroup[] = [
       { icon: '📋', label: 'Pedidos', route: '/pedidos' },
       { icon: '🧾', label: 'Vendas', route: '/vendas' },
       { icon: '💰', label: 'Tab. Preços', route: '/tabelas-preco' },
-      { icon: '💳', label: 'Pagamentos', route: '/contas-a-pagar' },
+      { icon: '💳', label: 'Formas de Recebimento', route: '/formas-recebimento' },
+      { icon: '💸', label: 'Pagamentos', route: '/contas-a-pagar' },
     ],
   },
   {
@@ -121,7 +122,6 @@ const navGroups: NavGroup[] = [
       { icon: '👥', label: 'Clientes', route: '/clientes' },
       { icon: '🏭', label: 'Fornecedores', route: '/fornecedores' },
       { icon: '🚚', label: 'Transportadoras', route: null },
-      { icon: '💳', label: 'Formas de Pagamento', route: '/formas-pagamento' },
     ],
   },
   {

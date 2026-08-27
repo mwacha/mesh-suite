@@ -60,8 +60,8 @@
             <input disabled placeholder="—" title="Depende do domínio Financeiro, ainda não implementado" />
           </div>
           <div>
-            <label class="field-label">Forma de Pagamento</label>
-            <input :value="parceiro.paymentMethodDescription || '—'" data-test="forma-pagamento" readonly />
+            <label class="field-label">Forma de Recebimento</label>
+            <input :value="parceiro.paymentMethodDescription || '—'" data-test="forma-recebimento" readonly />
           </div>
           <div>
             <label class="field-label">Vendedor Responsável</label>

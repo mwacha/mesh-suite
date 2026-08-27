@@ -38,9 +38,9 @@ describe('ClienteFormView', () => {
     })
   })
 
-  it('populates the forma de pagamento select with active payment methods and submits the chosen one', async () => {
+  it('populates the forma de recebimento select with active payment methods and submits the chosen one', async () => {
     vi.mocked(formasPagamentoApi.listPaymentMethods).mockResolvedValue({
-      content: [{ id: 'pm-1', description: 'À Vista', active: true, installmentsCount: 1 }],
+      content: [{ id: 'pm-1', description: 'À Vista', type: 'CASH', active: true, maxInstallments: 1, installmentsCount: 1, installmentDays: [0] }],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
     const { wrapper } = await mountWithRouter()
@@ -48,7 +48,7 @@ describe('ClienteFormView', () => {
 
     expect(wrapper.text()).toContain('À Vista')
 
-    await wrapper.find('[data-test="forma-pagamento"]').setValue('pm-1')
+    await wrapper.find('[data-test="forma-recebimento"]').setValue('pm-1')
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Mercado Silva')
     await wrapper.find('[data-test="razaoSocial"]').setValue('Mercado Silva Ltda')
     await wrapper.find('[data-test="documento"]').setValue('11222333000144')

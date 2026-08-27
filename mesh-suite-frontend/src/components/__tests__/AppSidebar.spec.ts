@@ -155,6 +155,34 @@ describe('AppSidebar', () => {
     expect(router.currentRoute.value.path).toBe('/notas-fiscais-entrada')
   })
 
+  it('lists Formas de Recebimento under VENDAS, not under CADASTROS', async () => {
+    const { wrapper } = mountWithRouter()
+
+    await wrapper.find('[data-test="group-cadastros"]').trigger('click')
+    expect(wrapper.find('[data-test="nav-Formas de Recebimento"]').exists()).toBe(false)
+
+    // accordion: abrir "vendas" fecha "cadastros"
+    await wrapper.find('[data-test="group-vendas"]').trigger('click')
+    expect(wrapper.find('[data-test="nav-Formas de Recebimento"]').exists()).toBe(true)
+  })
+
+  it('navigates to /formas-recebimento when Formas de Recebimento is clicked', async () => {
+    const router = createRouter({
+      history: createWebHistory(),
+      routes: [
+        { path: '/', name: 'dashboard', component: { template: '<div />' } },
+        { path: '/formas-recebimento', name: 'formas-recebimento', component: { template: '<div />' } },
+      ],
+    })
+    const wrapper = mount(AppSidebar, { global: { plugins: [router] } })
+
+    await wrapper.find('[data-test="group-vendas"]').trigger('click')
+    await wrapper.find('[data-test="nav-Formas de Recebimento"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/formas-recebimento')
+  })
+
   it('groups nav items under category headers, collapsed by default', () => {
     const { wrapper } = mountWithRouter()
 

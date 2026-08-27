@@ -1,6 +1,7 @@
 package com.meshsuite.paymentmethod.repository.specification;
 
 import com.meshsuite.paymentmethod.domain.PaymentMethod;
+import com.meshsuite.paymentmethod.domain.enums.PaymentMethodType;
 import org.springframework.data.jpa.domain.Specification;
 
 public final class PaymentMethodSpecifications {
@@ -21,5 +22,12 @@ public final class PaymentMethodSpecifications {
             return null;
         }
         return (root, query, cb) -> cb.equal(root.get("active"), active);
+    }
+
+    public static Specification<PaymentMethod> withType(PaymentMethodType type) {
+        if (type == null) {
+            return null;
+        }
+        return (root, query, cb) -> cb.equal(root.get("type"), type);
     }
 }

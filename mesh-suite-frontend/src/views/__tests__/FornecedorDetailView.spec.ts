@@ -59,13 +59,13 @@ describe('FornecedorDetailView', () => {
     expect(partnersApi.listPartners).toHaveBeenCalledWith(expect.objectContaining({ papel: 'SUPPLIER' }))
   })
 
-  it('does not show the sale-only stub fields (Tabela de Preço, Limite de Crédito, Forma de Pagamento, Vendedor Responsável)', async () => {
+  it('does not show the sale-only stub fields (Tabela de Preço, Limite de Crédito, Forma de Recebimento, Vendedor Responsável)', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
     expect(wrapper.text()).not.toContain('Tabela de Preço')
     expect(wrapper.text()).not.toContain('Limite de Crédito')
-    expect(wrapper.text()).not.toContain('Forma de Pagamento')
+    expect(wrapper.text()).not.toContain('Forma de Recebimento')
     expect(wrapper.text()).not.toContain('Vendedor Responsável')
   })
 

@@ -110,7 +110,9 @@ class PaymentMethodControllerTest extends AbstractIntegrationTest {
         return """
                 {
                   "description": "%s",
+                  "type": "DUPLICATA",
                   "active": true,
+                  "maxInstallments": 3,
                   "installments": [
                     {"daysDue": 30, "percentage": 34.00},
                     {"daysDue": 60, "percentage": 33.00},
@@ -139,14 +141,29 @@ class PaymentMethodControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/payment-methods").cookie(cookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].description").value("30/60/90"))
-                .andExpect(jsonPath("$.content[0].installmentsCount").value(3));
+                .andExpect(jsonPath("$.content[0].type").value("DUPLICATA"))
+                .andExpect(jsonPath("$.content[0].maxInstallments").value(3))
+                .andExpect(jsonPath("$.content[0].installmentsCount").value(3))
+                .andExpect(jsonPath("$.content[0].installmentDays[2]").value(90));
+
+        mockMvc.perform(get("/api/payment-methods").param("tipo", "PIX").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0));
+
+        mockMvc.perform(get("/api/payment-methods/counts").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.active").value(1))
+                .andExpect(jsonPath("$.inactive").value(0));
 
         mockMvc.perform(put("/api/payment-methods/" + id).cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "description": "30/60/90 Atualizado",
+                                  "type": "BOLETO",
                                   "active": true,
+                                  "maxInstallments": 1,
                                   "installments": [{"daysDue": 0, "percentage": 100.00}]
                                 }
                                 """))
@@ -187,7 +204,9 @@ class PaymentMethodControllerTest extends AbstractIntegrationTest {
                         .content("""
                                 {
                                   "description": "Errado",
+                                  "type": "BOLETO",
                                   "active": true,
+                                  "maxInstallments": 2,
                                   "installments": [{"daysDue": 30, "percentage": 40.00}, {"daysDue": 60, "percentage": 40.00}]
                                 }
                                 """))
@@ -213,6 +232,49 @@ class PaymentMethodControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/payment-methods/" + id).cookie(cookieB))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createsPaymentMethodWithoutInstallmentBreakdown() throws Exception {
+        String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
+
+        mockMvc.perform(post("/api/payment-methods").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "description": "Cartão Crédito",
+                                  "type": "CARD",
+                                  "notes": "Bandeiras próprias",
+                                  "active": true,
+                                  "maxInstallments": 12,
+                                  "interestRate": 2.50,
+                                  "settlementDays": 30
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.type").value("CARD"))
+                .andExpect(jsonPath("$.notes").value("Bandeiras próprias"))
+                .andExpect(jsonPath("$.maxInstallments").value(12))
+                .andExpect(jsonPath("$.settlementDays").value(30))
+                .andExpect(jsonPath("$.installments.length()").value(0));
+    }
+
+    @Test
+    void rejectsPaymentMethodWithoutTypeWithBadRequest() throws Exception {
+        String token = loginAndGetCookie("aurora", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
+
+        mockMvc.perform(post("/api/payment-methods").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "description": "Sem tipo",
+                                  "active": true,
+                                  "maxInstallments": 1
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
