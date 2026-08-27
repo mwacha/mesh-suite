@@ -60,7 +60,7 @@ describe('UserFormView', () => {
     mockPerfis()
   })
 
-  it('shows required-field errors when name/email/role/profile/password are missing on submit', async () => {
+  it('shows required-field errors when name/email/role/password are missing on submit', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 

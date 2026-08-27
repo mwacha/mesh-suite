@@ -9,5 +9,5 @@ public interface PermissionProfileRepository
         extends JpaRepository<PermissionProfile, UUID>, JpaSpecificationExecutor<PermissionProfile> {
     boolean existsByName(String name);
     boolean existsByNameAndIdNot(String name, UUID id);
-    long countByTenantId(UUID tenantId);
+    boolean existsByCode(String code);
 }

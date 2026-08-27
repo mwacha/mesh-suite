@@ -110,18 +110,34 @@ public class PermissionProfileService {
         }
     }
 
+    // Display names for the 4 seeded system profiles, keyed by their stable
+    // internal code. The code is the profile's real identity for seeding
+    // purposes; the name is just a mutable, user-editable label (see below).
+    private static final Map<String, String> DEFAULT_NAMES = Map.of(
+            "ADMIN", "Admin",
+            "MANAGER", "Gerente",
+            "SALES", "Vendedor",
+            "VIEWER", "Visualizador");
+
     // Seeds the 4 system defaults the first time a tenant lists its profiles --
     // there is no tenant-registration flow yet to hook this into (see spec §8.1).
-    // The DB's UNIQUE(tenant_id, name) makes a concurrent double-seed harmless:
-    // the loser's insert throws DataIntegrityViolationException, surfaced as a
-    // 409 by the same handler duplicate names already get.
+    // Seeding is keyed on `code`, a stable internal identity, rather than on the
+    // mutable `name` field: PermissionProfileFormView.vue intentionally allows
+    // renaming any profile, including isSystem ones, so keying on name would
+    // cause a rename to be re-seeded as a brand-new (permanent, undeletable)
+    // duplicate on the next list() call.
+    // The DB's UNIQUE(tenant_id, code) WHERE code IS NOT NULL makes a concurrent
+    // double-seed harmless: the loser's insert throws DataIntegrityViolationException,
+    // surfaced as a 409 by the same handler duplicate names already get.
     private void ensureDefaultsSeeded() {
         UUID tenantId = TenantContext.get();
         for (Map.Entry<String, List<UserPermissionGrant>> entry : defaultMatrix().entrySet()) {
-            if (!permissionProfileRepository.existsByName(entry.getKey())) {
+            String code = entry.getKey();
+            if (!permissionProfileRepository.existsByCode(code)) {
                 PermissionProfile profile = new PermissionProfile();
                 profile.setTenantId(tenantId);
-                profile.setName(entry.getKey());
+                profile.setName(DEFAULT_NAMES.get(code));
+                profile.setCode(code);
                 profile.setIsSystem(true);
                 profile.getGrants().addAll(entry.getValue());
                 permissionProfileRepository.saveAndFlush(profile);
@@ -131,9 +147,10 @@ public class PermissionProfileService {
 
     // Business-judgment default matrix, ported from the old frontend-only
     // DEFAULT_MATRIX (UserFormView.vue), extended with STOCK -- see spec §3.
+    // Keyed by stable code (not display name) -- see ensureDefaultsSeeded().
     private static Map<String, List<UserPermissionGrant>> defaultMatrix() {
         return Map.of(
-                "Admin", List.of(
+                "ADMIN", List.of(
                         g(Module.CUSTOMER, Action.VIEW), g(Module.CUSTOMER, Action.CREATE), g(Module.CUSTOMER, Action.EDIT), g(Module.CUSTOMER, Action.DELETE),
                         g(Module.PRODUCT, Action.VIEW), g(Module.PRODUCT, Action.CREATE), g(Module.PRODUCT, Action.EDIT), g(Module.PRODUCT, Action.DELETE),
                         g(Module.ORDER, Action.VIEW), g(Module.ORDER, Action.CREATE), g(Module.ORDER, Action.EDIT), g(Module.ORDER, Action.DELETE),
@@ -143,7 +160,7 @@ public class PermissionProfileService {
                         g(Module.PAYABLE, Action.VIEW), g(Module.PAYABLE, Action.EDIT),
                         g(Module.SALE, Action.VIEW), g(Module.SALE, Action.CREATE),
                         g(Module.PURCHASE_INVOICE, Action.VIEW), g(Module.PURCHASE_INVOICE, Action.CREATE)),
-                "Gerente", List.of(
+                "MANAGER", List.of(
                         g(Module.CUSTOMER, Action.VIEW), g(Module.CUSTOMER, Action.CREATE), g(Module.CUSTOMER, Action.EDIT),
                         g(Module.PRODUCT, Action.VIEW), g(Module.PRODUCT, Action.CREATE), g(Module.PRODUCT, Action.EDIT),
                         g(Module.ORDER, Action.VIEW), g(Module.ORDER, Action.CREATE), g(Module.ORDER, Action.EDIT),
@@ -153,12 +170,12 @@ public class PermissionProfileService {
                         g(Module.SALE, Action.VIEW), g(Module.SALE, Action.CREATE),
                         g(Module.PURCHASE_INVOICE, Action.VIEW), g(Module.PURCHASE_INVOICE, Action.CREATE),
                         g(Module.USER, Action.VIEW)),
-                "Vendedor", List.of(
+                "SALES", List.of(
                         g(Module.CUSTOMER, Action.VIEW), g(Module.CUSTOMER, Action.CREATE), g(Module.CUSTOMER, Action.EDIT),
                         g(Module.PRODUCT, Action.VIEW),
                         g(Module.ORDER, Action.VIEW), g(Module.ORDER, Action.CREATE), g(Module.ORDER, Action.EDIT),
                         g(Module.SALE, Action.VIEW), g(Module.SALE, Action.CREATE)),
-                "Visualizador", List.of(
+                "VIEWER", List.of(
                         g(Module.CUSTOMER, Action.VIEW),
                         g(Module.PRODUCT, Action.VIEW),
                         g(Module.ORDER, Action.VIEW),

@@ -3,12 +3,14 @@ CREATE TABLE permission_profile (
     tenant_id UUID NOT NULL REFERENCES tenant(id),
     name VARCHAR(255) NOT NULL,
     description VARCHAR(500),
+    code VARCHAR(20),
     is_system BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE UNIQUE INDEX idx_permission_profile_tenant_name ON permission_profile(tenant_id, name);
 CREATE INDEX idx_permission_profile_tenant_id ON permission_profile(tenant_id);
+CREATE UNIQUE INDEX idx_permission_profile_tenant_code ON permission_profile(tenant_id, code) WHERE code IS NOT NULL;
 
 ALTER TABLE permission_profile ENABLE ROW LEVEL SECURITY;
 ALTER TABLE permission_profile FORCE ROW LEVEL SECURITY;

@@ -30,6 +30,9 @@ public class PermissionProfile {
     @Column(length = 500)
     private String description;
 
+    @Column(length = 20)
+    private String code;
+
     @Column(name = "is_system", nullable = false)
     private Boolean isSystem = false;
 

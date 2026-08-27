@@ -31,12 +31,11 @@
         </div>
         <div class="grid grid-2">
           <div>
-            <label class="field-label">Perfil de Acesso *</label>
+            <label class="field-label">Perfil de Acesso</label>
             <select v-model="form.permissionProfileId" data-test="profile" @change="applyProfilePermissions">
               <option value="">Selecione...</option>
               <option v-for="p in perfis" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
-            <p v-if="erros.profile" class="field-error">{{ erros.profile }}</p>
           </div>
           <div>
             <label class="field-label">Status</label>
@@ -180,7 +179,7 @@ function novoFormulario(): FormState {
 
 const form = reactive<FormState>(novoFormulario())
 const perfis = ref<PermissionProfileSummary[]>([])
-const erros = reactive<{ name?: string; email?: string; role?: string; profile?: string; password?: string; confirmPassword?: string }>({})
+const erros = reactive<{ name?: string; email?: string; role?: string; password?: string; confirmPassword?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
 
@@ -198,6 +197,7 @@ function togglePermission(module: ModuleName, action: ActionName) {
 }
 
 async function applyProfilePermissions() {
+  erroGeral.value = ''
   if (!form.permissionProfileId) {
     return
   }
@@ -215,6 +215,7 @@ onMounted(async () => {
     perfis.value = pagina.content
   } catch {
     perfis.value = []
+    erroGeral.value = 'Não foi possível carregar os perfis de permissão disponíveis.'
   }
 
   const id = route.params.id
@@ -238,7 +239,6 @@ function validar(): boolean {
   erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
   erros.email = form.email.trim() ? undefined : 'Campo obrigatório'
   erros.role = form.role ? undefined : 'Campo obrigatório'
-  erros.profile = form.permissionProfileId ? undefined : 'Campo obrigatório'
   erros.password = !modoEdicao.value && !form.password ? 'Campo obrigatório' : undefined
   if (form.password) {
     if (form.password !== form.confirmPassword) {
@@ -251,7 +251,7 @@ function validar(): boolean {
   } else {
     erros.confirmPassword = undefined
   }
-  return !erros.name && !erros.email && !erros.role && !erros.profile && !erros.password && !erros.confirmPassword
+  return !erros.name && !erros.email && !erros.role && !erros.password && !erros.confirmPassword
 }
 
 function paraPayload(): UserRequest {

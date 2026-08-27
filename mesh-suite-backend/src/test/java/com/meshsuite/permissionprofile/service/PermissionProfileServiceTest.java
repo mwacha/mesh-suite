@@ -194,6 +194,30 @@ class PermissionProfileServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void renamingASystemProfileDoesNotCauseItToBeReseeded() {
+        setUpTenant("aurora");
+        var admin = permissionProfileService.list(null, PageRequest.of(0, 10)).getContent().stream()
+                .filter(p -> p.name().equals("Admin")).findFirst().orElseThrow();
+
+        permissionProfileService.update(admin.id(), request("Administrador", List.of(new PermissionDto(Module.CUSTOMER, Action.VIEW))));
+        var apos = permissionProfileService.list(null, PageRequest.of(0, 10));
+
+        assertThat(apos.getTotalElements()).isEqualTo(4);
+        assertThat(apos.getContent()).extracting("name")
+                .containsExactlyInAnyOrder("Administrador", "Gerente", "Vendedor", "Visualizador");
+    }
+
+    @Test
+    void rejectsUpdateToAnotherProfilesName() {
+        setUpTenant("aurora");
+        permissionProfileService.create(TenantContext.get(), request("Financeiro", List.of()));
+        var outro = permissionProfileService.create(TenantContext.get(), request("Comercial", List.of()));
+
+        assertThatThrownBy(() -> permissionProfileService.update(outro.id(), request("Financeiro", List.of())))
+                .isInstanceOf(DuplicatePermissionProfileNameException.class);
+    }
+
+    @Test
     void rejectsDeletingAProfileThatIsInUseByAUser() {
         UUID tenantId = setUpTenant("aurora");
         var criado = permissionProfileService.create(TenantContext.get(), request("Financeiro", List.of()));
