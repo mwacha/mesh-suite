@@ -21,15 +21,27 @@ export interface Page<T> {
   size: number
 }
 
+export interface ColorwayCounts {
+  total: number
+  active: number
+  inactive: number
+}
+
 export interface ListColorwaysParams {
   busca?: string
   ativo?: boolean
+  sort?: string
   page?: number
   size?: number
 }
 
 export async function listColorways(params: ListColorwaysParams): Promise<Page<ColorwayResponse>> {
   const { data } = await apiClient.get<Page<ColorwayResponse>>('/colorways', { params })
+  return data
+}
+
+export async function getColorwayCounts(): Promise<ColorwayCounts> {
+  const { data } = await apiClient.get<ColorwayCounts>('/colorways/counts')
   return data
 }
 

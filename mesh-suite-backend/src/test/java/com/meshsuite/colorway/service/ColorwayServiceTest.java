@@ -192,4 +192,20 @@ class ColorwayServiceTest extends AbstractIntegrationTest {
                 .filteredOn(c -> c.id().equals(semProdutos.id())).first()
                 .satisfies(c -> assertThat(c.linkedProducts()).isEqualTo(0L));
     }
+
+    @Test
+    @Transactional
+    void countsTotalActiveAndInactiveColorways() {
+        setUpTenant("aurora-corest");
+        colorwayService.create(TenantContext.get(), request("Azul Marinho"));
+        colorwayService.create(TenantContext.get(), request("Vermelho Ferrari"));
+        colorwayService.create(TenantContext.get(),
+                new ColorwayRequest("Descontinuada", LocalDate.of(2025, 1, 1), null, false));
+
+        var contagens = colorwayService.counts();
+
+        assertThat(contagens.total()).isEqualTo(3L);
+        assertThat(contagens.active()).isEqualTo(2L);
+        assertThat(contagens.inactive()).isEqualTo(1L);
+    }
 }

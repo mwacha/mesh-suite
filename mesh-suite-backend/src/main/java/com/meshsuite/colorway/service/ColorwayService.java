@@ -4,6 +4,7 @@ import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.colorway.domain.Colorway;
+import com.meshsuite.colorway.dto.ColorwayCountsResponse;
 import com.meshsuite.colorway.dto.ColorwayRequest;
 import com.meshsuite.colorway.dto.ColorwayResponse;
 import com.meshsuite.colorway.exception.ColorwayInUseException;
@@ -50,6 +51,14 @@ public class ColorwayService {
                                 ProductRepository.ColorwayProductCount::getTotal));
 
         return page.map(colorway -> toResponse(colorway, counts.getOrDefault(colorway.getId(), 0L)));
+    }
+
+    @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.PRODUCT, action = Action.VIEW)
+    public ColorwayCountsResponse counts() {
+        long active = colorwayRepository.countByActive(true);
+        long inactive = colorwayRepository.countByActive(false);
+        return new ColorwayCountsResponse(active + inactive, active, inactive);
     }
 
     @Transactional(readOnly = true)
