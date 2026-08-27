@@ -22,6 +22,22 @@ describe('OrdersLineChart', () => {
     expect(wrapper.text()).toContain('3')
   })
 
+  it('always labels the y axis "Nr. Pedido"', () => {
+    const wrapper = mount(OrdersLineChart, { props: { points } })
+    expect(wrapper.text()).toContain('Nr. Pedido')
+  })
+
+  it('labels the x axis "Dias do Mês" for the current-month period', () => {
+    const wrapper = mount(OrdersLineChart, { props: { points, period: 'CURRENT_MONTH' } })
+    expect(wrapper.text()).toContain('Dias do Mês')
+  })
+
+  it('labels the x axis "Período" for the last-12-months period', () => {
+    const wrapper = mount(OrdersLineChart, { props: { points, period: 'LAST_12_MONTHS' } })
+    expect(wrapper.text()).toContain('Período')
+    expect(wrapper.text()).not.toContain('Dias do Mês')
+  })
+
   it('shows an empty state when there are no points', () => {
     const wrapper = mount(OrdersLineChart, { props: { points: [] } })
     expect(wrapper.text()).toContain('Sem pedidos no período.')

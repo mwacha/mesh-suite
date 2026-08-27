@@ -14,11 +14,24 @@
       <path v-if="points.length > 1" :d="linePath" class="orders-chart-line" />
       <circle v-for="(p, i) in markerPoints" :key="`mk-${i}`" :cx="p.x" :cy="p.y" r="3.5" class="orders-chart-marker" />
 
-      <text v-for="(lbl, i) in xLabels" :key="`xl-${i}`" :x="lbl.x" :y="H - 6" text-anchor="middle" class="orders-chart-axis-label">
+      <text v-for="(lbl, i) in xLabels" :key="`xl-${i}`" :x="lbl.x" :y="H - 22" text-anchor="middle" class="orders-chart-axis-label">
         {{ lbl.text }}
       </text>
       <text v-for="(tick, i) in yTicks" :key="`yl-${i}`" :x="pad.l - 6" :y="yScale(tick) + 3.5" text-anchor="end" class="orders-chart-axis-label">
         {{ tick }}
+      </text>
+
+      <text :x="(pad.l + W - pad.r) / 2" :y="H - 4" text-anchor="middle" class="orders-chart-axis-title">
+        {{ xAxisTitle }}
+      </text>
+      <text
+        :x="12"
+        :y="pad.t + (H - pad.t - pad.b) / 2"
+        text-anchor="middle"
+        class="orders-chart-axis-title"
+        :transform="`rotate(-90, 12, ${pad.t + (H - pad.t - pad.b) / 2})`"
+      >
+        Nr. Pedido
       </text>
 
       <g v-if="hoverIndex !== null">
@@ -46,12 +59,15 @@ const props = defineProps<{ points: OrderPeriodPoint[]; period?: PeriodRange }>(
 // points are already a month label (ex: "Ago/26"), which doesn't read well
 // with a "Dia" prefix in front of it.
 const tooltipLabelPrefix = computed(() => (props.period === 'CURRENT_MONTH' ? 'Dia: ' : ''))
+const xAxisTitle = computed(() => (props.period === 'CURRENT_MONTH' ? 'Dias do Mês' : 'Período'))
 
 const wrapRef = ref<HTMLElement | null>(null)
 const hoverIndex = ref<number | null>(null)
 
-const H = 160
-const pad = { t: 14, r: 14, b: 26, l: 30 }
+// t/r unchanged; b/l grew to fit the new axis titles (a second text row below
+// the tick labels, and a rotated title to the left of the y tick labels).
+const H = 176
+const pad = { t: 14, r: 14, b: 40, l: 44 }
 
 // Kept in sync with the wrapper's actual rendered width (not just window
 // resize -- the sidebar's collapse toggle changes this layout without
@@ -158,7 +174,7 @@ const tooltipStyle = computed(() => {
 
 .orders-chart-svg {
   width: 100%;
-  height: 160px;
+  height: 176px;
   display: block;
 }
 
@@ -202,6 +218,13 @@ const tooltipStyle = computed(() => {
 .orders-chart-axis-label {
   font-size: 9px;
   fill: var(--pm-text-muted);
+  font-family: var(--pm-font);
+}
+
+.orders-chart-axis-title {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--pm-text-mid);
   font-family: var(--pm-font);
 }
 
