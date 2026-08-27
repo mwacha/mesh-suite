@@ -6,31 +6,16 @@
       <button type="button" class="btn-primary" data-test="novo-usuario" @click="novoUsuario">+ Novo Usuário</button>
     </PageHeader>
 
-    <div class="toolbar">
-      <input
-        v-model="filtros.busca"
-        class="busca"
-        placeholder="Buscar usuário por nome ou e-mail..."
-        data-test="busca"
-        @input="carregar(0)"
-      />
-      <select v-model="filtros.active" @change="carregar(0)">
-        <option value="">Status</option>
-        <option value="true">Ativo</option>
-        <option value="false">Inativo</option>
-      </select>
-    </div>
+    <FilterBar
+      :search="filtros.busca"
+      search-placeholder="Buscar usuário por nome ou e-mail..."
+      :categories="['Status']"
+      :value-map="{ Status: ['Ativo', 'Inativo'] }"
+      @update:search="onBuscaChange"
+      @update:filters="onFiltrosChange"
+    />
 
-    <section class="table-card">
-      <div class="table-card-header">
-        <span class="table-card-title">Lista de Usuários</span>
-        <div v-if="counts" class="table-card-stats">
-          <StatPill :value="counts.total" label="Total" color="dark" />
-          <StatPill :value="counts.active" label="Ativos" color="green" />
-          <StatPill :value="counts.inactive" label="Inativos" color="red" />
-        </div>
-      </div>
-
+    <ListCard title="Lista de Usuários" :stats="statsCard">
       <div class="table-grid">
         <div class="table-grid-header">
           <div class="table-grid-col table-grid-col-sortable" data-test="col-nome" @click="toggleSort('name')">
@@ -63,7 +48,8 @@
           </div>
         </div>
       </div>
-    </section>
+      <p v-if="!pagina.content.length" class="empty-state">Nenhum usuário para exibir.</p>
+    </ListCard>
 
     <Pagination
       :number="pagina.number"
@@ -81,8 +67,9 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
+import ListCard, { type ListCardStat } from '@/components/ListCard.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import StatPill from '@/components/StatPill.vue'
 import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
 import Pagination from '@/components/Pagination.vue'
 import {
@@ -96,7 +83,8 @@ import {
 
 const router = useRouter()
 
-const filtros = reactive({ busca: '', active: '' })
+const filtros = reactive({ busca: '' })
+const filtrosAvancados = ref<Record<string, string[]>>({})
 const pagina = ref<ApiPage<UserListItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const counts = ref<UserCounts | null>(null)
 const sortField = ref<'name' | null>(null)
@@ -104,6 +92,15 @@ const sortDir = ref<'asc' | 'desc'>('asc')
 const erro = ref('')
 
 const countLabel = computed(() => (counts.value ? `${counts.value.total} usuários cadastrados` : undefined))
+const statsCard = computed<ListCardStat[]>(() =>
+  counts.value
+    ? [
+        { value: counts.value.total, label: 'Total', color: 'dark' },
+        { value: counts.value.active, label: 'Ativos', color: 'green' },
+        { value: counts.value.inactive, label: 'Inativos', color: 'red' },
+      ]
+    : [],
+)
 
 function sortIcon(field: 'name') {
   if (sortField.value !== field) {
@@ -122,12 +119,18 @@ function toggleSort(field: 'name') {
   carregar(0)
 }
 
+function labelsFor(categoria: string): string[] {
+  return filtrosAvancados.value[categoria] ?? []
+}
+
 async function carregar(page: number) {
   erro.value = ''
+  const statusLabels = labelsFor('Status')
+  const active = statusLabels.length === 1 ? statusLabels[0] === 'Ativo' : undefined
   try {
     pagina.value = await listUsers({
       search: filtros.busca || undefined,
-      active: filtros.active === '' ? undefined : filtros.active === 'true',
+      active,
       sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,
       size: pagina.value.size,
@@ -144,6 +147,16 @@ async function carregarCounts() {
   } catch {
     erro.value = 'Não foi possível carregar o resumo de usuários.'
   }
+}
+
+function onBuscaChange(valor: string) {
+  filtros.busca = valor
+  carregar(0)
+}
+
+function onFiltrosChange(filtrosNovos: Record<string, string[]>) {
+  filtrosAvancados.value = filtrosNovos
+  carregar(0)
 }
 
 function onSizeChange(novoSize: number) {
@@ -208,56 +221,6 @@ onMounted(() => {
   font-family: var(--pm-font);
 }
 
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-family: var(--pm-font);
-}
-
-.busca {
-  flex: 1;
-}
-
-.toolbar input,
-.toolbar select {
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: var(--pm-font);
-  color: var(--pm-text-dark);
-  background: var(--pm-white);
-}
-
-.table-card {
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.table-card-header {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--pm-border-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--pm-font);
-}
-
-.table-card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--pm-text-dark);
-}
-
-.table-card-stats {
-  display: flex;
-  gap: 8px;
-}
-
 .table-grid {
   font-family: var(--pm-font);
   font-size: 12px;
@@ -266,7 +229,7 @@ onMounted(() => {
 .table-grid-header,
 .table-grid-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 140px 100px 90px;
+  grid-template-columns: 1fr 200px 130px 100px 90px;
   gap: 8px;
   align-items: center;
   padding: 8px 12px;
@@ -314,5 +277,12 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.empty-state {
+  padding: 16px;
+  color: var(--pm-text-mid);
+  font-size: 13px;
+  margin: 0;
 }
 </style>

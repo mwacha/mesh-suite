@@ -50,7 +50,7 @@ describe('UsersListView', () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="busca"]').setValue('carla')
+    await wrapper.find('[data-test="filter-bar-search"]').setValue('carla')
     await flushPromises()
 
     expect(usersApi.listUsers).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'carla' }))

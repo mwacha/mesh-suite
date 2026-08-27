@@ -101,6 +101,18 @@ describe('PaymentMethodsListView', () => {
     expect(wrapper.text()).toContain('Não foi possível carregar a lista de formas de recebimento.')
   })
 
+  it('navigates to the edit form when the row itself is clicked', async () => {
+    vi.mocked(formasPagamentoApi.listPaymentMethods).mockResolvedValue(paginaCom(formaExemplo))
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-pm-1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('formas-recebimento-editar')
+    expect(router.currentRoute.value.params.id).toBe('pm-1')
+  })
+
   it('navigates to the new-forma route when the button is clicked', async () => {
     vi.mocked(formasPagamentoApi.listPaymentMethods).mockResolvedValue(paginaCom())
     const { router, wrapper } = await mountWithRouter()

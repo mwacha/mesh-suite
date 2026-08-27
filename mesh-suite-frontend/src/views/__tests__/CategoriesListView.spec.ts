@@ -117,6 +117,18 @@ describe('CategoriesListView', () => {
     expect(router.currentRoute.value.name).toBe('categorias-novo')
   })
 
+  it('navigates to the edit form when the row itself is clicked', async () => {
+    vi.mocked(categoriesApi.listCategories).mockResolvedValue(paginaCom(categoriaExemplo))
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-cat-1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('categorias-editar')
+    expect(router.currentRoute.value.params.id).toBe('cat-1')
+  })
+
   it('sorts by name when the column header is clicked', async () => {
     vi.mocked(categoriesApi.listCategories).mockResolvedValue(paginaCom(categoriaExemplo))
     const { wrapper } = await mountWithRouter()

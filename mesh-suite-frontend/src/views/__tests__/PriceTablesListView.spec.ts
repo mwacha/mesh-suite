@@ -71,6 +71,20 @@ describe('PriceTablesListView', () => {
     expect(wrapper.text()).toContain('Não foi possível carregar a lista de tabelas de preço.')
   })
 
+  it('navigates to the edit form when the row itself is clicked', async () => {
+    vi.mocked(tabelasPrecoApi.listPriceTables).mockResolvedValue({
+      content: [tabelaExemplo], totalElements: 1, totalPages: 1, number: 0, size: 10,
+    })
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-tp-1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('tabelas-preco-editar')
+    expect(router.currentRoute.value.params.id).toBe('tp-1')
+  })
+
   it('navigates to the new-tabela route when the button is clicked', async () => {
     vi.mocked(tabelasPrecoApi.listPriceTables).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 10,

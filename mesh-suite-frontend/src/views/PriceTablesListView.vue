@@ -29,7 +29,13 @@
           <div class="table-grid-col"></div>
         </div>
 
-        <div v-for="tabela in pagina.content" :key="tabela.id" class="table-grid-row" :data-test="`row-${tabela.id}`">
+        <div
+          v-for="tabela in pagina.content"
+          :key="tabela.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${tabela.id}`"
+          @click="editarTabela(tabela.id)"
+        >
           <div class="table-grid-cell table-grid-cell-nome">{{ tabela.name }}</div>
           <div class="table-grid-cell">{{ resumoMetodoAjuste(tabela) }}</div>
           <div class="table-grid-cell">{{ formatarData(tabela.effectiveStartDate) }}</div>
@@ -37,7 +43,7 @@
           <div class="table-grid-cell">
             <StatusBadge :label="tabela.active ? 'Ativo' : 'Inativo'" :color="tabela.active ? 'green' : 'red'" />
           </div>
-          <div class="table-grid-cell">
+          <div class="table-grid-cell" @click.stop>
             <ActionsMenu :items="acoesPara(tabela)" />
           </div>
         </div>
@@ -273,6 +279,15 @@ onMounted(() => {
 .table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
+}
+
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-grid-row-clickable:hover {
+  background: var(--pm-bg);
 }
 
 .table-grid-cell-nome {

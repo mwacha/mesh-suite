@@ -53,6 +53,20 @@ describe('PermissionProfilesListView', () => {
     expect(wrapper.text()).toContain('Não foi possível carregar a lista de perfis de permissão.')
   })
 
+  it('navigates to the edit form when the row itself is clicked', async () => {
+    vi.mocked(perfisApi.listPermissionProfiles).mockResolvedValue({
+      content: [perfilExemplo], totalElements: 1, totalPages: 1, number: 0, size: 20,
+    })
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-pp-1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('permissoes-perfis-editar')
+    expect(router.currentRoute.value.params.id).toBe('pp-1')
+  })
+
   it('navigates to the new-profile route when the button is clicked', async () => {
     vi.mocked(perfisApi.listPermissionProfiles).mockResolvedValue({
       content: [], totalElements: 0, totalPages: 0, number: 0, size: 20,
