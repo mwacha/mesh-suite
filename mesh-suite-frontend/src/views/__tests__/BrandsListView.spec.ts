@@ -115,6 +115,29 @@ describe('BrandsListView', () => {
     )
   })
 
+  it('navigates to edit when a row is clicked', async () => {
+    vi.mocked(brandsApi.listBrands).mockResolvedValue(paginaCom(marcaExemplo))
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-brand-1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('marcas-editar')
+    expect(router.currentRoute.value.params.id).toBe('brand-1')
+  })
+
+  it('does not navigate to edit when clicking inside the Ações menu', async () => {
+    vi.mocked(brandsApi.listBrands).mockResolvedValue(paginaCom(marcaExemplo))
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="btn-acoes"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('marcas')
+  })
+
   it('deletes a brand after confirmation and reloads the list', async () => {
     vi.mocked(brandsApi.listBrands).mockResolvedValue(paginaCom(marcaExemplo))
     vi.mocked(brandsApi.deleteBrand).mockResolvedValue(undefined)

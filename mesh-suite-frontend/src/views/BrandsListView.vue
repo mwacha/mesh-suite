@@ -27,13 +27,19 @@
           <div class="table-grid-col"></div>
         </div>
 
-        <div v-for="brand in pagina.content" :key="brand.id" class="table-grid-row" :data-test="`row-${brand.id}`">
+        <div
+          v-for="brand in pagina.content"
+          :key="brand.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${brand.id}`"
+          @click="editarMarca(brand.id)"
+        >
           <div class="table-grid-cell table-grid-cell-nome">{{ brand.name }}</div>
           <div class="table-grid-cell">{{ brand.linkedProducts }} produtos</div>
           <div class="table-grid-cell">
             <StatusBadge :label="brand.active ? 'Ativo' : 'Inativo'" :color="brand.active ? 'green' : 'red'" />
           </div>
-          <div class="table-grid-cell">
+          <div class="table-grid-cell" @click.stop>
             <ActionsMenu :items="acoesPara(brand)" />
           </div>
         </div>
@@ -248,6 +254,15 @@ onMounted(() => {
 .table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
+}
+
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-grid-row-clickable:hover {
+  background: var(--pm-bg);
 }
 
 .table-grid-cell-nome {
