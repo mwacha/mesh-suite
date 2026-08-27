@@ -10,11 +10,14 @@ import com.meshsuite.partner.domain.Partner;
 import com.meshsuite.partner.domain.enums.PartnerRole;
 import com.meshsuite.partner.domain.enums.PersonType;
 import com.meshsuite.partner.repository.PartnerRepository;
+import com.meshsuite.salesorder.domain.enums.PeriodRange;
 import com.meshsuite.salesorder.domain.enums.SalesOrderStatus;
+import com.meshsuite.salesorder.dto.OrderPeriodPointResponse;
 import com.meshsuite.salesorder.dto.SalesOrderItemRequest;
 import com.meshsuite.salesorder.dto.SalesOrderRequest;
 import com.meshsuite.salesorder.exception.SalesOrderNotFoundException;
 import com.meshsuite.salesorder.exception.SalesOrderValidationException;
+import com.meshsuite.salesorder.repository.SalesOrderRepository;
 import com.meshsuite.product.domain.Product;
 import com.meshsuite.product.repository.ProductRepository;
 import com.meshsuite.shared.context.TenantContext;
@@ -27,6 +30,7 @@ import com.meshsuite.user.domain.enums.Role;
 import com.meshsuite.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +49,7 @@ class SalesOrderServiceTest extends AbstractIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired ProductRepository productRepository;
     @Autowired SalesOrderService salesOrderService;
+    @Autowired SalesOrderRepository salesOrderRepository;
     @Autowired EntityManager entityManager;
 
     @AfterEach
@@ -132,6 +137,16 @@ class SalesOrderServiceTest extends AbstractIntegrationTest {
 
     private SalesOrderRequest request(UUID customerId, UUID salespersonId, List<SalesOrderItemRequest> items, BigDecimal discount) {
         return new SalesOrderRequest(customerId, salespersonId, null, null, discount, items);
+    }
+
+    private SalesOrderRequest requestWithDate(UUID customerId, UUID salespersonId, List<SalesOrderItemRequest> items, LocalDate orderDate) {
+        return new SalesOrderRequest(customerId, salespersonId, orderDate, null, BigDecimal.ZERO, items);
+    }
+
+    private void markInvoiced(UUID id) {
+        var order = salesOrderRepository.findById(id).orElseThrow();
+        order.setStatus(SalesOrderStatus.INVOICED);
+        salesOrderRepository.saveAndFlush(order);
     }
 
     @Test
@@ -407,5 +422,65 @@ class SalesOrderServiceTest extends AbstractIntegrationTest {
 
         assertThrows(SalesOrderValidationException.class,
                 () -> salesOrderService.advanceStatus(created.id(), SalesOrderStatus.INVOICED));
+    }
+
+    @Test
+    void monthlyRevenueSumsOnlyInvoicedOrdersInCurrentMonth() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID customerId = createCustomer(tenantId, "11222333000144");
+        UUID salespersonId = createSalesperson(tenantId, "marina@aurora.com.br");
+        UUID productId = createProduct(tenantId, "P0001", new BigDecimal("100.00"));
+        var items = List.of(new SalesOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("100.00")));
+        LocalDate today = LocalDate.now();
+
+        var invoiced = salesOrderService.create(tenantId, requestWithDate(customerId, salespersonId, items, today));
+        markInvoiced(invoiced.id());
+        var lastMonthInvoiced = salesOrderService.create(tenantId,
+                requestWithDate(customerId, salespersonId, items, today.minusMonths(1)));
+        markInvoiced(lastMonthInvoiced.id());
+        salesOrderService.create(tenantId, requestWithDate(customerId, salespersonId, items, today));
+
+        var revenue = salesOrderService.monthlyRevenue();
+
+        assertThat(revenue.currentMonthRevenue()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void ordersByPeriodCurrentMonthCountsOrdersPerDay() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID customerId = createCustomer(tenantId, "11222333000144");
+        UUID salespersonId = createSalesperson(tenantId, "marina@aurora.com.br");
+        UUID productId = createProduct(tenantId, "P0001", new BigDecimal("59.90"));
+        var items = List.of(new SalesOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("59.90")));
+        LocalDate today = LocalDate.now();
+
+        salesOrderService.create(tenantId, requestWithDate(customerId, salespersonId, items, today));
+        salesOrderService.create(tenantId, requestWithDate(customerId, salespersonId, items, today));
+
+        var points = salesOrderService.ordersByPeriod(PeriodRange.CURRENT_MONTH);
+
+        assertThat(points).hasSize(today.getDayOfMonth());
+        var todayPoint = points.get(points.size() - 1);
+        assertThat(todayPoint.label()).isEqualTo(String.valueOf(today.getDayOfMonth()));
+        assertThat(todayPoint.count()).isEqualTo(2);
+        assertThat(points.stream().mapToLong(OrderPeriodPointResponse::count).sum()).isEqualTo(2);
+    }
+
+    @Test
+    void ordersByPeriodLast12MonthsCountsOrdersPerMonth() {
+        UUID tenantId = setUpTenant("aurora");
+        UUID customerId = createCustomer(tenantId, "11222333000144");
+        UUID salespersonId = createSalesperson(tenantId, "marina@aurora.com.br");
+        UUID productId = createProduct(tenantId, "P0001", new BigDecimal("59.90"));
+        var items = List.of(new SalesOrderItemRequest(productId, BigDecimal.ONE, new BigDecimal("59.90")));
+        LocalDate today = LocalDate.now();
+
+        salesOrderService.create(tenantId, requestWithDate(customerId, salespersonId, items, today));
+
+        var points = salesOrderService.ordersByPeriod(PeriodRange.LAST_12_MONTHS);
+
+        assertThat(points).hasSize(12);
+        assertThat(points.get(11).count()).isEqualTo(1);
+        assertThat(points.stream().mapToLong(OrderPeriodPointResponse::count).sum()).isEqualTo(1);
     }
 }

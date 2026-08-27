@@ -8,6 +8,7 @@ import com.meshsuite.partner.domain.enums.PartnerRole;
 import com.meshsuite.partner.repository.PartnerRepository;
 import com.meshsuite.salesorder.domain.SalesOrderItem;
 import com.meshsuite.salesorder.domain.SalesOrder;
+import com.meshsuite.salesorder.domain.enums.PeriodRange;
 import com.meshsuite.salesorder.domain.enums.SalesOrderStatus;
 import com.meshsuite.salesorder.dto.*;
 import com.meshsuite.salesorder.exception.SalesOrderNotFoundException;
@@ -22,8 +23,13 @@ import com.meshsuite.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -66,6 +72,44 @@ public class SalesOrderService {
         long inPreparation = salesOrderRepository.countByStatus(SalesOrderStatus.IN_PREPARATION);
         long invoiced = salesOrderRepository.countByStatus(SalesOrderStatus.INVOICED);
         return new SalesOrderCountsResponse(draft + inPreparation + invoiced, draft, inPreparation, invoiced);
+    }
+
+    @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.ORDER, action = Action.VIEW)
+    public MonthlyRevenueResponse monthlyRevenue() {
+        LocalDate today = LocalDate.now();
+        BigDecimal total = salesOrderRepository.sumTotalByStatusAndOrderDateBetween(
+                SalesOrderStatus.INVOICED, today.withDayOfMonth(1), today);
+        return new MonthlyRevenueResponse(total);
+    }
+
+    private static final String[] MONTH_LABELS = {
+        "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez",
+    };
+
+    @Transactional(readOnly = true)
+    @RequiresPermission(module = Module.ORDER, action = Action.VIEW)
+    public List<OrderPeriodPointResponse> ordersByPeriod(PeriodRange range) {
+        LocalDate today = LocalDate.now();
+        if (range == PeriodRange.CURRENT_MONTH) {
+            LocalDate start = today.withDayOfMonth(1);
+            Map<Integer, Long> byDay = salesOrderRepository.findOrderDatesBetween(start, today).stream()
+                    .collect(Collectors.groupingBy(LocalDate::getDayOfMonth, Collectors.counting()));
+            return IntStream.rangeClosed(1, today.getDayOfMonth())
+                    .mapToObj(day -> new OrderPeriodPointResponse(String.valueOf(day), byDay.getOrDefault(day, 0L)))
+                    .toList();
+        }
+
+        LocalDate start = today.minusMonths(11).withDayOfMonth(1);
+        Map<YearMonth, Long> byMonth = salesOrderRepository.findOrderDatesBetween(start, today).stream()
+                .collect(Collectors.groupingBy(YearMonth::from, Collectors.counting()));
+        List<OrderPeriodPointResponse> points = new ArrayList<>();
+        for (int i = 11; i >= 0; i--) {
+            YearMonth ym = YearMonth.from(today).minusMonths(i);
+            String label = MONTH_LABELS[ym.getMonthValue() - 1] + "/" + String.format("%02d", ym.getYear() % 100);
+            points.add(new OrderPeriodPointResponse(label, byMonth.getOrDefault(ym, 0L)));
+        }
+        return points;
     }
 
     @Transactional(readOnly = true)

@@ -29,7 +29,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -308,5 +310,34 @@ class SalesOrderControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"INVOICED\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void reportsMonthlyRevenueAndOrdersByPeriod() throws Exception {
+        Context ctx = loginAndSetUp("aurora", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
+
+        mockMvc.perform(post("/api/sales-orders").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(salesOrderPayload(ctx)))
+                .andExpect(status().isCreated());
+
+        // The order stays DRAFT (never invoiced via this flow -- see
+        // advancingToInvoicedViaStatusEndpointIsRejected), so it must not count.
+        mockMvc.perform(get("/api/sales-orders/monthly-revenue").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentMonthRevenue").value(0));
+
+        String currentMonthBody = mockMvc.perform(get("/api/sales-orders/orders-by-period").cookie(cookie)
+                        .param("period", "CURRENT_MONTH"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Integer> currentMonthCounts = com.jayway.jsonpath.JsonPath.read(currentMonthBody, "$[*].count");
+        assertThat(currentMonthCounts.get(currentMonthCounts.size() - 1)).isEqualTo(1);
+
+        mockMvc.perform(get("/api/sales-orders/orders-by-period").cookie(cookie)
+                        .param("period", "LAST_12_MONTHS"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(12));
     }
 }

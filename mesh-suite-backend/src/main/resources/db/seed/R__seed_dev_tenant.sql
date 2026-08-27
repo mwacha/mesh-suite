@@ -21,14 +21,14 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Full ADMIN permission matrix (every Module x Action except USER+DELETE,
 -- which doesn't exist as an operation -- there is no hard delete for User).
--- Matches the frontend's DEFAULT_MATRIX.ADMIN and what a user created
--- through the real UI with profile=ADMIN would receive. Without this, a
--- seeded user predates the permission system and is silently denied every
--- @RequiresPermission-gated endpoint, including read-only ones like the
--- dashboard's /resumo calls.
+-- Matches what a user created through the real UI with profile=ADMIN would
+-- receive. Without this, a seeded user predates the permission system (or a
+-- Module added after this file was first written) and is silently denied
+-- every @RequiresPermission-gated endpoint, including read-only ones like
+-- the dashboard's /resumo calls.
 INSERT INTO user_permission (user_id, module, action)
 SELECT '55555555-5555-5555-5555-555555555555', m, a
-FROM unnest(ARRAY['CUSTOMER','PRODUCT','ORDER','USER']) AS m
+FROM unnest(ARRAY['CUSTOMER','PRODUCT','ORDER','USER','PURCHASE','STOCK','PAYABLE','SALE','PURCHASE_INVOICE']) AS m
 CROSS JOIN unnest(ARRAY['VIEW','CREATE','EDIT','DELETE']) AS a
 WHERE NOT (m = 'USER' AND a = 'DELETE')
 ON CONFLICT DO NOTHING;
@@ -45,7 +45,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_permission (user_id, module, action)
 SELECT '66666666-6666-6666-6666-666666666666', m, a
-FROM unnest(ARRAY['CUSTOMER','PRODUCT','ORDER','USER']) AS m
+FROM unnest(ARRAY['CUSTOMER','PRODUCT','ORDER','USER','PURCHASE','STOCK','PAYABLE','SALE','PURCHASE_INVOICE']) AS m
 CROSS JOIN unnest(ARRAY['VIEW','CREATE','EDIT','DELETE']) AS a
 WHERE NOT (m = 'USER' AND a = 'DELETE')
 ON CONFLICT DO NOTHING;
