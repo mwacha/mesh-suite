@@ -28,7 +28,7 @@
     </svg>
 
     <div v-if="hoverIndex !== null" class="orders-chart-tooltip" :style="tooltipStyle">
-      <div class="orders-chart-tooltip-label">{{ points[hoverIndex].label }}</div>
+      <div class="orders-chart-tooltip-label">{{ tooltipLabelPrefix }}{{ points[hoverIndex].label }}</div>
       <div class="orders-chart-tooltip-value">{{ points[hoverIndex].count }} pedido{{ points[hoverIndex].count === 1 ? '' : 's' }}</div>
     </div>
 
@@ -38,9 +38,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import type { OrderPeriodPoint } from '@/api/salesOrders'
+import type { OrderPeriodPoint, PeriodRange } from '@/api/salesOrders'
 
-const props = defineProps<{ points: OrderPeriodPoint[] }>()
+const props = defineProps<{ points: OrderPeriodPoint[]; period?: PeriodRange }>()
+
+// Only the "Mês Corrente" view's points are day numbers -- "Últimos 12 Meses"
+// points are already a month label (ex: "Ago/26"), which doesn't read well
+// with a "Dia" prefix in front of it.
+const tooltipLabelPrefix = computed(() => (props.period === 'CURRENT_MONTH' ? 'Dia: ' : ''))
 
 const wrapRef = ref<HTMLElement | null>(null)
 const hoverIndex = ref<number | null>(null)
