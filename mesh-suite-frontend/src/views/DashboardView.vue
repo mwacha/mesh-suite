@@ -31,7 +31,7 @@
           @update:model-value="(v) => (periodo = v as PeriodRange)"
         />
       </div>
-      <OrdersLineChart :points="chartPoints" />
+      <OrdersLineChart :points="chartPoints" :period="periodo" />
     </section>
 
     <ListCard title="Últimos Pedidos" :stats="statsCard">

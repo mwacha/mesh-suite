@@ -40,4 +40,37 @@ describe('OrdersLineChart', () => {
     expect(wrapper.find('.orders-chart-tooltip').exists()).toBe(true)
     wrapper.unmount()
   })
+
+  it('prefixes the tooltip label with "Dia: " when the period is the current month', async () => {
+    const wrapper = mount(OrdersLineChart, { props: { points, period: 'CURRENT_MONTH' }, attachTo: document.body })
+    const el = wrapper.find('.orders-chart').element as HTMLElement
+    el.getBoundingClientRect = () => ({
+      left: 0, top: 0, right: 700, bottom: 160, width: 700, height: 160, x: 0, y: 0, toJSON: () => {},
+    })
+
+    await wrapper.find('.orders-chart').trigger('mousemove', { clientX: 350, clientY: 80 })
+
+    expect(wrapper.find('.orders-chart-tooltip-label').text()).toMatch(/^Dia: \d+$/)
+    wrapper.unmount()
+  })
+
+  it('does not prefix the tooltip label for the last-12-months period', async () => {
+    const monthPoints = [
+      { label: 'Jul/26', count: 4 },
+      { label: 'Ago/26', count: 7 },
+    ]
+    const wrapper = mount(OrdersLineChart, {
+      props: { points: monthPoints, period: 'LAST_12_MONTHS' },
+      attachTo: document.body,
+    })
+    const el = wrapper.find('.orders-chart').element as HTMLElement
+    el.getBoundingClientRect = () => ({
+      left: 0, top: 0, right: 700, bottom: 160, width: 700, height: 160, x: 0, y: 0, toJSON: () => {},
+    })
+
+    await wrapper.find('.orders-chart').trigger('mousemove', { clientX: 350, clientY: 80 })
+
+    expect(wrapper.find('.orders-chart-tooltip-label').text()).not.toContain('Dia:')
+    wrapper.unmount()
+  })
 })
