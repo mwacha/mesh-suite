@@ -69,7 +69,7 @@ describe('ColorwayFormView', () => {
   it('toggles between Ativo and Inativo status', async () => {
     const { wrapper } = await mountWithRouter()
 
-    await wrapper.find('[data-test="status-inativo"]').trigger('click')
+    await wrapper.find('[data-test="status-INATIVO"]').trigger('click')
     vi.mocked(colorwaysApi.createColorway).mockResolvedValue({} as any)
     await wrapper.find('[data-test="nome"]').setValue('Azul Marinho')
     await wrapper.find('[data-test="data-vigencia"]').setValue('2026-01-01')

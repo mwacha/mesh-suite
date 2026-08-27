@@ -31,14 +31,20 @@
           <div class="table-grid-col"></div>
         </div>
 
-        <div v-for="forma in pagina.content" :key="forma.id" class="table-grid-row" :data-test="`row-${forma.id}`">
+        <div
+          v-for="forma in pagina.content"
+          :key="forma.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${forma.id}`"
+          @click="editarFormaRecebimento(forma.id)"
+        >
           <div class="table-grid-cell table-grid-cell-nome">{{ forma.description }}</div>
           <div class="table-grid-cell">{{ forma.type ? PAYMENT_METHOD_TYPE_LABEL[forma.type] : '—' }}</div>
           <div class="table-grid-cell">{{ resumoParcelamento(forma) }}</div>
           <div class="table-grid-cell">
             <StatusBadge :label="forma.active ? 'Ativo' : 'Inativo'" :color="forma.active ? 'green' : 'red'" />
           </div>
-          <div class="table-grid-cell">
+          <div class="table-grid-cell" @click.stop>
             <ActionsMenu :items="acoesPara(forma)" />
           </div>
         </div>
@@ -276,6 +282,15 @@ onMounted(() => {
 .table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
+}
+
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-grid-row-clickable:hover {
+  background: var(--pm-bg);
 }
 
 .table-grid-cell-nome {

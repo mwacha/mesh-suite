@@ -176,7 +176,7 @@ describe('UserFormView', () => {
     expect(wrapper.text()).toContain('Você não tem permissão para executar esta ação')
   })
 
-  it('loads existing user data in edit mode with blank password fields and the right profile selected', async () => {
+  it('loads existing user data in edit mode and hides the password section', async () => {
     vi.mocked(usersApi.getUser).mockResolvedValue({
       id: 'u1', name: 'Carla', email: 'carla@aurora.com.br', phone: '(11) 98888-7777',
       role: 'SALES_REP', active: true,
@@ -189,8 +189,18 @@ describe('UserFormView', () => {
 
     expect(usersApi.getUser).toHaveBeenCalledWith('u1')
     expect((wrapper.find('[data-test="name"]').element as HTMLInputElement).value).toBe('Carla')
-    expect((wrapper.find('[data-test="password"]').element as HTMLInputElement).value).toBe('')
     expect((wrapper.find('[data-test="profile"]').element as HTMLInputElement).value).toBe('pp-vendedor')
+    expect(wrapper.find('[data-test="password"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="confirm-password"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Acesso ao Sistema')
+  })
+
+  it('shows the password section only when creating a new user', async () => {
+    const { wrapper } = await mountWithRouter('/usuarios/novo')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="password"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Acesso ao Sistema')
   })
 
   it('shows an error message when loading user data fails in edit mode', async () => {

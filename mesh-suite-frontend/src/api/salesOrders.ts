@@ -72,6 +72,17 @@ export interface SalesOrderCounts {
   invoiced: number
 }
 
+export type PeriodRange = 'CURRENT_MONTH' | 'LAST_12_MONTHS'
+
+export interface MonthlyRevenue {
+  currentMonthRevenue: number
+}
+
+export interface OrderPeriodPoint {
+  label: string
+  count: number
+}
+
 export async function listSalesOrders(params: ListSalesOrdersParams): Promise<Page<SalesOrderSummary>> {
   const { data } = await apiClient.get<Page<SalesOrderSummary>>('/sales-orders', { params })
   return data
@@ -102,5 +113,15 @@ export async function deleteSalesOrder(id: string): Promise<void> {
 
 export async function getSalesOrderCounts(): Promise<SalesOrderCounts> {
   const { data } = await apiClient.get<SalesOrderCounts>('/sales-orders/counts')
+  return data
+}
+
+export async function getMonthlyRevenue(): Promise<MonthlyRevenue> {
+  const { data } = await apiClient.get<MonthlyRevenue>('/sales-orders/monthly-revenue')
+  return data
+}
+
+export async function getOrdersByPeriod(period: PeriodRange): Promise<OrderPeriodPoint[]> {
+  const { data } = await apiClient.get<OrderPeriodPoint[]>('/sales-orders/orders-by-period', { params: { period } })
   return data
 }

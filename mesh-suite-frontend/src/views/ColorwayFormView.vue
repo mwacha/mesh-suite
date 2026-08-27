@@ -1,55 +1,47 @@
 <template>
   <AppShell :title="modoEdicao ? 'Editar Cor / Estampa' : 'Nova Cor / Estampa'">
+    <PageHeader :title="modoEdicao ? 'Edição de Cor / Estampa' : 'Cadastro de Cor / Estampa'" />
+
     <form class="form" @submit.prevent="salvar">
       <section class="card">
         <h2>Informações Gerais</h2>
+        <TextField
+          v-model="form.name"
+          label="Cor / Estampa"
+          required
+          :error="erros.name"
+          placeholder="Ex: Azul Marinho, Floral Primavera"
+          test-id="nome"
+          @blur="validarNome"
+        />
         <div class="grid grid-2">
           <div>
-            <label class="field-label">Cor / Estampa *</label>
-            <input v-model="form.name" data-test="nome" placeholder="Ex: Azul Marinho, Floral Primavera" />
-            <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
-          </div>
-          <div>
             <label class="field-label">Data de Vigência *</label>
-            <input v-model="form.effectiveDate" type="date" data-test="data-vigencia" />
+            <input v-model="form.effectiveDate" type="date" data-test="data-vigencia" @blur="validarVigencia" />
             <p v-if="erros.effectiveDate" class="field-error">{{ erros.effectiveDate }}</p>
           </div>
+          <TextField
+            v-model="form.description"
+            label="Descrição"
+            placeholder="Descrição opcional..."
+            test-id="descricao"
+          />
         </div>
-        <div>
-          <label class="field-label">Descrição</label>
-          <textarea v-model="form.description" data-test="descricao" rows="3" placeholder="Descrição opcional..."></textarea>
-        </div>
-        <div>
-          <label class="field-label">Status</label>
-          <div class="status-toggle">
-            <button
-              type="button"
-              class="status-btn"
-              :class="{ 'status-btn-active-ativo': form.active }"
-              data-test="status-ativo"
-              @click="form.active = true"
-            >
-              Ativo
-            </button>
-            <button
-              type="button"
-              class="status-btn"
-              :class="{ 'status-btn-active-inativo': !form.active }"
-              data-test="status-inativo"
-              @click="form.active = false"
-            >
-              Inativo
-            </button>
-          </div>
+        <div class="status-bloco">
+          <label class="status-label">Status</label>
+          <SegmentedControl
+            :model-value="form.active ? 'ATIVO' : 'INATIVO'"
+            :options="statusOptions"
+            variant="status"
+            test-id="status"
+            @update:model-value="(v) => (form.active = v === 'ATIVO')"
+          />
         </div>
       </section>
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
 
-      <div class="actions">
-        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
-        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Cor / Estampa</button>
-      </div>
+      <FormActions :saving="salvando" save-label="Salvar Cor / Estampa" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
@@ -58,6 +50,10 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import TextField from '@/components/TextField.vue'
+import SegmentedControl, { type SegmentedOption } from '@/components/SegmentedControl.vue'
+import FormActions from '@/components/FormActions.vue'
 import {
   getColorway,
   createColorway,
@@ -70,11 +66,23 @@ const router = useRouter()
 
 const modoEdicao = computed(() => typeof route.params.id === 'string')
 
-function novoFormulario(): ColorwayRequest {
+const statusOptions: SegmentedOption[] = [
+  { value: 'ATIVO', label: 'Ativo' },
+  { value: 'INATIVO', label: 'Inativo' },
+]
+
+interface FormularioCorEstampa {
+  name: string
+  effectiveDate: string
+  description: string
+  active: boolean
+}
+
+function novoFormulario(): FormularioCorEstampa {
   return { name: '', effectiveDate: '', description: '', active: true }
 }
 
-const form = reactive<ColorwayRequest>(novoFormulario())
+const form = reactive<FormularioCorEstampa>(novoFormulario())
 const erros = reactive<{ name?: string; effectiveDate?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
@@ -86,18 +94,35 @@ onMounted(async () => {
       const colorway = await getColorway(id)
       form.name = colorway.name
       form.effectiveDate = colorway.effectiveDate
-      form.description = colorway.description
-      form.active = colorway.active
+      form.description = colorway.description ?? ''
+      form.active = colorway.active ?? true
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados da cor/estampa.'
     }
   }
 })
 
-function validar(): boolean {
+function validarNome() {
   erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
+}
+
+function validarVigencia() {
   erros.effectiveDate = form.effectiveDate ? undefined : 'Campo obrigatório'
+}
+
+function validar(): boolean {
+  validarNome()
+  validarVigencia()
   return !erros.name && !erros.effectiveDate
+}
+
+function paraPayload(): ColorwayRequest {
+  return {
+    name: form.name,
+    effectiveDate: form.effectiveDate,
+    description: form.description.trim() || null,
+    active: form.active,
+  }
 }
 
 async function salvar() {
@@ -108,10 +133,11 @@ async function salvar() {
   salvando.value = true
   try {
     const id = route.params.id
+    const payload = paraPayload()
     if (typeof id === 'string') {
-      await updateColorway(id, form)
+      await updateColorway(id, payload)
     } else {
-      await createColorway(form)
+      await createColorway(payload)
     }
     router.push({ name: 'cores-estampas' })
   } catch (err: any) {
@@ -150,7 +176,7 @@ function cancelar() {
 }
 
 .card h2 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--pm-text-dark);
   margin: 0 0 12px;
@@ -173,8 +199,7 @@ function cancelar() {
   margin-bottom: 4px;
 }
 
-input,
-textarea {
+input {
   width: 100%;
   box-sizing: border-box;
   background: var(--pm-white);
@@ -184,78 +209,28 @@ textarea {
   color: var(--pm-text-dark);
   font-size: 13px;
   font-family: var(--pm-font);
-  margin-bottom: 10px;
 }
 
 .field-error {
   color: var(--pm-error);
   font-size: 12px;
-  margin: -6px 0 10px;
+  margin: 4px 0 0;
 }
 
-.status-toggle {
-  display: flex;
-  gap: 8px;
+.status-bloco {
+  margin-top: 2px;
 }
 
-.status-btn {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border-radius: 999px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.status-btn-active-ativo {
-  border-color: var(--pm-success);
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.status-btn-active-inativo {
-  border-color: var(--pm-error);
-  background: var(--pm-error-bg);
-  color: var(--pm-error);
+.status-label {
+  display: block;
+  font-size: 12px;
+  color: var(--pm-text-muted);
+  margin-bottom: 5px;
 }
 
 .error-geral {
   color: var(--pm-error);
   font-size: 14px;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.btn-primary,
-.btn-secondary {
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border: none;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border: 1px solid var(--pm-border-light);
+  margin: 0;
 }
 </style>

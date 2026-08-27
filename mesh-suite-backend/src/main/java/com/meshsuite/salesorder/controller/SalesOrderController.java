@@ -1,10 +1,12 @@
 package com.meshsuite.salesorder.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
+import com.meshsuite.salesorder.domain.enums.PeriodRange;
 import com.meshsuite.salesorder.domain.enums.SalesOrderStatus;
 import com.meshsuite.salesorder.dto.*;
 import com.meshsuite.salesorder.service.SalesOrderService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +38,17 @@ public class SalesOrderController {
     @GetMapping("/counts")
     public SalesOrderCountsResponse counts() {
         return salesOrderService.counts();
+    }
+
+    @GetMapping("/monthly-revenue")
+    public MonthlyRevenueResponse monthlyRevenue() {
+        return salesOrderService.monthlyRevenue();
+    }
+
+    @GetMapping("/orders-by-period")
+    public List<OrderPeriodPointResponse> ordersByPeriod(
+            @RequestParam(defaultValue = "CURRENT_MONTH") PeriodRange period) {
+        return salesOrderService.ordersByPeriod(period);
     }
 
     @GetMapping("/{id}")

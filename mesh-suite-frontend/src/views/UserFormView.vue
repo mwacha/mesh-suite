@@ -1,19 +1,13 @@
 <template>
   <AppShell :title="modoEdicao ? 'Editar Usuário' : 'Novo Usuário'">
+    <PageHeader :title="modoEdicao ? 'Edição de Usuário' : 'Cadastro de Usuário'" />
+
     <form class="form" @submit.prevent="salvar">
       <section class="card">
         <h2>Dados do Usuário</h2>
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">Nome completo *</label>
-            <input v-model="form.name" data-test="name" />
-            <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
-          </div>
-          <div>
-            <label class="field-label">E-mail *</label>
-            <input v-model="form.email" data-test="email" />
-            <p v-if="erros.email" class="field-error">{{ erros.email }}</p>
-          </div>
+          <TextField v-model="form.name" label="Nome completo" required :error="erros.name" placeholder="Ex: Ana Santos" test-id="name" @blur="validarNome" />
+          <TextField v-model="form.email" label="E-mail" required :error="erros.email" placeholder="usuario@empresa.com" test-id="email" @blur="validarEmail" />
         </div>
         <div class="grid grid-2">
           <div>
@@ -37,35 +31,37 @@
               <option v-for="p in perfis" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
           </div>
-          <div>
-            <label class="field-label">Status</label>
-            <select v-model="form.active">
-              <option :value="true">Ativo</option>
-              <option :value="false">Inativo</option>
-            </select>
+          <div class="status-bloco">
+            <label class="status-label">Status</label>
+            <SegmentedControl
+              :model-value="form.active ? 'ATIVO' : 'INATIVO'"
+              :options="statusOptions"
+              variant="status"
+              test-id="status"
+              @update:model-value="(v) => (form.active = v === 'ATIVO')"
+            />
           </div>
         </div>
       </section>
 
-      <section class="card">
+      <section v-if="!modoEdicao" class="card">
         <h2>Acesso ao Sistema</h2>
         <div class="grid grid-2">
           <div>
-            <label class="field-label">Senha{{ modoEdicao ? '' : ' *' }}</label>
+            <label class="field-label">Senha *</label>
             <input v-model="form.password" type="password" data-test="password" />
           </div>
           <div>
-            <label class="field-label">Confirmar Senha{{ modoEdicao ? '' : ' *' }}</label>
+            <label class="field-label">Confirmar Senha *</label>
             <input v-model="form.confirmPassword" type="password" data-test="confirm-password" />
           </div>
         </div>
         <p v-if="erros.password" class="field-error">{{ erros.password }}</p>
         <p v-if="erros.confirmPassword" class="field-error">{{ erros.confirmPassword }}</p>
-        <p class="field-hint">Mínimo 8 caracteres, com letras e números. Deixe em branco para manter a senha atual.</p>
+        <p class="field-hint">Mínimo 8 caracteres, com letras e números.</p>
       </section>
 
-      <details class="card">
-        <summary>Permissões por Módulo</summary>
+      <CollapsibleSection title="Permissões por Módulo">
         <p class="field-hint">As permissões são herdadas do perfil selecionado. Você pode personalizar abaixo.</p>
         <table class="tabela-permissoes">
           <thead>
@@ -88,14 +84,11 @@
             </tr>
           </tbody>
         </table>
-      </details>
+      </CollapsibleSection>
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
 
-      <div class="actions">
-        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
-        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Usuário</button>
-      </div>
+      <FormActions :saving="salvando" save-label="Salvar Usuário" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
@@ -104,6 +97,11 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import TextField from '@/components/TextField.vue'
+import SegmentedControl, { type SegmentedOption } from '@/components/SegmentedControl.vue'
+import CollapsibleSection from '@/components/CollapsibleSection.vue'
+import FormActions from '@/components/FormActions.vue'
 import {
   getUser,
   createUser,
@@ -145,6 +143,11 @@ const ACTION_LABELS: Record<ActionName, string> = {
 }
 
 const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
+
+const statusOptions: SegmentedOption[] = [
+  { value: 'ATIVO', label: 'Ativo' },
+  { value: 'INATIVO', label: 'Inativo' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -235,9 +238,17 @@ onMounted(async () => {
   }
 })
 
-function validar(): boolean {
+function validarNome() {
   erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
+}
+
+function validarEmail() {
   erros.email = form.email.trim() ? undefined : 'Campo obrigatório'
+}
+
+function validar(): boolean {
+  validarNome()
+  validarEmail()
   erros.role = form.role ? undefined : 'Campo obrigatório'
   erros.password = !modoEdicao.value && !form.password ? 'Campo obrigatório' : undefined
   if (form.password) {
@@ -325,13 +336,6 @@ function cancelar() {
   margin: 0 0 12px;
 }
 
-details.card summary {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--pm-text-dark);
-  cursor: pointer;
-}
-
 .grid {
   display: grid;
   gap: 0 14px;
@@ -340,6 +344,17 @@ details.card summary {
 
 .grid-2 {
   grid-template-columns: 1fr 1fr;
+}
+
+.status-bloco {
+  margin-top: 2px;
+}
+
+.status-label {
+  display: block;
+  font-size: 12px;
+  color: var(--pm-text-muted);
+  margin-bottom: 5px;
 }
 
 .field-label {
@@ -398,38 +413,5 @@ select {
   text-align: left;
   font-weight: 600;
   color: var(--pm-text-dark);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.btn-primary,
-.btn-secondary {
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border: none;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border: 1px solid var(--pm-border-light);
 }
 </style>

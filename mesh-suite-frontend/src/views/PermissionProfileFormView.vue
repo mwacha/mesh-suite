@@ -1,23 +1,22 @@
 <template>
   <AppShell :title="modoEdicao ? 'Editar Perfil de Permissão' : 'Novo Perfil de Permissão'">
+    <PageHeader :title="modoEdicao ? `Editar Perfil · ${form.name}` : 'Novo Perfil de Permissão'" />
+
     <form class="form" @submit.prevent="salvar">
       <section class="card">
         <h2>Dados do Perfil</h2>
-        <div class="grid grid-2">
-          <div>
-            <label class="field-label">Nome do Perfil *</label>
-            <input v-model="form.name" data-test="nome" placeholder="Ex: Supervisor de Vendas" />
-            <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
-          </div>
-          <div>
-            <label class="field-label">Descrição</label>
-            <input v-model="form.description" data-test="descricao" placeholder="Descreva as responsabilidades deste perfil..." />
-          </div>
+        <TextField v-model="form.name" label="Nome do Perfil" required :error="erros.name" placeholder="Ex: Supervisor de Vendas" test-id="nome" @blur="validarNome" />
+        <div>
+          <label class="field-label">Descrição</label>
+          <textarea v-model="form.description" data-test="descricao" placeholder="Descreva as responsabilidades deste perfil..." rows="2"></textarea>
         </div>
       </section>
 
-      <section class="card">
-        <h2>Permissões por Módulo</h2>
+      <section class="card table-card">
+        <div class="table-card-header">
+          <h2>Permissões por Módulo</h2>
+          <p class="field-hint">Selecione quais ações este perfil pode executar em cada módulo</p>
+        </div>
         <table class="tabela-permissoes">
           <thead>
             <tr>
@@ -43,10 +42,7 @@
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
 
-      <div class="actions">
-        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
-        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Perfil</button>
-      </div>
+      <FormActions :saving="salvando" save-label="Salvar Perfil" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
@@ -55,6 +51,9 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import TextField from '@/components/TextField.vue'
+import FormActions from '@/components/FormActions.vue'
 import {
   getPermissionProfile,
   createPermissionProfile,
@@ -125,8 +124,12 @@ onMounted(async () => {
   }
 })
 
-function validar(): boolean {
+function validarNome() {
   erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
+}
+
+function validar(): boolean {
+  validarNome()
   return !erros.name
 }
 
@@ -169,21 +172,19 @@ function cancelar() {
 .form { display: flex; flex-direction: column; gap: 12px; font-family: var(--pm-font); }
 .card { background: var(--pm-white); border: 1px solid var(--pm-border-light); border-radius: 12px; padding: 16px; }
 .card h2 { font-size: 14px; font-weight: 700; color: var(--pm-text-dark); margin: 0 0 12px; }
-.grid { display: grid; gap: 0 14px; margin-bottom: 10px; }
-.grid-2 { grid-template-columns: 1fr 1fr; }
+.table-card { padding: 0; overflow: hidden; }
+.table-card-header { padding: 14px 16px; border-bottom: 2px solid var(--pm-border-light); }
+.table-card-header h2 { margin: 0; }
 .field-label { display: block; font-size: 12px; color: var(--pm-text-mid); margin-bottom: 4px; }
-input {
+.field-hint { font-size: 11px; color: var(--pm-text-muted); margin: 2px 0 0; }
+textarea {
   width: 100%; box-sizing: border-box; background: var(--pm-white); border: 1px solid var(--pm-border-light);
   border-radius: 8px; padding: 8px 10px; color: var(--pm-text-dark); font-size: 13px; font-family: var(--pm-font);
+  resize: vertical;
 }
-.field-error { color: var(--pm-error); font-size: 12px; margin: 4px 0 0; }
 .error-geral { color: var(--pm-error); font-size: 14px; }
-.tabela-permissoes { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
-.tabela-permissoes th, .tabela-permissoes td { text-align: center; padding: 6px 8px; border-top: 1px solid var(--pm-border-light); }
+.tabela-permissoes { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tabela-permissoes th, .tabela-permissoes td { text-align: center; padding: 8px 10px; border-top: 1px solid var(--pm-border-light); }
+.tabela-permissoes thead tr { background: var(--pm-bg); }
 .tabela-permissoes td:first-child { text-align: left; font-weight: 600; color: var(--pm-text-dark); }
-.actions { display: flex; justify-content: flex-end; gap: 8px; }
-.btn-primary, .btn-secondary { border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 600; font-family: var(--pm-font); cursor: pointer; }
-.btn-primary { background: var(--pm-accent); color: var(--pm-white); border: none; }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-secondary { background: var(--pm-white); color: var(--pm-text-dark); border: 1px solid var(--pm-border-light); }
 </style>

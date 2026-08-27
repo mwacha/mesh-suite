@@ -28,6 +28,7 @@ import SalesListView from '@/views/SalesListView.vue'
 import UserFormView from '@/views/UserFormView.vue'
 import UsersListView from '@/views/UsersListView.vue'
 import PermissionsView from '@/views/PermissionsView.vue'
+import PermissionsUsersView from '@/views/PermissionsUsersView.vue'
 import PermissionProfileFormView from '@/views/PermissionProfileFormView.vue'
 import PurchaseOrderFormView from '@/views/PurchaseOrderFormView.vue'
 import PurchaseOrdersListView from '@/views/PurchaseOrdersListView.vue'
@@ -79,6 +80,7 @@ const router = createRouter({
     { path: '/usuarios/novo', name: 'usuarios-novo', component: UserFormView },
     { path: '/usuarios/:id/editar', name: 'usuarios-editar', component: UserFormView },
     { path: '/permissoes', name: 'permissoes', component: PermissionsView },
+    { path: '/permissoes/usuarios', name: 'permissoes-usuarios', component: PermissionsUsersView },
     { path: '/permissoes/perfis/novo', name: 'permissoes-perfis-novo', component: PermissionProfileFormView },
     { path: '/permissoes/perfis/:id/editar', name: 'permissoes-perfis-editar', component: PermissionProfileFormView },
     { path: '/compras', name: 'compras', component: PurchaseOrdersListView },

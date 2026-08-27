@@ -1,6 +1,7 @@
 package com.meshsuite.colorway.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
+import com.meshsuite.colorway.dto.ColorwayCountsResponse;
 import com.meshsuite.colorway.dto.ColorwayRequest;
 import com.meshsuite.colorway.dto.ColorwayResponse;
 import com.meshsuite.colorway.service.ColorwayService;
@@ -29,6 +30,11 @@ public class ColorwayController {
             @RequestParam(required = false) Boolean ativo,
             @PageableDefault(size = 10, sort = "name") Pageable pageable) {
         return colorwayService.list(busca, ativo, pageable);
+    }
+
+    @GetMapping("/counts")
+    public ColorwayCountsResponse counts() {
+        return colorwayService.counts();
     }
 
     @GetMapping("/{id}")
