@@ -6,31 +6,16 @@
       <button type="button" class="btn-primary" data-test="novo-produto" @click="novoProduto">+ Novo Produto</button>
     </PageHeader>
 
-    <div class="toolbar">
-      <input
-        v-model="filtros.busca"
-        class="busca"
-        placeholder="Buscar produto por nome ou SKU..."
-        data-test="busca"
-        @input="carregar(0)"
-      />
-      <select v-model="filtros.status" @change="carregar(0)">
-        <option value="">Status</option>
-        <option value="ACTIVE">Ativo</option>
-        <option value="INACTIVE">Inativo</option>
-      </select>
-    </div>
+    <FilterBar
+      :search="filtros.busca"
+      search-placeholder="Buscar produto por nome ou SKU..."
+      :categories="['Status', 'Tipo']"
+      :value-map="{ Status: ['Ativo', 'Inativo'], Tipo: ['Simples', 'Kit', 'Variação'] }"
+      @update:search="onBuscaChange"
+      @update:filters="onFiltrosChange"
+    />
 
-    <section class="table-card">
-      <div class="table-card-header">
-        <span class="table-card-title">Lista de Produtos</span>
-        <div v-if="resumo" class="table-card-stats">
-          <StatPill :value="resumo.total" label="Total" color="dark" />
-          <StatPill :value="resumo.active" label="Ativos" color="green" />
-          <StatPill :value="resumo.inactive" label="Inativos" color="red" />
-        </div>
-      </div>
-
+    <ListCard title="Lista de Produtos" :stats="statsCard">
       <div class="table-grid">
         <div class="table-grid-header">
           <div class="table-grid-col">Código</div>
@@ -39,8 +24,9 @@
             <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'name' }">{{ sortIcon('name') }}</span>
           </div>
           <div class="table-grid-col">Marca</div>
+          <div class="table-grid-col">Tipo</div>
           <div class="table-grid-col table-grid-col-sortable" data-test="col-preco" @click="toggleSort('salePrice')">
-            Preço de Venda
+            Preço
             <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'salePrice' }">{{ sortIcon('salePrice') }}</span>
           </div>
           <div class="table-grid-col">Estoque</div>
@@ -51,27 +37,67 @@
           <div class="table-grid-col"></div>
         </div>
 
-        <div
-          v-for="produto in pagina.content"
-          :key="produto.id"
-          class="table-grid-row table-grid-row-clickable"
-          :data-test="`row-${produto.id}`"
-          @click="editarProduto(produto.id)"
-        >
-          <div class="table-grid-cell">{{ produto.sku }}</div>
-          <div class="table-grid-cell table-grid-cell-nome">{{ produto.name }}</div>
-          <div class="table-grid-cell">{{ produto.brand }}</div>
-          <div class="table-grid-cell">{{ formatarPreco(produto.salePrice) }}</div>
-          <div class="table-grid-cell">{{ produto.stockQuantity }}</div>
-          <div class="table-grid-cell">
-            <StatusBadge :label="statusLabel(produto.status)" :color="produto.status === 'ACTIVE' ? 'green' : 'red'" />
+        <template v-for="produto in pagina.content" :key="produto.id">
+          <div
+            class="table-grid-row table-grid-row-clickable"
+            :data-test="`row-${produto.id}`"
+            @click="editarProduto(produto)"
+          >
+            <div class="table-grid-cell">{{ produto.sku }}</div>
+            <div class="table-grid-cell table-grid-cell-nome">
+              <span
+                v-if="produto.type === 'VARIATION_PARENT'"
+                class="expand-toggle"
+                :class="{ 'expand-toggle-open': isExpanded(produto.id) }"
+                :data-test="`expandir-${produto.id}`"
+                @click.stop="toggleExpanded(produto.id)"
+              >
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                  <path d="M2 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span v-else class="expand-toggle-spacer"></span>
+              {{ produto.name }}
+            </div>
+            <div class="table-grid-cell">{{ produto.brand }}</div>
+            <div class="table-grid-cell">{{ tipoLabel(produto.type) }}</div>
+            <div class="table-grid-cell">{{ formatarPreco(produto.salePrice) }}</div>
+            <div class="table-grid-cell">{{ produto.stockQuantity }}</div>
+            <div class="table-grid-cell">
+              <StatusBadge :label="statusLabel(produto.status)" :color="produto.status === 'ACTIVE' ? 'green' : 'red'" />
+            </div>
+            <div class="table-grid-cell" @click.stop>
+              <ActionsMenu :items="acoesPara(produto)" :test-id="`btn-acoes-${produto.id}`" />
+            </div>
           </div>
-          <div class="table-grid-cell" @click.stop>
-            <ActionsMenu :items="acoesPara(produto)" :test-id="`btn-acoes-${produto.id}`" />
-          </div>
-        </div>
+
+          <template v-if="produto.type === 'VARIATION_PARENT' && isExpanded(produto.id)">
+            <div
+              v-for="filho in produto.children"
+              :key="filho.id"
+              class="table-grid-row table-grid-row-child table-grid-row-clickable"
+              :data-test="`row-filho-${filho.id}`"
+              @click="editarProduto(produto)"
+            >
+              <div class="table-grid-cell">{{ filho.sku }}</div>
+              <div class="table-grid-cell table-grid-cell-nome">— {{ filho.name }}</div>
+              <div class="table-grid-cell"></div>
+              <div class="table-grid-cell">
+                <StatusBadge label="Variação" color="amber" />
+              </div>
+              <div class="table-grid-cell">{{ formatarPreco(filho.salePrice) }}</div>
+              <div class="table-grid-cell">{{ filho.stockQuantity }}</div>
+              <div class="table-grid-cell">
+                <StatusBadge :label="statusLabel(produto.status)" :color="produto.status === 'ACTIVE' ? 'green' : 'red'" />
+              </div>
+              <div class="table-grid-cell" @click.stop>
+                <ActionsMenu :items="acoesParaFilho(produto)" :test-id="`btn-acoes-${filho.id}`" />
+              </div>
+            </div>
+          </template>
+        </template>
       </div>
-    </section>
+    </ListCard>
 
     <Pagination
       :number="pagina.number"
@@ -89,31 +115,66 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
+import ListCard, { type ListCardStat } from '@/components/ListCard.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import StatPill from '@/components/StatPill.vue'
 import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
 import Pagination from '@/components/Pagination.vue'
 import {
-  listProducts,
-  getProductSummary,
+  listAllProducts,
+  getAllProductsSummary,
   updateProductStatus,
   deleteProduct,
-  type ProductListItem,
-  type ProductSummary,
+  type ProductAllListItem,
+  type ProductType,
   type Page as ApiPage,
   type ProductStatus,
+  type ProductSummary,
 } from '@/api/products'
 
 const router = useRouter()
 
-const filtros = reactive({ busca: '', status: '' })
-const pagina = ref<ApiPage<ProductListItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
-const resumo = ref<ProductSummary | null>(null)
+const TIPO_LABEL: Record<ProductType, string> = {
+  PRODUCT: 'Simples',
+  PRODUCT_KIT: 'Kit',
+  VARIATION_PARENT: 'Variação',
+  VARIATION_CHILD: 'Variante',
+}
+const TIPO_TO_ROUTE_TYPE: Record<string, ProductType> = {
+  Simples: 'PRODUCT',
+  Kit: 'PRODUCT_KIT',
+  Variação: 'VARIATION_PARENT',
+}
+const TIPO_EDIT_ROUTE: Record<ProductType, string> = {
+  PRODUCT: 'produtos-editar',
+  PRODUCT_KIT: 'produtos-editar-kit',
+  VARIATION_PARENT: 'produtos-editar-variacao',
+  VARIATION_CHILD: 'produtos-editar',
+}
+
+const filtros = reactive({ busca: '' })
+const filtrosAvancados = ref<Record<string, string[]>>({})
+const pagina = ref<ApiPage<ProductAllListItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const sortField = ref<'name' | 'salePrice' | 'status' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 const erro = ref('')
+const expandedIds = ref<Set<string>>(new Set())
+const resumo = ref<ProductSummary | null>(null)
 
-const countLabel = computed(() => (resumo.value ? `${resumo.value.total} produtos cadastrados` : undefined))
+const countLabel = computed(() => `${pagina.value.totalElements} produtos cadastrados`)
+const statsCard = computed<ListCardStat[]>(() =>
+  resumo.value
+    ? [
+        { value: resumo.value.total, label: 'Total', color: 'dark' },
+        { value: resumo.value.active, label: 'Ativos', color: 'green' },
+        { value: resumo.value.inactive, label: 'Inativos', color: 'red' },
+      ]
+    : [],
+)
+
+function tipoLabel(type: ProductType) {
+  return TIPO_LABEL[type]
+}
 
 function statusLabel(status: ProductStatus) {
   return { ACTIVE: 'Ativo', INACTIVE: 'Inativo' }[status]
@@ -121,6 +182,20 @@ function statusLabel(status: ProductStatus) {
 
 function formatarPreco(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function isExpanded(id: string) {
+  return expandedIds.value.has(id)
+}
+
+function toggleExpanded(id: string) {
+  const next = new Set(expandedIds.value)
+  if (next.has(id)) {
+    next.delete(id)
+  } else {
+    next.add(id)
+  }
+  expandedIds.value = next
 }
 
 function sortIcon(field: 'name' | 'salePrice' | 'status') {
@@ -140,12 +215,21 @@ function toggleSort(field: 'name' | 'salePrice' | 'status') {
   carregar(0)
 }
 
+function labelsFor(categoria: string): string[] {
+  return filtrosAvancados.value[categoria] ?? []
+}
+
 async function carregar(page: number) {
   erro.value = ''
+  const statusLabels = labelsFor('Status')
+  const status = statusLabels.length === 1 ? (statusLabels[0] === 'Ativo' ? 'ACTIVE' : 'INACTIVE') : undefined
+  const tipoLabels = labelsFor('Tipo')
+  const type = tipoLabels.length === 1 ? TIPO_TO_ROUTE_TYPE[tipoLabels[0]] : undefined
   try {
-    pagina.value = await listProducts({
-      busca: filtros.busca || undefined,
-      status: (filtros.status || undefined) as ProductStatus | undefined,
+    pagina.value = await listAllProducts({
+      search: filtros.busca || undefined,
+      status,
+      type,
       sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,
       size: pagina.value.size,
@@ -156,12 +240,21 @@ async function carregar(page: number) {
 }
 
 async function carregarResumo() {
-  erro.value = ''
   try {
-    resumo.value = await getProductSummary()
+    resumo.value = await getAllProductsSummary()
   } catch {
-    erro.value = 'Não foi possível carregar o resumo de produtos.'
+    // Pills de contagem são um complemento -- uma falha aqui não deve bloquear a listagem.
   }
+}
+
+function onBuscaChange(valor: string) {
+  filtros.busca = valor
+  carregar(0)
+}
+
+function onFiltrosChange(filtrosNovos: Record<string, string[]>) {
+  filtrosAvancados.value = filtrosNovos
+  carregar(0)
 }
 
 function onSizeChange(novoSize: number) {
@@ -173,11 +266,11 @@ function novoProduto() {
   router.push({ name: 'produtos-novo' })
 }
 
-function editarProduto(id: string) {
-  router.push({ name: 'produtos-editar', params: { id } })
+function editarProduto(produto: ProductAllListItem) {
+  router.push({ name: TIPO_EDIT_ROUTE[produto.type], params: { id: produto.id } })
 }
 
-async function alternarStatus(produto: ProductListItem) {
+async function alternarStatus(produto: ProductAllListItem) {
   erro.value = ''
   const novoStatus = produto.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE'
   try {
@@ -188,7 +281,7 @@ async function alternarStatus(produto: ProductListItem) {
   }
 }
 
-async function excluir(produto: ProductListItem) {
+async function excluir(produto: ProductAllListItem) {
   if (!confirm(`Excluir o produto "${produto.name}"?`)) {
     return
   }
@@ -201,9 +294,9 @@ async function excluir(produto: ProductListItem) {
   }
 }
 
-function acoesPara(produto: ProductListItem): ActionsMenuItem[] {
+function acoesPara(produto: ProductAllListItem): ActionsMenuItem[] {
   return [
-    { label: 'Editar', action: () => editarProduto(produto.id), testId: 'acao-editar' },
+    { label: 'Editar', action: () => editarProduto(produto), testId: 'acao-editar' },
     {
       label: produto.status === 'INACTIVE' ? 'Ativar' : 'Inativar',
       action: () => alternarStatus(produto),
@@ -211,6 +304,15 @@ function acoesPara(produto: ProductListItem): ActionsMenuItem[] {
     },
     { label: 'Excluir', action: () => excluir(produto), danger: true, testId: 'acao-excluir' },
   ]
+}
+
+// A variante (VARIATION_CHILD) nunca é um recurso próprio no backend -- só é
+// gerenciada através do formulário de Variação do pai (ver
+// ProductTypeStrategyResolver), então a única ação sensata aqui é abrir esse
+// formulário, e não repetir Ativar/Inativar/Excluir como se a variante fosse
+// editável isoladamente.
+function acoesParaFilho(pai: ProductAllListItem): ActionsMenuItem[] {
+  return [{ label: 'Editar', action: () => editarProduto(pai), testId: 'acao-editar' }]
 }
 
 onMounted(() => {
@@ -239,56 +341,6 @@ onMounted(() => {
   font-family: var(--pm-font);
 }
 
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-family: var(--pm-font);
-}
-
-.busca {
-  flex: 1;
-}
-
-.toolbar input,
-.toolbar select {
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: var(--pm-font);
-  color: var(--pm-text-dark);
-  background: var(--pm-white);
-}
-
-.table-card {
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.table-card-header {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--pm-border-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--pm-font);
-}
-
-.table-card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--pm-text-dark);
-}
-
-.table-card-stats {
-  display: flex;
-  gap: 8px;
-}
-
 .table-grid {
   font-family: var(--pm-font);
   font-size: 12px;
@@ -297,7 +349,7 @@ onMounted(() => {
 .table-grid-header,
 .table-grid-row {
   display: grid;
-  grid-template-columns: 100px 1fr 140px 130px 90px 100px 90px;
+  grid-template-columns: 110px 1fr 130px 90px 110px 90px 90px 90px;
   gap: 8px;
   align-items: center;
   padding: 8px 12px;
@@ -332,6 +384,10 @@ onMounted(() => {
   color: var(--pm-text-dark);
 }
 
+.table-grid-row-child {
+  background: var(--pm-bg);
+}
+
 .table-grid-row-clickable {
   cursor: pointer;
   transition: background-color 0.1s;
@@ -345,5 +401,39 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.expand-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-right: 6px;
+  border: 1.5px solid var(--pm-border-light);
+  border-radius: 4px;
+  background: var(--pm-white);
+  color: var(--pm-text-muted);
+  cursor: pointer;
+}
+
+.expand-toggle svg {
+  transition: transform 0.15s;
+}
+
+.expand-toggle-open {
+  background: var(--pm-accent-bg);
+  color: var(--pm-accent);
+}
+
+.expand-toggle-open svg {
+  transform: rotate(90deg);
+}
+
+.expand-toggle-spacer {
+  display: inline-block;
+  width: 18px;
+  margin-right: 6px;
 }
 </style>

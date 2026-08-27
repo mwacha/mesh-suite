@@ -170,6 +170,26 @@ class PriceTableServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Transactional
+    void statusUpdateTogglesActiveAndCounts() {
+        setUpTenant("aurora-tp");
+        var criada = tabelaPrecoService.criar(TenantContext.get(), request("Varejo", List.of()));
+        assertThat(criada.active()).isTrue();
+
+        var contagensAntes = tabelaPrecoService.counts();
+        assertThat(contagensAntes.active()).isEqualTo(1);
+        assertThat(contagensAntes.inactive()).isEqualTo(0);
+
+        var inativada = tabelaPrecoService.atualizarStatus(criada.id(), false);
+        assertThat(inativada.active()).isFalse();
+
+        var contagensDepois = tabelaPrecoService.counts();
+        assertThat(contagensDepois.total()).isEqualTo(1);
+        assertThat(contagensDepois.active()).isEqualTo(0);
+        assertThat(contagensDepois.inactive()).isEqualTo(1);
+    }
+
+    @Test
+    @Transactional
     void listFiltersByActive() {
         setUpTenant("aurora-tp");
         var requestAtiva = new PriceTableRequest("Ativa", ProductSelectionMode.SELECT_PRODUCTS, AdjustmentMethod.MANUAL,

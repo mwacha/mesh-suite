@@ -1,8 +1,10 @@
 package com.meshsuite.pricetable.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
+import com.meshsuite.pricetable.dto.PriceTableCountsResponse;
 import com.meshsuite.pricetable.dto.PriceTableRequest;
 import com.meshsuite.pricetable.dto.PriceTableResponse;
+import com.meshsuite.pricetable.dto.PriceTableStatusRequest;
 import com.meshsuite.pricetable.dto.PriceTableSummaryResponse;
 import com.meshsuite.pricetable.service.PriceTableService;
 import jakarta.validation.Valid;
@@ -32,6 +34,11 @@ public class PriceTableController {
         return tabelaPrecoService.listar(busca, ativo, pageable);
     }
 
+    @GetMapping("/counts")
+    public PriceTableCountsResponse counts() {
+        return tabelaPrecoService.counts();
+    }
+
     @GetMapping("/{id}")
     public PriceTableResponse buscarPorId(@PathVariable UUID id) {
         return tabelaPrecoService.buscarPorId(id);
@@ -47,6 +54,11 @@ public class PriceTableController {
     @PutMapping("/{id}")
     public PriceTableResponse atualizar(@PathVariable UUID id, @Valid @RequestBody PriceTableRequest request) {
         return tabelaPrecoService.atualizar(id, request);
+    }
+
+    @PatchMapping("/{id}/status")
+    public PriceTableResponse atualizarStatus(@PathVariable UUID id, @Valid @RequestBody PriceTableStatusRequest request) {
+        return tabelaPrecoService.atualizarStatus(id, request.active());
     }
 
     @DeleteMapping("/{id}")

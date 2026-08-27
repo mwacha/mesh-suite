@@ -3,31 +3,21 @@
     <form class="form" @submit.prevent="save">
       <section class="card">
         <h2>Dados do Pedido</h2>
-        <div class="grid grid-2">
-          <div class="busca-wrapper">
-            <label class="field-label">Cliente *</label>
-            <input
-              v-model="customerSearch"
-              data-test="customer-search"
-              placeholder="Buscar cliente..."
-              autocomplete="off"
-              @input="searchCustomers"
-            />
-            <p v-if="errors.customerId" class="field-error">{{ errors.customerId }}</p>
-            <ul v-if="customerResults.length" class="dropdown-busca" data-test="customer-results">
-              <li v-for="c in customerResults" :key="c.id" @click="selectCustomer(c)">{{ c.tradeName }}</li>
-            </ul>
-          </div>
-          <div>
-            <label class="field-label">Vendedor *</label>
-            <select v-model="form.salespersonId" data-test="salesperson">
-              <option value="">Selecione...</option>
-              <option v-for="r in salesReps" :key="r.id" :value="r.id">{{ r.name }}</option>
-            </select>
-            <p v-if="errors.salespersonId" class="field-error">{{ errors.salespersonId }}</p>
-          </div>
-        </div>
-        <div class="grid grid-2">
+        <div class="grid grid-3">
+          <SearchSelect
+            v-model="form.customerId"
+            label="Cliente"
+            required
+            :selected-label="customerLabel"
+            :items="customerResults"
+            placeholder="Buscar cliente por nome ou CNPJ..."
+            :error="errors.customerId"
+            :empty-message="customerSearchError || undefined"
+            :empty-is-error="!!customerSearchError"
+            test-id="customer-search"
+            @search="searchCustomers"
+            @select="selectCustomer"
+          />
           <div>
             <label class="field-label">Data do Pedido</label>
             <input v-model="form.orderDate" type="date" data-test="order-date" />
@@ -37,46 +27,89 @@
             <input v-model="form.deliveryDate" type="date" data-test="delivery-date" />
           </div>
         </div>
+        <div class="grid grid-2">
+          <SearchSelect
+            v-model="form.salespersonId"
+            label="Vendedor"
+            required
+            :selected-label="salespersonLabel"
+            :items="salesRepResults"
+            placeholder="Buscar vendedor..."
+            :error="errors.salespersonId"
+            test-id="salesperson"
+            @search="searchSalesReps"
+            @select="selectSalesperson"
+          />
+          <SearchSelect
+            :model-value="priceTableId"
+            label="Tabela de Preço (padrão)"
+            :selected-label="priceTableLabel"
+            :items="priceTableResults"
+            placeholder="Buscar tabela de preço..."
+            :empty-message="priceTableSearchError || undefined"
+            :empty-is-error="!!priceTableSearchError"
+            test-id="price-table"
+            @search="searchPriceTables"
+            @select="selectPriceTable"
+          />
+        </div>
+        <div class="grid grid-2">
+          <SearchSelect
+            :model-value="paymentTermId"
+            label="Condição de Pagamento"
+            :selected-label="paymentTermLabel"
+            :items="paymentTermResults"
+            placeholder="Buscar condição de pagamento..."
+            :empty-message="paymentTermSearchError || undefined"
+            :empty-is-error="!!paymentTermSearchError"
+            test-id="payment-term"
+            @search="searchPaymentTerms"
+            @select="selectPaymentTerm"
+          />
+        </div>
       </section>
 
       <section class="card">
         <h2>Itens</h2>
         <div class="item-adicionar">
-          <div class="busca-wrapper item-product-busca">
+          <ProductPicker
+            class="item-product-busca"
+            label="Adicionar Produto"
+            :selected-label="productLabel"
+            :items="productResults"
+            :empty-message="productSearchError || undefined"
+            :empty-is-error="!!productSearchError"
+            test-id="product-search"
+            @search="searchProducts"
+            @select="selectProduct"
+          />
+          <div class="item-qtd">
+            <label class="field-label">Qtd</label>
             <input
-              v-model="productSearch"
-              placeholder="Buscar produto por nome ou SKU..."
-              data-test="product-search"
-              autocomplete="off"
-              @input="searchProducts"
+              v-model.number="itemForm.quantity"
+              type="number"
+              step="0.001"
+              min="0.001"
+              placeholder="1"
+              data-test="item-quantity"
             />
-            <ul v-if="productResults.length" class="dropdown-busca" data-test="product-results">
-              <li v-for="p in productResults" :key="p.id" @click="selectProduct(p)">{{ p.name }} ({{ p.sku }})</li>
-            </ul>
           </div>
-          <input
-            v-model.number="itemForm.quantity"
-            type="number"
-            step="0.001"
-            min="0.001"
-            placeholder="Qtd."
-            data-test="item-quantity"
-          />
-          <input
-            v-model.number="itemForm.unitPrice"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Valor unit."
-            data-test="item-unit-price"
-          />
-          <button type="button" class="btn-secondary" data-test="item-add" @click="addItem">+ Adicionar</button>
+          <div>
+            <label class="field-label">Vlr. Produto</label>
+            <div class="item-readonly" data-test="item-unit-price">{{ formatPrice(itemForm.unitPrice) }}</div>
+          </div>
+          <div>
+            <label class="field-label">Total</label>
+            <div class="item-readonly" data-test="item-line-total">{{ formatPrice(itemLineTotal) }}</div>
+          </div>
+          <button type="button" class="btn-primary" data-test="item-add" @click="addItem">+ Adicionar</button>
         </div>
         <p v-if="errors.items" class="field-error">{{ errors.items }}</p>
 
         <table v-if="form.items.length" class="tabela-itens">
           <thead>
             <tr>
+              <th>SKU</th>
               <th>Produto</th>
               <th>Qtd.</th>
               <th>Valor Unit.</th>
@@ -86,6 +119,7 @@
           </thead>
           <tbody>
             <tr v-for="(item, index) in form.items" :key="index">
+              <td>{{ item.sku }}</td>
               <td>{{ item.productName }}</td>
               <td>{{ item.quantity }}</td>
               <td>{{ formatPrice(item.unitPrice) }}</td>
@@ -95,21 +129,25 @@
           </tbody>
         </table>
 
-        <div class="totais">
-          <div><span>Subtotal</span><span>{{ formatPrice(subtotal) }}</span></div>
-          <div>
-            <span>Desconto</span>
-            <input v-model.number="form.discount" type="number" step="0.01" min="0" data-test="discount" />
+        <div class="itens-rodape">
+          <span v-if="form.items.length" class="itens-resumo">{{ itemsSummary }}</span>
+          <div class="totais">
+            <div><span>Subtotal</span><span>{{ formatPrice(subtotal) }}</span></div>
+            <div>
+              <span>Desconto</span>
+              <input v-model.number="form.discount" type="number" step="0.01" min="0" data-test="discount" />
+            </div>
+            <div class="total-final"><span>Total</span><span>{{ formatPrice(total) }}</span></div>
           </div>
-          <div class="total-final"><span>Total</span><span>{{ formatPrice(total) }}</span></div>
         </div>
       </section>
 
       <p v-if="generalError" class="error-geral">{{ generalError }}</p>
 
       <div class="actions">
-        <button type="button" class="btn-secondary" @click="cancel">Cancelar</button>
-        <button type="submit" class="btn-primary" :disabled="saving">Salvar Pedido</button>
+        <button type="button" class="btn-secondary" data-test="cancel" @click="cancel">Cancelar</button>
+        <button type="button" class="btn-secondary" data-test="save-draft" :disabled="saving" @click="save">Salvar Rascunho</button>
+        <button type="submit" class="btn-primary" data-test="save" :disabled="saving">Salvar Pedido</button>
       </div>
     </form>
   </AppShell>
@@ -119,10 +157,14 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import SearchSelect, { type SearchSelectItem } from '@/components/SearchSelect.vue'
+import ProductPicker from '@/components/ProductPicker.vue'
 import { getSalesOrder, createSalesOrder, updateSalesOrder, type SalesOrderRequest, type SalesOrderItemRequest } from '@/api/salesOrders'
-import { listPartners, type PartnerListItem } from '@/api/partners'
+import { listPartners } from '@/api/partners'
 import { listSalesReps, type SalesRep } from '@/api/users'
-import { listProducts, type ProductListItem } from '@/api/products'
+import { listSellableProducts, type SellableProductItem } from '@/api/products'
+import { listPriceTables } from '@/api/priceTables'
+import { listPaymentMethods } from '@/api/paymentMethods'
 
 const route = useRoute()
 const router = useRouter()
@@ -131,6 +173,7 @@ const editMode = computed(() => typeof route.params.id === 'string')
 
 interface ItemForm extends SalesOrderItemRequest {
   productName: string
+  sku: string
 }
 
 interface FormState {
@@ -158,59 +201,140 @@ const errors = reactive<{ customerId?: string; salespersonId?: string; items?: s
 const generalError = ref('')
 const saving = ref(false)
 
-const customerSearch = ref('')
-const customerResults = ref<PartnerListItem[]>([])
-const salesReps = ref<SalesRep[]>([])
+const customerLabel = ref('')
+const customerResults = ref<SearchSelectItem[]>([])
+const customerSearchError = ref('')
 
-const productSearch = ref('')
-const productResults = ref<ProductListItem[]>([])
-const itemForm = reactive({ productId: '', productName: '', quantity: 1, unitPrice: 0 })
+const salesReps = ref<SalesRep[]>([])
+const salespersonLabel = ref('')
+const salesRepResults = ref<SearchSelectItem[]>([])
+
+// Presentation-only: neither field is persisted by the sales order API yet.
+const priceTableId = ref<string | null>(null)
+const priceTableLabel = ref('')
+const priceTableResults = ref<SearchSelectItem[]>([])
+const priceTableSearchError = ref('')
+
+const paymentTermId = ref<string | null>(null)
+const paymentTermLabel = ref('')
+const paymentTermResults = ref<SearchSelectItem[]>([])
+const paymentTermSearchError = ref('')
+
+const productLabel = ref('')
+const productResults = ref<SellableProductItem[]>([])
+const productSearchError = ref('')
+
+// A failed lookup and a genuinely empty result set both render an empty list, so
+// without this the picker silently shows "Nenhum resultado" when the request
+// actually errored (offline, expired session, backend down) -- indistinguishable
+// from "this SKU doesn't exist" and impossible to diagnose from the UI.
+const SEARCH_FAILED = 'Não foi possível buscar. Verifique sua conexão e tente novamente.'
+const itemForm = reactive({ productId: '', productName: '', sku: '', quantity: 1, unitPrice: 0 })
+
+// Previews what the row about to be added is worth. v-model.number yields '' for a
+// cleared quantity field, so it is coerced here rather than rendering "R$ NaN".
+const itemLineTotal = computed(() => (Number(itemForm.quantity) || 0) * itemForm.unitPrice)
 
 const subtotal = computed(() => form.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0))
 const total = computed(() => subtotal.value - (Number(form.discount) || 0))
+const itemsSummary = computed(() => {
+  const units = form.items.reduce((sum, item) => sum + item.quantity, 0)
+  const itemLabel = form.items.length === 1 ? 'item' : 'itens'
+  const unitLabel = units === 1 ? 'unidade' : 'unidades'
+  return `${form.items.length} ${itemLabel} · ${units} ${unitLabel}`
+})
 
 function formatPrice(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-async function searchCustomers() {
-  if (!customerSearch.value.trim()) {
+async function searchCustomers(query: string) {
+  customerSearchError.value = ''
+  if (!query.trim()) {
     customerResults.value = []
     return
   }
   try {
-    const page = await listPartners({ busca: customerSearch.value, papel: 'CUSTOMER', size: 5 })
-    customerResults.value = page.content
+    const page = await listPartners({ busca: query, papel: 'CUSTOMER', size: 5 })
+    customerResults.value = page.content.map((c) => ({ id: c.id, label: c.tradeName }))
   } catch {
     customerResults.value = []
+    customerSearchError.value = SEARCH_FAILED
   }
 }
 
-function selectCustomer(customer: PartnerListItem) {
-  form.customerId = customer.id
-  customerSearch.value = customer.tradeName
-  customerResults.value = []
+function selectCustomer(item: SearchSelectItem) {
+  form.customerId = item.id
+  customerLabel.value = item.label
 }
 
-async function searchProducts() {
-  if (!productSearch.value.trim()) {
+function searchSalesReps(query: string) {
+  const term = query.trim().toLowerCase()
+  salesRepResults.value = salesReps.value
+    .filter((r) => !term || r.name.toLowerCase().includes(term))
+    .map((r) => ({ id: r.id, label: r.name }))
+}
+
+function selectSalesperson(item: SearchSelectItem) {
+  form.salespersonId = item.id
+  salespersonLabel.value = item.label
+}
+
+async function searchPriceTables(query: string) {
+  priceTableSearchError.value = ''
+  try {
+    const page = await listPriceTables({ busca: query || undefined, ativo: true, size: 5 })
+    priceTableResults.value = page.content.map((t) => ({ id: t.id, label: t.name }))
+  } catch {
+    priceTableResults.value = []
+    priceTableSearchError.value = SEARCH_FAILED
+  }
+}
+
+function selectPriceTable(item: SearchSelectItem) {
+  priceTableId.value = item.id
+  priceTableLabel.value = item.label
+}
+
+async function searchPaymentTerms(query: string) {
+  paymentTermSearchError.value = ''
+  try {
+    const page = await listPaymentMethods({ busca: query || undefined, ativo: true, size: 5 })
+    paymentTermResults.value = page.content.map((m) => ({ id: m.id, label: m.description }))
+  } catch {
+    paymentTermResults.value = []
+    paymentTermSearchError.value = SEARCH_FAILED
+  }
+}
+
+function selectPaymentTerm(item: SearchSelectItem) {
+  paymentTermId.value = item.id
+  paymentTermLabel.value = item.label
+}
+
+async function searchProducts(query: string) {
+  productSearchError.value = ''
+  if (!query.trim()) {
     productResults.value = []
     return
   }
   try {
-    const page = await listProducts({ busca: productSearch.value, size: 5 })
+    // Wider than the other pickers on purpose: the Tamanho/Cor filters are derived
+    // from this result set, so too small a page would hide axis values that exist.
+    const page = await listSellableProducts({ search: query, size: 50 })
     productResults.value = page.content
   } catch {
     productResults.value = []
+    productSearchError.value = SEARCH_FAILED
   }
 }
 
-function selectProduct(product: ProductListItem) {
+function selectProduct(product: SellableProductItem) {
   itemForm.productId = product.id
   itemForm.productName = product.name
+  itemForm.sku = product.sku
   itemForm.unitPrice = product.salePrice
-  productSearch.value = product.name
-  productResults.value = []
+  productLabel.value = `${product.sku} · ${product.name}`
 }
 
 function addItem() {
@@ -221,17 +345,16 @@ function addItem() {
   form.items.push({
     productId: itemForm.productId,
     productName: itemForm.productName,
+    sku: itemForm.sku,
     quantity,
-    // Normalized here for the same reason toPayload() normalizes on submit:
-    // v-model.number on a blank input yields '' (not 0), and that would flow
-    // straight into form.items and later into the request payload untouched.
-    unitPrice: Number(itemForm.unitPrice) || 0,
+    unitPrice: itemForm.unitPrice,
   })
   itemForm.productId = ''
   itemForm.productName = ''
+  itemForm.sku = ''
   itemForm.quantity = 1
   itemForm.unitPrice = 0
-  productSearch.value = ''
+  productLabel.value = ''
 }
 
 function removeItem(index: number) {
@@ -250,14 +373,16 @@ onMounted(async () => {
     try {
       const order = await getSalesOrder(id)
       form.customerId = order.customerId
-      customerSearch.value = order.customerName
+      customerLabel.value = order.customerName
       form.salespersonId = order.salespersonId
+      salespersonLabel.value = order.salespersonName
       form.orderDate = order.orderDate
       form.deliveryDate = order.deliveryDate ?? ''
       form.discount = order.discount
       form.items = order.items.map((item) => ({
         productId: item.productId,
         productName: item.productName,
+        sku: '',
         quantity: item.quantity,
         unitPrice: item.unitPrice,
       }))
@@ -350,6 +475,10 @@ function cancel() {
   grid-template-columns: 1fr 1fr;
 }
 
+.grid-3 {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+
 .field-label {
   display: block;
   font-size: 12px;
@@ -382,46 +511,45 @@ select {
   font-size: 14px;
 }
 
-.busca-wrapper {
-  position: relative;
-}
-
-.dropdown-busca {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin: 4px 0 0;
-  padding: 4px 0;
-  list-style: none;
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 8px 28px rgba(0, 0, 0, 0.12);
-  z-index: 10;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.dropdown-busca li {
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--pm-text-dark);
-  cursor: pointer;
-}
-
 .item-adicionar {
   display: grid;
-  grid-template-columns: 1fr 100px 120px auto;
+  grid-template-columns: 1fr 76px 110px 110px auto;
   gap: 8px;
-  align-items: start;
+  align-items: end;
   margin-bottom: 10px;
 }
 
 .item-product-busca {
   min-width: 0;
+}
+
+.item-qtd {
+  min-width: 0;
+}
+
+/* Derived from the picked product and the quantity -- shown, never typed into. */
+.item-readonly {
+  height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 10px;
+  border: 1px solid var(--pm-border-light);
+  border-radius: 8px;
+  background: var(--pm-bg);
+  color: var(--pm-text-muted);
+  font-size: 13px;
+  font-family: var(--pm-font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Keeps the button's baseline on the inputs' row, not the labels' row above them. */
+.item-adicionar .btn-primary {
+  height: 34px;
+  padding: 0 16px;
 }
 
 .tabela-itens {
@@ -453,6 +581,19 @@ select {
   color: var(--pm-error);
   cursor: pointer;
   font-size: 13px;
+}
+
+.itens-rodape {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.itens-resumo {
+  font-size: 12px;
+  color: var(--pm-text-muted);
+  font-family: var(--pm-font);
 }
 
 .totais {
@@ -515,5 +656,10 @@ select {
   background: var(--pm-white);
   color: var(--pm-text-dark);
   border: 1px solid var(--pm-border-light);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

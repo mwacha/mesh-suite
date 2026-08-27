@@ -7,11 +7,15 @@ import * as salesOrdersApi from '@/api/salesOrders'
 import * as partnersApi from '@/api/partners'
 import * as usersApi from '@/api/users'
 import * as productsApi from '@/api/products'
+import * as priceTablesApi from '@/api/priceTables'
+import * as paymentMethodsApi from '@/api/paymentMethods'
 
 vi.mock('@/api/salesOrders')
 vi.mock('@/api/partners')
 vi.mock('@/api/users')
 vi.mock('@/api/products')
+vi.mock('@/api/priceTables')
+vi.mock('@/api/paymentMethods')
 
 function mountWithRouter(path = '/pedidos/novo') {
   const router = createRouter({
@@ -25,7 +29,9 @@ function mountWithRouter(path = '/pedidos/novo') {
   router.push(path)
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(SalesOrderFormView, { global: { plugins: [router] } }),
+    // SearchSelect's dropdown panel is Teleported to <body> -- stub it so it
+    // renders in place instead, keeping wrapper.find() queries working.
+    wrapper: mount(SalesOrderFormView, { global: { plugins: [router], stubs: { teleport: true } } }),
   }))
 }
 
@@ -38,8 +44,28 @@ const customerBase = {
 const salesRepBase = { id: 'v1', name: 'Carla Vendedora' }
 
 const productBase = {
-  id: 'p1', name: 'Camiseta Polo', sku: 'P0001', brand: 'Marca Alpha',
+  id: 'p1', name: 'Camiseta Polo', sku: 'P0001', type: 'PRODUCT' as const,
   salePrice: 59.9, stockQuantity: 10, status: 'ACTIVE' as const,
+  size: null, colorwayName: null,
+}
+
+async function selectCustomer(wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper']) {
+  await wrapper.find('[data-test="customer-search"]').trigger('click')
+  await wrapper.find('[data-test="customer-search-input"]').setValue('silva')
+  await flushPromises()
+  await wrapper.find('[data-test="customer-search-option-c1"]').trigger('click')
+}
+
+async function selectSalesperson(wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper']) {
+  await wrapper.find('[data-test="salesperson"]').trigger('click')
+  await wrapper.find('[data-test="salesperson-option-v1"]').trigger('click')
+}
+
+async function selectProduct(wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper']) {
+  await wrapper.find('[data-test="product-search"]').trigger('click')
+  await wrapper.find('[data-test="product-search-input"]').setValue('camiseta')
+  await flushPromises()
+  await wrapper.find('[data-test="product-search-option-p1"]').trigger('click')
 }
 
 describe('SalesOrderFormView', () => {
@@ -50,8 +76,20 @@ describe('SalesOrderFormView', () => {
     vi.mocked(partnersApi.listPartners).mockResolvedValue({
       content: [customerBase], totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
-    vi.mocked(productsApi.listProducts).mockResolvedValue({
+    vi.mocked(productsApi.listSellableProducts).mockResolvedValue({
       content: [productBase], totalElements: 1, totalPages: 1, number: 0, size: 5,
+    })
+    vi.mocked(priceTablesApi.listPriceTables).mockResolvedValue({
+      content: [{
+        id: 't1', name: 'Tabela Varejo', adjustmentMethod: 'MANUAL', adjustmentOperation: null,
+        adjustmentValueType: null, adjustmentValue: null, effectiveStartDate: '2026-01-01',
+        effectiveEndDate: null, active: true,
+      }],
+      totalElements: 1, totalPages: 1, number: 0, size: 5,
+    })
+    vi.mocked(paymentMethodsApi.listPaymentMethods).mockResolvedValue({
+      content: [{ id: 'pm1', description: 'À vista', active: true, installmentsCount: 1 }],
+      totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
   })
 
@@ -73,31 +111,51 @@ describe('SalesOrderFormView', () => {
     await flushPromises()
 
     expect(usersApi.listSalesReps).toHaveBeenCalled()
-    expect(wrapper.find('[data-test="salesperson"]').text()).toContain('Carla Vendedora')
+    await wrapper.find('[data-test="salesperson"]').trigger('click')
+
+    expect(wrapper.text()).toContain('Carla Vendedora')
   })
 
-  it('searches and selects a customer via the busca dropdown', async () => {
+  it('searches and selects a customer via the SearchSelect dropdown', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="customer-search"]').setValue('silva')
-    await flushPromises()
+    await selectCustomer(wrapper)
 
     expect(partnersApi.listPartners).toHaveBeenCalledWith(
       expect.objectContaining({ busca: 'silva', papel: 'CUSTOMER' }),
     )
-    await wrapper.find('[data-test="customer-results"] li').trigger('click')
+    expect(wrapper.find('[data-test="customer-search"]').text()).toContain('Mercado Silva')
+  })
 
-    expect((wrapper.find('[data-test="customer-search"]').element as HTMLInputElement).value).toBe('Mercado Silva')
+  it('lets the user pick a Tabela de Preço and a Condição de Pagamento', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="price-table"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="price-table-option-t1"]').trigger('click')
+
+    await wrapper.find('[data-test="payment-term"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="payment-term-option-pm1"]').trigger('click')
+
+    expect(wrapper.find('[data-test="price-table"]').text()).toContain('Tabela Varejo')
+    expect(wrapper.find('[data-test="payment-term"]').text()).toContain('À vista')
+  })
+
+  it('renders the "+ Adicionar" button as the primary (blue) action, matching the wireframe', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="item-add"]').classes()).toContain('btn-primary')
   })
 
   it('searches for a product, adds it as an item and computes totals live', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="product-search"]').setValue('camiseta')
-    await flushPromises()
-    await wrapper.find('[data-test="product-results"] li').trigger('click')
+    await selectProduct(wrapper)
     await wrapper.find('[data-test="item-quantity"]').setValue('2')
     await wrapper.find('[data-test="item-add"]').trigger('click')
     await flushPromises()
@@ -111,34 +169,53 @@ describe('SalesOrderFormView', () => {
     expect(wrapper.text()).not.toContain('Camiseta Polo')
   })
 
-  it('normalizes a cleared unitPrice to the number 0 (not empty-string) when added immediately', async () => {
+  it('shows Vlr. Produto and Total as read-only, never as editable inputs', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    const unitPrice = wrapper.find('[data-test="item-unit-price"]')
+    const lineTotal = wrapper.find('[data-test="item-line-total"]')
+    expect(unitPrice.element.tagName).not.toBe('INPUT')
+    expect(lineTotal.element.tagName).not.toBe('INPUT')
+    expect(unitPrice.text()).toContain('0,00')
+
+    await selectProduct(wrapper)
+    await wrapper.find('[data-test="item-quantity"]').setValue('3')
+    await flushPromises()
+
+    expect(unitPrice.text()).toContain('59,90')
+    expect(lineTotal.text()).toContain('179,70')
+  })
+
+  it('resets Vlr. Produto and Total once the pending row is added', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await selectProduct(wrapper)
+    await wrapper.find('[data-test="item-quantity"]').setValue('2')
+    await wrapper.find('[data-test="item-add"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="item-unit-price"]').text()).toContain('0,00')
+    expect(wrapper.find('[data-test="item-line-total"]').text()).toContain('0,00')
+  })
+
+  it('takes the unit price from the selected product, matching the wireframe', async () => {
     vi.mocked(salesOrdersApi.createSalesOrder).mockResolvedValue({} as any)
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="customer-search"]').setValue('silva')
-    await flushPromises()
-    await wrapper.find('[data-test="customer-results"] li').trigger('click')
-    await wrapper.find('[data-test="salesperson"]').setValue('v1')
+    await selectCustomer(wrapper)
+    await selectSalesperson(wrapper)
 
-    await wrapper.find('[data-test="product-search"]').setValue('camiseta')
-    await flushPromises()
-    await wrapper.find('[data-test="product-results"] li').trigger('click')
-    // Simulate the auto-filled unit price being manually cleared, then
-    // "Adicionar" clicked immediately -- v-model.number drives the underlying
-    // value to '' (empty string) when cleared, and addItem() must
-    // normalize that '' to 0 before it lands in form.items/payload. This must
-    // NOT be refilled before clicking Adicionar, or the empty-string state
-    // never reaches addItem() and the normalization guard goes untested.
-    await wrapper.find('[data-test="item-unit-price"]').setValue('')
+    await selectProduct(wrapper)
     await wrapper.find('[data-test="item-quantity"]').setValue('1')
     await wrapper.find('[data-test="item-add"]').trigger('click')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     const payload = vi.mocked(salesOrdersApi.createSalesOrder).mock.calls[0][0]
-    expect(payload.items[0].unitPrice).toBe(0)
-    expect(typeof payload.items[0].unitPrice).toBe('number')
+    expect(payload.items[0].unitPrice).toBe(productBase.salePrice)
   })
 
   it('submits the form and navigates to the list on success', async () => {
@@ -146,14 +223,10 @@ describe('SalesOrderFormView', () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="customer-search"]').setValue('silva')
-    await flushPromises()
-    await wrapper.find('[data-test="customer-results"] li').trigger('click')
-    await wrapper.find('[data-test="salesperson"]').setValue('v1')
+    await selectCustomer(wrapper)
+    await selectSalesperson(wrapper)
 
-    await wrapper.find('[data-test="product-search"]').setValue('camiseta')
-    await flushPromises()
-    await wrapper.find('[data-test="product-results"] li').trigger('click')
+    await selectProduct(wrapper)
     await wrapper.find('[data-test="item-quantity"]').setValue('1')
     await wrapper.find('[data-test="item-add"]').trigger('click')
 
@@ -164,19 +237,43 @@ describe('SalesOrderFormView', () => {
     expect(router.currentRoute.value.name).toBe('pedidos')
   })
 
+  it('saves the same payload via the "Salvar Rascunho" button', async () => {
+    vi.mocked(salesOrdersApi.createSalesOrder).mockResolvedValue({} as any)
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await selectCustomer(wrapper)
+    await selectSalesperson(wrapper)
+
+    await selectProduct(wrapper)
+    await wrapper.find('[data-test="item-quantity"]').setValue('1')
+    await wrapper.find('[data-test="item-add"]').trigger('click')
+
+    await wrapper.find('[data-test="save-draft"]').trigger('click')
+    await flushPromises()
+
+    expect(salesOrdersApi.createSalesOrder).toHaveBeenCalled()
+  })
+
+  it('navigates back to the list when "Cancelar" is clicked', async () => {
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="cancel"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('pedidos')
+  })
+
   it('shows a permission-denied message on 403', async () => {
     vi.mocked(salesOrdersApi.createSalesOrder).mockRejectedValue({ response: { status: 403 } })
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    await wrapper.find('[data-test="customer-search"]').setValue('silva')
-    await flushPromises()
-    await wrapper.find('[data-test="customer-results"] li').trigger('click')
-    await wrapper.find('[data-test="salesperson"]').setValue('v1')
+    await selectCustomer(wrapper)
+    await selectSalesperson(wrapper)
 
-    await wrapper.find('[data-test="product-search"]').setValue('camiseta')
-    await flushPromises()
-    await wrapper.find('[data-test="product-results"] li').trigger('click')
+    await selectProduct(wrapper)
     await wrapper.find('[data-test="item-quantity"]').setValue('1')
     await wrapper.find('[data-test="item-add"]').trigger('click')
 
@@ -198,7 +295,8 @@ describe('SalesOrderFormView', () => {
     await flushPromises()
 
     expect(salesOrdersApi.getSalesOrder).toHaveBeenCalledWith('ped-1')
-    expect((wrapper.find('[data-test="customer-search"]').element as HTMLInputElement).value).toBe('Mercado Silva')
+    expect(wrapper.find('[data-test="customer-search"]').text()).toContain('Mercado Silva')
+    expect(wrapper.find('[data-test="salesperson"]').text()).toContain('Carla Vendedora')
     expect(wrapper.text()).toContain('Camiseta Polo')
   })
 

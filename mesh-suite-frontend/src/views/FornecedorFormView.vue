@@ -199,10 +199,7 @@
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
 
-      <div class="actions">
-        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
-        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Fornecedor</button>
-      </div>
+      <FormActions :saving="salvando" save-label="Salvar Fornecedor" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
@@ -213,6 +210,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import TextField from '@/components/TextField.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
+import FormActions from '@/components/FormActions.vue'
 import {
   getPartner,
   createPartner,
@@ -590,38 +588,5 @@ textarea {
 .error-geral {
   color: var(--pm-error);
   font-size: 14px;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.btn-primary,
-.btn-secondary {
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border: none;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border: 1px solid var(--pm-border-light);
 }
 </style>

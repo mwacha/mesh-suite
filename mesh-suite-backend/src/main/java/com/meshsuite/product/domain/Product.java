@@ -5,9 +5,12 @@ import com.meshsuite.colorway.domain.Colorway;
 import com.meshsuite.fiscal.domain.FiscalRegistration;
 import com.meshsuite.product.domain.enums.ProductStatus;
 import com.meshsuite.product.domain.enums.MeasurementUnit;
+import com.meshsuite.product.domain.enums.ProductType;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +29,10 @@ public class Product {
 
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ProductType type = ProductType.PRODUCT;
 
     @Column(nullable = false)
     private String name;
@@ -67,11 +74,17 @@ public class Product {
     @Column(name = "measurement_unit", nullable = false, length = 5)
     private MeasurementUnit measurementUnit = MeasurementUnit.UN;
 
+    @Column(name = "sale_multiple", nullable = false, precision = 12, scale = 3)
+    private BigDecimal saleMultiple = BigDecimal.ONE;
+
     @Column(name = "min_stock", precision = 12, scale = 3)
     private BigDecimal minStock;
 
     @Column(name = "max_stock", precision = 12, scale = 3)
     private BigDecimal maxStock;
+
+    @Column(length = 50)
+    private String size;
 
     @Column(precision = 10, scale = 3)
     private BigDecimal weight;
@@ -91,4 +104,30 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fiscal_registration_id")
     private FiscalRegistration fiscalRegistration;
+
+    // Set only on VARIATION_CHILD rows, pointing back to their VARIATION_PARENT.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_product_id")
+    private Product parentProduct;
+
+    // Set only on VARIATION_PARENT rows -- the Tipos de Variação matrix (axis name +
+    // its values, e.g. [{"name":"Tamanho","values":["P","M"]}]) that generated this
+    // parent's children, serialized as JSON. Stored as plain TEXT (not a native JSONB
+    // mapping) to match this codebase's existing conventions -- serialization happens
+    // in VariationProductService via Jackson, not at the entity/column level.
+    @Column(name = "variation_axes", columnDefinition = "TEXT")
+    private String variationAxesJson;
+
+    // Set only on VARIATION_CHILD rows -- this child's own coordinate in the parent's
+    // matrix, e.g. ["40","VERMELHA"], in the same order as the parent's axes. Only
+    // "Tamanho" has a real column of its own (size); every other axis value would be
+    // unrecoverable on reload without this, leaving the child unmatchable to the
+    // combination that generated it.
+    @Column(name = "variation_values", columnDefinition = "TEXT")
+    private String variationValuesJson;
+
+    // Owned only by PRODUCT_KIT rows -- see ProductKitItem. Cleared and rebuilt
+    // wholesale on every save, same convention as PriceTable/PurchaseOrder items.
+    @OneToMany(mappedBy = "kitProduct", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductKitItem> kitItems = new ArrayList<>();
 }

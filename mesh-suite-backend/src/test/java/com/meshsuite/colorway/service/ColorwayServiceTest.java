@@ -13,7 +13,7 @@ import com.meshsuite.colorway.exception.ColorwayInUseException;
 import com.meshsuite.colorway.exception.ColorwayNotFoundException;
 import com.meshsuite.colorway.exception.DuplicateColorwayNameException;
 import com.meshsuite.colorway.service.ColorwayService;
-import com.meshsuite.product.service.ProductService;
+import com.meshsuite.product.service.SimpleProductService;
 import com.meshsuite.shared.context.TenantContext;
 import com.meshsuite.tenant.domain.Tenant;
 import com.meshsuite.tenant.repository.TenantRepository;
@@ -36,7 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 class ColorwayServiceTest extends AbstractIntegrationTest {
 
     @Autowired ColorwayService colorwayService;
-    @Autowired ProductService produtoService;
+    @Autowired SimpleProductService productService;
     @Autowired TenantRepository tenantRepository;
     @Autowired UserRepository userRepository;
     @Autowired EntityManager entityManager;
@@ -138,10 +138,10 @@ class ColorwayServiceTest extends AbstractIntegrationTest {
     void rejectsDeletingAColorwayInUseByAProduct() {
         setUpTenant("aurora-corest");
         var corEstampa = colorwayService.create(TenantContext.get(), request("Azul Marinho"));
-        produtoService.criar(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
+        productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Polo", "P0001", null, null, null, corEstampa.id(),
                 new BigDecimal("59.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
 
         assertThatThrownBy(() -> colorwayService.delete(corEstampa.id()))
                 .isInstanceOf(ColorwayInUseException.class);
@@ -167,18 +167,18 @@ class ColorwayServiceTest extends AbstractIntegrationTest {
         var vermelho = colorwayService.create(TenantContext.get(), request("Vermelho Ferrari"));
         var semProdutos = colorwayService.create(TenantContext.get(), request("Preto"));
 
-        produtoService.criar(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
+        productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Polo", "P0001", null, null, null, azul.id(),
                 new BigDecimal("59.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null));
-        produtoService.criar(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
+        productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Camiseta Regata", "P0002", null, null, null, azul.id(),
                 new BigDecimal("39.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null));
-        produtoService.criar(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
+        productService.create(TenantContext.get(), new com.meshsuite.product.dto.ProductRequest(
                 "Calça Jeans", "P0003", null, null, null, vermelho.id(),
                 new BigDecimal("119.90"), null, ProductStatus.ACTIVE, null,
-                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null));
+                new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
 
         var pagina = colorwayService.list(null, null, PageRequest.of(0, 10));
 

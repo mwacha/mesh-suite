@@ -1,0 +1,1 @@
+ALTER TABLE product ADD COLUMN sale_multiple NUMERIC(12,3) NOT NULL DEFAULT 1;

@@ -3,36 +3,20 @@
     <p v-if="error" class="error-geral">{{ error }}</p>
 
     <PageHeader title="Pedidos" :count="countLabel">
+      <button type="button" class="btn-secondary" data-test="export-orders" @click="exportCsv">Exportar</button>
       <button type="button" class="btn-primary" data-test="new-order" @click="newOrder">+ Novo Pedido</button>
     </PageHeader>
 
-    <div class="toolbar">
-      <input
-        v-model="filters.busca"
-        class="busca"
-        placeholder="Buscar por nº, cliente ou vendedor..."
-        data-test="busca"
-        @input="load(0)"
-      />
-      <select v-model="filters.status" @change="load(0)">
-        <option value="">Status</option>
-        <option value="DRAFT">Digitado</option>
-        <option value="IN_PREPARATION">Em Preparo</option>
-        <option value="INVOICED">Faturado</option>
-      </select>
-    </div>
+    <FilterBar
+      :search="filters.busca"
+      search-placeholder="Buscar por nº, cliente ou vendedor..."
+      :categories="categories"
+      :value-map="valueMap"
+      @update:search="onBuscaChange"
+      @update:filters="onFiltersChange"
+    />
 
-    <section class="table-card">
-      <div class="table-card-header">
-        <span class="table-card-title">Lista de Pedidos</span>
-        <div v-if="counts" class="table-card-stats">
-          <StatPill :value="counts.total" label="Total" color="dark" />
-          <StatPill :value="counts.draft" label="Digitados" color="dark" />
-          <StatPill :value="counts.inPreparation" label="Em Preparo" color="amber" />
-          <StatPill :value="counts.invoiced" label="Faturados" color="green" />
-        </div>
-      </div>
-
+    <ListCard title="Lista de Pedidos" :stats="statsCard">
       <div class="table-grid">
         <div class="table-grid-header">
           <div class="table-grid-col">Nº</div>
@@ -76,7 +60,7 @@
           </div>
         </div>
       </div>
-    </section>
+    </ListCard>
 
     <Pagination
       :number="page.number"
@@ -94,8 +78,9 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
 import StatusBadge, { type StatusBadgeColor } from '@/components/StatusBadge.vue'
-import StatPill from '@/components/StatPill.vue'
+import ListCard, { type ListCardStat } from '@/components/ListCard.vue'
 import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
 import Pagination from '@/components/Pagination.vue'
 import {
@@ -109,10 +94,25 @@ import {
   type SalesOrderStatus,
 } from '@/api/salesOrders'
 import { issueSale } from '@/api/sales'
+import { listSalesReps, type SalesRep } from '@/api/users'
 
 const router = useRouter()
 
-const filters = reactive({ busca: '', status: '' })
+const STATUS_LABELS: Record<string, SalesOrderStatus> = {
+  Digitado: 'DRAFT',
+  'Em Preparo': 'IN_PREPARATION',
+  Faturado: 'INVOICED',
+}
+
+const categories = ['Status', 'Vendedor']
+const salesReps = ref<SalesRep[]>([])
+const valueMap = computed(() => ({
+  Status: Object.keys(STATUS_LABELS),
+  Vendedor: salesReps.value.map((r) => r.name),
+}))
+
+const filters = reactive({ busca: '' })
+const filtrosAvancados = ref<Record<string, string[]>>({})
 const page = ref<ApiPage<SalesOrderSummary>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const counts = ref<SalesOrderCounts | null>(null)
 const sortField = ref<'customerName' | 'orderDate' | 'total' | 'status' | null>(null)
@@ -120,6 +120,16 @@ const sortDir = ref<'asc' | 'desc'>('asc')
 const error = ref('')
 
 const countLabel = computed(() => (counts.value ? `${counts.value.total} pedidos cadastrados` : undefined))
+const statsCard = computed<ListCardStat[]>(() =>
+  counts.value
+    ? [
+        { value: counts.value.total, label: 'Total', color: 'dark' },
+        { value: counts.value.draft, label: 'Digitados', color: 'dark' },
+        { value: counts.value.inPreparation, label: 'Em Preparo', color: 'amber' },
+        { value: counts.value.invoiced, label: 'Faturados', color: 'green' },
+      ]
+    : [],
+)
 
 const NEXT_STATUS: Record<SalesOrderStatus, SalesOrderStatus | null> = {
   DRAFT: 'IN_PREPARATION',
@@ -172,12 +182,19 @@ function toggleSort(field: 'customerName' | 'orderDate' | 'total' | 'status') {
   load(0)
 }
 
+function labelsFor(category: string): string[] {
+  return filtrosAvancados.value[category] ?? []
+}
+
 async function load(pageNumber: number) {
   error.value = ''
+  const selectedStatus = labelsFor('Status')[0]
+  const selectedSalesperson = salesReps.value.find((r) => r.name === labelsFor('Vendedor')[0])
   try {
     page.value = await listSalesOrders({
       busca: filters.busca || undefined,
-      status: (filters.status || undefined) as SalesOrderStatus | undefined,
+      status: selectedStatus ? STATUS_LABELS[selectedStatus] : undefined,
+      salespersonId: selectedSalesperson?.id,
       sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page: pageNumber,
       size: page.value.size,
@@ -194,6 +211,24 @@ async function loadCounts() {
   } catch {
     error.value = 'Não foi possível carregar o resumo de pedidos.'
   }
+}
+
+async function loadSalesReps() {
+  try {
+    salesReps.value = await listSalesReps()
+  } catch {
+    salesReps.value = []
+  }
+}
+
+function onBuscaChange(value: string) {
+  filters.busca = value
+  load(0)
+}
+
+function onFiltersChange(newFilters: Record<string, string[]>) {
+  filtrosAvancados.value = newFilters
+  load(0)
 }
 
 function onSizeChange(newSize: number) {
@@ -260,9 +295,30 @@ function actionsFor(order: SalesOrderSummary): ActionsMenuItem[] {
   return items
 }
 
+function exportCsv() {
+  const header = ['Nº', 'Cliente', 'Vendedor', 'Data', 'Total', 'Status']
+  const rows = page.value.content.map((order) => [
+    String(order.number),
+    order.customerName,
+    order.salespersonName,
+    formatDate(order.orderDate),
+    formatPrice(order.total),
+    statusLabel(order.status),
+  ])
+  const csv = [header, ...rows].map((cols) => cols.map((col) => `"${col.replace(/"/g, '""')}"`).join(';')).join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'pedidos.csv'
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 onMounted(() => {
   load(0)
   loadCounts()
+  loadSalesReps()
 })
 </script>
 
@@ -273,9 +329,8 @@ onMounted(() => {
   margin: 0 0 12px;
 }
 
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
+.btn-primary,
+.btn-secondary {
   border: none;
   border-radius: 8px;
   padding: 8px 16px;
@@ -286,54 +341,15 @@ onMounted(() => {
   font-family: var(--pm-font);
 }
 
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-family: var(--pm-font);
+.btn-primary {
+  background: var(--pm-accent);
+  color: var(--pm-white);
 }
 
-.busca {
-  flex: 1;
-}
-
-.toolbar input,
-.toolbar select {
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: var(--pm-font);
-  color: var(--pm-text-dark);
+.btn-secondary {
   background: var(--pm-white);
-}
-
-.table-card {
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.table-card-header {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--pm-border-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--pm-font);
-}
-
-.table-card-title {
-  font-size: 15px;
-  font-weight: 700;
   color: var(--pm-text-dark);
-}
-
-.table-card-stats {
-  display: flex;
-  gap: 8px;
+  border: 1px solid var(--pm-border-light);
 }
 
 .table-grid {

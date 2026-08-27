@@ -169,6 +169,31 @@ class PriceTableControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void countsReflectActiveAndInactivePriceTables() throws Exception {
+        Contexto ctx = loginAndSetUp("aurora-tp", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
+
+        String created = mockMvc.perform(post("/api/price-tables").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(tabelaPrecoPayload("Varejo", ctx.produtoId())))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
+
+        mockMvc.perform(patch("/api/price-tables/" + id + "/status").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"active\": false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+
+        mockMvc.perform(get("/api/price-tables/counts").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.active").value(0))
+                .andExpect(jsonPath("$.inactive").value(1));
+    }
+
+    @Test
     void rejectsDuplicateNameWithConflict() throws Exception {
         Contexto ctx = loginAndSetUp("aurora-tp", "marina@aurora.com.br", "11222333000144");
         Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, ctx.cookie());
