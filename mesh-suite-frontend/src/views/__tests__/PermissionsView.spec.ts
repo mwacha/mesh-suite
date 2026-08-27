@@ -12,6 +12,7 @@ function mountWithRouter() {
     history: createWebHistory(),
     routes: [
       { path: '/permissoes', name: 'permissoes', component: PermissionsView },
+      { path: '/permissoes/usuarios', name: 'permissoes-usuarios', component: { template: '<div />' } },
       { path: '/usuarios', name: 'usuarios', component: { template: '<div />' } },
     ],
   })
@@ -39,13 +40,13 @@ describe('PermissionsView', () => {
     expect(perfisApi.listPermissionProfiles).toHaveBeenCalled()
   })
 
-  it('navigates to /usuarios when the Usuários e Permissões tab is clicked', async () => {
+  it('navigates to the Usuários e Permissões screen when that tab is clicked', async () => {
     const { router, wrapper } = await mountWithRouter()
     await flushPromises()
 
     await wrapper.find('[data-test="tab-usuarios"]').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.name).toBe('usuarios')
+    expect(router.currentRoute.value.name).toBe('permissoes-usuarios')
   })
 })
