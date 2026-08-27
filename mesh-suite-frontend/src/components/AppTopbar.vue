@@ -3,7 +3,9 @@
     <div class="breadcrumb">{{ title }}</div>
 
     <div class="topbar-right">
-      <div class="company-badge">Empresa Principal</div>
+      <div v-if="authStore.usuario?.nomeEmpresa" class="company-badge" data-test="company-badge">
+        {{ authStore.usuario.nomeEmpresa }}
+      </div>
 
       <button type="button" class="icon-button" title="Notificações (em breve)">🔔</button>
 

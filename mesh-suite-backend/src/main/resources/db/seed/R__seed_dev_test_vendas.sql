@@ -21,7 +21,7 @@ INSERT INTO app_user (tenant_id, name, email, password_hash, role, profile, acti
         '$2a$10$gc21cu8nxmoffokwJXbpaeCEhZLVpe1IX/zX0wyFFkx.XnMzBy.IS', 'SALES_REP', 'SALES', true),
     ('11111111-1111-1111-1111-111111111111', 'Juliana Comercial', 'juliana.comercial@aurora.com.br',
         '$2a$10$gc21cu8nxmoffokwJXbpaeCEhZLVpe1IX/zX0wyFFkx.XnMzBy.IS', 'SALES_REP', 'SALES', true)
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (tenant_id, email) DO NOTHING;
 
 INSERT INTO user_permission (user_id, module, action)
 SELECT u.id, m, a
@@ -69,14 +69,27 @@ JOIN LATERAL (
 WHERE p.id = c.id AND p.payment_method_id IS NULL;
 
 -- ── Produtos ─────────────────────────────────────────────────────────────
+-- product.brand was replaced by product.brand_id (FK to brand) in
+-- V42__replace_product_brand_with_fk.sql -- these three names need to exist
+-- as real brand rows before the products below can reference them.
+INSERT INTO brand (tenant_id, name) VALUES
+    ('11111111-1111-1111-1111-111111111111', 'Aurora Basics'),
+    ('11111111-1111-1111-1111-111111111111', 'Aurora Denim'),
+    ('11111111-1111-1111-1111-111111111111', 'Aurora Feminina')
+ON CONFLICT (tenant_id, name) DO NOTHING;
 
-INSERT INTO product (tenant_id, name, sku, brand, sale_price, status, stock_quantity, measurement_unit) VALUES
-    ('11111111-1111-1111-1111-111111111111', 'Camiseta Polo', 'SEED-CAMPOLO', 'Aurora Basics', 59.90, 'ACTIVE', 180, 'UN'),
-    ('11111111-1111-1111-1111-111111111111', 'Camiseta Regata', 'SEED-CAMREGATA', 'Aurora Basics', 39.90, 'ACTIVE', 220, 'UN'),
-    ('11111111-1111-1111-1111-111111111111', 'Calça Jeans', 'SEED-CALJEANS', 'Aurora Denim', 119.90, 'ACTIVE', 95, 'UN'),
-    ('11111111-1111-1111-1111-111111111111', 'Bermuda Sarja', 'SEED-BERSARJA', 'Aurora Denim', 79.90, 'ACTIVE', 140, 'UN'),
-    ('11111111-1111-1111-1111-111111111111', 'Vestido Floral', 'SEED-VESFLORAL', 'Aurora Feminina', 149.90, 'ACTIVE', 60, 'UN'),
-    ('11111111-1111-1111-1111-111111111111', 'Jaqueta Jeans', 'SEED-JAQJEANS', 'Aurora Denim', 199.90, 'ACTIVE', 40, 'UN')
+INSERT INTO product (tenant_id, name, sku, brand_id, sale_price, status, stock_quantity, measurement_unit)
+SELECT '11111111-1111-1111-1111-111111111111', v.name, v.sku,
+       (SELECT id FROM brand WHERE tenant_id = '11111111-1111-1111-1111-111111111111' AND name = v.brand_name),
+       v.sale_price, 'ACTIVE', v.stock_quantity, 'UN'
+FROM (VALUES
+    ('Camiseta Polo', 'SEED-CAMPOLO', 'Aurora Basics', 59.90, 180),
+    ('Camiseta Regata', 'SEED-CAMREGATA', 'Aurora Basics', 39.90, 220),
+    ('Calça Jeans', 'SEED-CALJEANS', 'Aurora Denim', 119.90, 95),
+    ('Bermuda Sarja', 'SEED-BERSARJA', 'Aurora Denim', 79.90, 140),
+    ('Vestido Floral', 'SEED-VESFLORAL', 'Aurora Feminina', 149.90, 60),
+    ('Jaqueta Jeans', 'SEED-JAQJEANS', 'Aurora Denim', 199.90, 40)
+) AS v(name, sku, brand_name, sale_price, stock_quantity)
 ON CONFLICT (tenant_id, sku) DO NOTHING;
 
 -- ── Pedidos ──────────────────────────────────────────────────────────────

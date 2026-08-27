@@ -66,8 +66,8 @@ public class SecurityConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/forgot-password", "/api/auth/reset-password",
-                                "/actuator/health").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/select-account", "/api/auth/forgot-password",
+                                "/api/auth/reset-password", "/actuator/health").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

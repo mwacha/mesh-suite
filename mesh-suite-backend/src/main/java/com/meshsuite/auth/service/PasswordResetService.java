@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,13 +50,22 @@ public class PasswordResetService {
     }
 
     // User lookups pre-tenant-context always go through AuthService, the one
-    // class that sets app.bypass_tenant_check.
+    // class that sets app.bypass_tenant_check. Since e-mail is unique per tenant
+    // (not globally), this can legitimately match more than one account -- issues
+    // one reset token/e-mail per active account rather than assuming a single row.
     public boolean requestReset(String email) {
-        User user = authService.findByEmailForLogin(email);
-        if (user == null || !user.isActive()) {
+        List<User> users = authService.findAllByEmailForLogin(email).stream()
+                .filter(User::isActive)
+                .toList();
+        if (users.isEmpty()) {
             return false; // caller still returns 200 with the generic message
         }
 
+        users.forEach(user -> issueResetToken(user, email));
+        return true;
+    }
+
+    private void issueResetToken(User user, String email) {
         byte[] randomBytes = new byte[32];
         secureRandom.nextBytes(randomBytes);
         String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
@@ -68,7 +78,6 @@ public class PasswordResetService {
 
         String resetLink = "https://app.meshsuite.local/redefinir-senha?token=" + rawToken;
         mailService.sendPasswordResetEmail(email, resetLink);
-        return true;
     }
 
     public void confirmReset(String rawToken, String novaSenha) {

@@ -16,8 +16,8 @@ class DevSeedTest extends AbstractIntegrationTest {
 
     @Test
     void seedCreatesTwoTenantsWithLoginableAdmins() {
-        var marina = authService.findByEmailForLogin("marina@aurora.com.br");
-        var carlos = authService.findByEmailForLogin("carlos@boreal.com.br");
+        var marina = authService.findAllByEmailForLogin("marina@aurora.com.br").stream().findFirst().orElse(null);
+        var carlos = authService.findAllByEmailForLogin("carlos@boreal.com.br").stream().findFirst().orElse(null);
 
         assertThat(marina).isNotNull();
         assertThat(carlos).isNotNull();

@@ -1,6 +1,8 @@
 package com.meshsuite.auth.service;
 
 import com.meshsuite.auth.aspect.TenantContextAspect;
+import com.meshsuite.company.domain.Company;
+import com.meshsuite.company.repository.CompanyRepository;
 import com.meshsuite.shared.context.TenantContext;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -12,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthContextService {
 
     private final EntityManager entityManager;
+    private final CompanyRepository companyRepository;
 
-    public AuthContextService(EntityManager entityManager) {
+    public AuthContextService(EntityManager entityManager, CompanyRepository companyRepository) {
         this.entityManager = entityManager;
+        this.companyRepository = companyRepository;
     }
 
     public record Context(UUID usuarioId, UUID tenantId, String papel) {
@@ -43,5 +47,21 @@ public class AuthContextService {
                         "SELECT u.name FROM User u WHERE u.id = :id", String.class)
                 .setParameter("id", userId)
                 .getSingleResult();
+    }
+
+    // Called with TenantContext already set by JwtAuthenticationFilter for the
+    // current request, so TenantContextAspect scopes this to the right tenant --
+    // same "matriz, as default" pick as AuthService.loadTenantAndCompany at login.
+    @Transactional(readOnly = true)
+    public String companyName(UUID tenantId) {
+        return companyRepository.findByTenantId(tenantId).stream()
+                .findFirst()
+                .map(AuthContextService::displayName)
+                .orElse(null);
+    }
+
+    private static String displayName(Company company) {
+        String tradeName = company.getTradeName();
+        return tradeName != null && !tradeName.isBlank() ? tradeName : company.getLegalName();
     }
 }
