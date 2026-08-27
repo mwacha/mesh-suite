@@ -234,6 +234,23 @@ class ColorwayControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void reportsTotalActiveAndInactiveCounts() throws Exception {
+        String token = loginAndGetCookie("aurora-corest", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
+
+        mockMvc.perform(post("/api/colorways").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(colorwayPayload("Azul Marinho")))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/colorways/counts").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.active").value(1))
+                .andExpect(jsonPath("$.inactive").value(0));
+    }
+
+    @Test
     void unauthenticatedRequestIsRejected() throws Exception {
         mockMvc.perform(get("/api/colorways"))
                 .andExpect(status().isUnauthorized());
