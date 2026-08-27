@@ -14,5 +14,7 @@ public record UserResponse(
         Role role,
         Profile profile,
         boolean active,
-        List<PermissionDto> permissions) {
+        List<PermissionDto> permissions,
+        UUID permissionProfileId,
+        String permissionProfileName) {
 }

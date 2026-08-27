@@ -14,13 +14,6 @@
         data-test="busca"
         @input="carregar(0)"
       />
-      <select v-model="filtros.profile" @change="carregar(0)">
-        <option value="">Perfil</option>
-        <option value="ADMIN">Admin</option>
-        <option value="MANAGER">Gerente</option>
-        <option value="SALES">Vendedor</option>
-        <option value="VIEWER">Visualizador</option>
-      </select>
       <select v-model="filtros.active" @change="carregar(0)">
         <option value="">Status</option>
         <option value="true">Ativo</option>
@@ -45,10 +38,7 @@
             <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'name' }">{{ sortIcon('name') }}</span>
           </div>
           <div class="table-grid-col">E-mail</div>
-          <div class="table-grid-col table-grid-col-sortable" data-test="col-perfil" @click="toggleSort('profile')">
-            Perfil
-            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'profile' }">{{ sortIcon('profile') }}</span>
-          </div>
+          <div class="table-grid-col">Perfil</div>
           <div class="table-grid-col">Status</div>
           <div class="table-grid-col"></div>
         </div>
@@ -63,7 +53,7 @@
           <div class="table-grid-cell table-grid-cell-nome">{{ user.name }}</div>
           <div class="table-grid-cell">{{ user.email }}</div>
           <div class="table-grid-cell">
-            <StatusBadge :label="PROFILE_LABELS[user.profile]" color="blue" />
+            <StatusBadge :label="user.permissionProfileName ?? '—'" color="blue" />
           </div>
           <div class="table-grid-cell">
             <StatusBadge :label="user.active ? 'Ativo' : 'Inativo'" :color="user.active ? 'green' : 'red'" />
@@ -102,35 +92,27 @@ import {
   type UserListItem,
   type UserCounts,
   type Page as ApiPage,
-  type Profile,
 } from '@/api/users'
-
-const PROFILE_LABELS: Record<Profile, string> = {
-  ADMIN: 'Admin',
-  MANAGER: 'Gerente',
-  SALES: 'Vendedor',
-  VIEWER: 'Visualizador',
-}
 
 const router = useRouter()
 
-const filtros = reactive({ busca: '', profile: '', active: '' })
+const filtros = reactive({ busca: '', active: '' })
 const pagina = ref<ApiPage<UserListItem>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
 const counts = ref<UserCounts | null>(null)
-const sortField = ref<'name' | 'profile' | null>(null)
+const sortField = ref<'name' | null>(null)
 const sortDir = ref<'asc' | 'desc'>('asc')
 const erro = ref('')
 
 const countLabel = computed(() => (counts.value ? `${counts.value.total} usuários cadastrados` : undefined))
 
-function sortIcon(field: 'name' | 'profile') {
+function sortIcon(field: 'name') {
   if (sortField.value !== field) {
     return '⇅'
   }
   return sortDir.value === 'asc' ? '▲' : '▼'
 }
 
-function toggleSort(field: 'name' | 'profile') {
+function toggleSort(field: 'name') {
   if (sortField.value === field) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   } else {
@@ -145,7 +127,6 @@ async function carregar(page: number) {
   try {
     pagina.value = await listUsers({
       search: filtros.busca || undefined,
-      profile: (filtros.profile || undefined) as Profile | undefined,
       active: filtros.active === '' ? undefined : filtros.active === 'true',
       sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,

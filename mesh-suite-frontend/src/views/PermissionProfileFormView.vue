@@ -1,0 +1,189 @@
+<template>
+  <AppShell :title="modoEdicao ? 'Editar Perfil de Permissão' : 'Novo Perfil de Permissão'">
+    <form class="form" @submit.prevent="salvar">
+      <section class="card">
+        <h2>Dados do Perfil</h2>
+        <div class="grid grid-2">
+          <div>
+            <label class="field-label">Nome do Perfil *</label>
+            <input v-model="form.name" data-test="nome" placeholder="Ex: Supervisor de Vendas" />
+            <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
+          </div>
+          <div>
+            <label class="field-label">Descrição</label>
+            <input v-model="form.description" data-test="descricao" placeholder="Descreva as responsabilidades deste perfil..." />
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Permissões por Módulo</h2>
+        <table class="tabela-permissoes">
+          <thead>
+            <tr>
+              <th></th>
+              <th v-for="a in ACTIONS" :key="a">{{ ACTION_LABELS[a] }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in MODULES" :key="m">
+              <td>{{ MODULE_LABELS[m] }}</td>
+              <td v-for="a in ACTIONS" :key="a">
+                <input
+                  type="checkbox"
+                  :checked="isChecked(m, a)"
+                  :data-test="`perm-${m}-${a}`"
+                  @change="toggleGrant(m, a)"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
+
+      <div class="actions">
+        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
+        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Perfil</button>
+      </div>
+    </form>
+  </AppShell>
+</template>
+
+<script setup lang="ts">
+import { reactive, ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppShell from '@/components/AppShell.vue'
+import {
+  getPermissionProfile,
+  createPermissionProfile,
+  updatePermissionProfile,
+  type PermissionProfileRequest,
+  type ModuleName,
+  type ActionName,
+} from '@/api/permissionProfiles'
+
+const MODULES: ModuleName[] = ['CUSTOMER', 'PRODUCT', 'ORDER', 'USER', 'PURCHASE', 'STOCK', 'PAYABLE', 'SALE', 'PURCHASE_INVOICE']
+const MODULE_LABELS: Record<ModuleName, string> = {
+  CUSTOMER: 'Clientes',
+  PRODUCT: 'Produtos',
+  ORDER: 'Pedidos',
+  USER: 'Usuários',
+  PURCHASE: 'Compras',
+  STOCK: 'Estoque',
+  PAYABLE: 'Contas a Pagar',
+  SALE: 'Vendas',
+  PURCHASE_INVOICE: 'Notas de Entrada',
+}
+const ACTIONS: ActionName[] = ['VIEW', 'CREATE', 'EDIT', 'DELETE']
+const ACTION_LABELS: Record<ActionName, string> = {
+  VIEW: 'Visualizar',
+  CREATE: 'Criar',
+  EDIT: 'Editar',
+  DELETE: 'Excluir',
+}
+
+const route = useRoute()
+const router = useRouter()
+
+const modoEdicao = computed(() => typeof route.params.id === 'string')
+
+function novoFormulario(): PermissionProfileRequest {
+  return { name: '', description: '', grants: [] }
+}
+
+const form = reactive<PermissionProfileRequest>(novoFormulario())
+const erros = reactive<{ name?: string }>({})
+const erroGeral = ref('')
+const salvando = ref(false)
+
+function isChecked(module: ModuleName, action: ActionName) {
+  return form.grants.some((g) => g.module === module && g.action === action)
+}
+
+function toggleGrant(module: ModuleName, action: ActionName) {
+  const index = form.grants.findIndex((g) => g.module === module && g.action === action)
+  if (index >= 0) {
+    form.grants.splice(index, 1)
+  } else {
+    form.grants.push({ module, action })
+  }
+}
+
+onMounted(async () => {
+  const id = route.params.id
+  if (typeof id === 'string') {
+    try {
+      const perfil = await getPermissionProfile(id)
+      form.name = perfil.name
+      form.description = perfil.description ?? ''
+      form.grants = [...perfil.grants]
+    } catch {
+      erroGeral.value = 'Não foi possível carregar os dados do perfil.'
+    }
+  }
+})
+
+function validar(): boolean {
+  erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
+  return !erros.name
+}
+
+async function salvar() {
+  erroGeral.value = ''
+  if (!validar()) {
+    return
+  }
+  salvando.value = true
+  try {
+    const id = route.params.id
+    const payload: PermissionProfileRequest = { name: form.name, description: form.description, grants: form.grants }
+    if (typeof id === 'string') {
+      await updatePermissionProfile(id, payload)
+    } else {
+      await createPermissionProfile(payload)
+    }
+    router.push({ name: 'permissoes' })
+  } catch (err: any) {
+    if (err?.response?.status === 409) {
+      erroGeral.value = 'Já existe um perfil de permissão cadastrado com este nome.'
+    } else if (err?.response?.status === 403) {
+      erroGeral.value = 'Você não tem permissão para executar esta ação.'
+    } else if (err?.response?.status === 400) {
+      erroGeral.value = err.response.data?.mensagem ?? 'Verifique os dados informados.'
+    } else {
+      erroGeral.value = 'Não foi possível salvar. Tente novamente em instantes.'
+    }
+  } finally {
+    salvando.value = false
+  }
+}
+
+function cancelar() {
+  router.push({ name: 'permissoes' })
+}
+</script>
+
+<style scoped>
+.form { display: flex; flex-direction: column; gap: 12px; font-family: var(--pm-font); }
+.card { background: var(--pm-white); border: 1px solid var(--pm-border-light); border-radius: 12px; padding: 16px; }
+.card h2 { font-size: 14px; font-weight: 700; color: var(--pm-text-dark); margin: 0 0 12px; }
+.grid { display: grid; gap: 0 14px; margin-bottom: 10px; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.field-label { display: block; font-size: 12px; color: var(--pm-text-mid); margin-bottom: 4px; }
+input {
+  width: 100%; box-sizing: border-box; background: var(--pm-white); border: 1px solid var(--pm-border-light);
+  border-radius: 8px; padding: 8px 10px; color: var(--pm-text-dark); font-size: 13px; font-family: var(--pm-font);
+}
+.field-error { color: var(--pm-error); font-size: 12px; margin: 4px 0 0; }
+.error-geral { color: var(--pm-error); font-size: 14px; }
+.tabela-permissoes { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
+.tabela-permissoes th, .tabela-permissoes td { text-align: center; padding: 6px 8px; border-top: 1px solid var(--pm-border-light); }
+.tabela-permissoes td:first-child { text-align: left; font-weight: 600; color: var(--pm-text-dark); }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }
+.btn-primary, .btn-secondary { border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 600; font-family: var(--pm-font); cursor: pointer; }
+.btn-primary { background: var(--pm-accent); color: var(--pm-white); border: none; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: var(--pm-white); color: var(--pm-text-dark); border: 1px solid var(--pm-border-light); }
+</style>

@@ -8,15 +8,17 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.UUID;
 
 public record UserRequest(
         @NotBlank String name,
         @NotBlank @Email String email,
         String phone,
         @NotNull Role role,
-        @NotNull Profile profile,
+        Profile profile,
         boolean active,
         String password,
         String confirmPassword,
-        List<@Valid PermissionDto> permissions) {
+        List<@Valid PermissionDto> permissions,
+        UUID permissionProfileId) {
 }

@@ -130,7 +130,7 @@ const navGroups: NavGroup[] = [
     items: [
       { icon: '🏢', label: 'Empresa', route: null },
       { icon: '👤', label: 'Usuários', route: '/usuarios' },
-      { icon: '🔒', label: 'Permissões', route: null },
+      { icon: '🔒', label: 'Permissões', route: '/permissoes' },
     ],
   },
 ]

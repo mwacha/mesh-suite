@@ -9,5 +9,7 @@ public record UserListItemResponse(
         String name,
         String email,
         Profile profile,
-        boolean active) {
+        boolean active,
+        UUID permissionProfileId,
+        String permissionProfileName) {
 }

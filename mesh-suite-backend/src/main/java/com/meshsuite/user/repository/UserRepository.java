@@ -16,6 +16,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     Optional<User> findByEmail(String email);
     List<User> findByRoleOrderByName(Role role);
     long countByActive(boolean active);
+    long countByPermissionProfileId(UUID permissionProfileId);
 
     @Query("SELECT COUNT(u) > 0 FROM User u JOIN u.permissions p " +
             "WHERE u.id = :userId AND p.module = :module AND p.action = :action")

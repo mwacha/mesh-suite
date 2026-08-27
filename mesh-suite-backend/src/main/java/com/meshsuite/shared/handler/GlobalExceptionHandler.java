@@ -219,4 +219,22 @@ public class GlobalExceptionHandler {
             com.meshsuite.paymentmethod.exception.PaymentMethodValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.permissionprofile.exception.PermissionProfileNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePermissionProfileNotFound(
+            com.meshsuite.permissionprofile.exception.PermissionProfileNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.permissionprofile.exception.DuplicatePermissionProfileNameException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicatePermissionProfileName(
+            com.meshsuite.permissionprofile.exception.DuplicatePermissionProfileNameException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.permissionprofile.exception.PermissionProfileValidationException.class)
+    public ResponseEntity<Map<String, String>> handlePermissionProfileValidation(
+            com.meshsuite.permissionprofile.exception.PermissionProfileValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }
