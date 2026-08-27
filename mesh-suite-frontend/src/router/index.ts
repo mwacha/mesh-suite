@@ -77,9 +77,9 @@ const router = createRouter({
     { path: '/compras/:id/nota-fiscal', name: 'compras-nota-fiscal', component: PurchaseInvoiceFormView },
     { path: '/notas-fiscais-entrada', name: 'notas-fiscais-entrada', component: PurchaseInvoicesListView },
     { path: '/contas-a-pagar', name: 'contas-a-pagar', component: AccountsPayableListView },
-    { path: '/formas-pagamento', name: 'formas-pagamento', component: PaymentMethodsListView },
-    { path: '/formas-pagamento/novo', name: 'formas-pagamento-novo', component: PaymentMethodFormView },
-    { path: '/formas-pagamento/:id/editar', name: 'formas-pagamento-editar', component: PaymentMethodFormView },
+    { path: '/formas-recebimento', name: 'formas-recebimento', component: PaymentMethodsListView },
+    { path: '/formas-recebimento/novo', name: 'formas-recebimento-novo', component: PaymentMethodFormView },
+    { path: '/formas-recebimento/:id/editar', name: 'formas-recebimento-editar', component: PaymentMethodFormView },
   ],
 })
 

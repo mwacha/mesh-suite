@@ -7,6 +7,7 @@ import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
 import com.meshsuite.auth.exception.PermissionDeniedException;
 import com.meshsuite.auth.service.AuthContextService;
+import com.meshsuite.paymentmethod.domain.enums.PaymentMethodType;
 import com.meshsuite.paymentmethod.dto.PaymentMethodInstallmentInput;
 import com.meshsuite.paymentmethod.dto.PaymentMethodRequest;
 import com.meshsuite.paymentmethod.exception.DuplicatePaymentMethodDescriptionException;
@@ -75,7 +76,13 @@ class PaymentMethodServiceTest extends AbstractIntegrationTest {
     }
 
     private PaymentMethodRequest request(String description, Boolean active, List<PaymentMethodInstallmentInput> installments) {
-        return new PaymentMethodRequest(description, active, installments);
+        int max = installments == null ? 1 : Math.max(1, installments.size());
+        return request(description, PaymentMethodType.BOLETO, active, max, installments);
+    }
+
+    private PaymentMethodRequest request(String description, PaymentMethodType type, Boolean active,
+            Integer maxInstallments, List<PaymentMethodInstallmentInput> installments) {
+        return new PaymentMethodRequest(description, type, null, active, maxInstallments, null, null, installments);
     }
 
     private List<PaymentMethodInstallmentInput> aVista() {
@@ -136,11 +143,52 @@ class PaymentMethodServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rejectsEmptyInstallmentList() {
+    void rejectsInstallmentListLongerThanTheDeclaredMaximum() {
         setUpTenant("aurora-pm");
 
-        assertThatThrownBy(() -> paymentMethodService.create(TenantContext.get(), request("Vazio", true, List.of())))
+        assertThatThrownBy(() -> paymentMethodService.create(TenantContext.get(),
+                request("Curto demais", PaymentMethodType.DUPLICATA, true, 2, parcelado3x())))
                 .isInstanceOf(PaymentMethodValidationException.class);
+    }
+
+    @Test
+    void createsPaymentMethodWithoutInstallments() {
+        setUpTenant("aurora-pm");
+
+        var criado = paymentMethodService.create(TenantContext.get(),
+                request("Cartão Crédito", PaymentMethodType.CARD, true, 12, null));
+
+        assertThat(criado.installments()).isEmpty();
+        assertThat(criado.type()).isEqualTo(PaymentMethodType.CARD);
+        assertThat(criado.maxInstallments()).isEqualTo(12);
+    }
+
+    @Test
+    void persistsTypeNotesAndConditionFields() {
+        setUpTenant("aurora-pm");
+        var request = new PaymentMethodRequest("Cartão Crédito", PaymentMethodType.CARD, "Bandeiras próprias", true,
+                12, new BigDecimal("2.50"), 30, null);
+
+        var criado = paymentMethodService.create(TenantContext.get(), request);
+        var buscado = paymentMethodService.findById(criado.id());
+
+        assertThat(buscado.type()).isEqualTo(PaymentMethodType.CARD);
+        assertThat(buscado.notes()).isEqualTo("Bandeiras próprias");
+        assertThat(buscado.maxInstallments()).isEqualTo(12);
+        assertThat(buscado.interestRate()).isEqualByComparingTo("2.50");
+        assertThat(buscado.settlementDays()).isEqualTo(30);
+    }
+
+    @Test
+    void updateKeepsStoredInstallmentsWhenTheRequestOmitsThem() {
+        setUpTenant("aurora-pm");
+        var criado = paymentMethodService.create(TenantContext.get(), request("30/60/90", true, parcelado3x()));
+
+        var atualizado = paymentMethodService.update(criado.id(),
+                request("30/60/90", PaymentMethodType.DUPLICATA, true, 3, null));
+
+        assertThat(atualizado.installments()).hasSize(3);
+        assertThat(atualizado.type()).isEqualTo(PaymentMethodType.DUPLICATA);
     }
 
     @Test
@@ -171,11 +219,47 @@ class PaymentMethodServiceTest extends AbstractIntegrationTest {
         paymentMethodService.create(TenantContext.get(), request("30/60/90", true, parcelado3x()));
         paymentMethodService.create(TenantContext.get(), request("À Vista", false, aVista()));
 
-        var ativas = paymentMethodService.list(null, true, PageRequest.of(0, 10));
+        var ativas = paymentMethodService.list(null, null, true, PageRequest.of(0, 10));
         assertThat(ativas.getContent()).extracting("description").containsExactly("30/60/90");
 
-        var busca = paymentMethodService.list("vista", null, PageRequest.of(0, 10));
+        var busca = paymentMethodService.list("vista", null, null, PageRequest.of(0, 10));
         assertThat(busca.getContent()).extracting("description").containsExactly("À Vista");
+    }
+
+    @Test
+    void listFiltersByType() {
+        setUpTenant("aurora-pm");
+        paymentMethodService.create(TenantContext.get(), request("Pix", PaymentMethodType.PIX, true, 1, null));
+        paymentMethodService.create(TenantContext.get(), request("Cartão Crédito", PaymentMethodType.CARD, true, 12, null));
+
+        var cartoes = paymentMethodService.list(null, PaymentMethodType.CARD, null, PageRequest.of(0, 10));
+
+        assertThat(cartoes.getContent()).extracting("description").containsExactly("Cartão Crédito");
+    }
+
+    @Test
+    void summaryCarriesTypeMaxAndInstallmentDays() {
+        setUpTenant("aurora-pm");
+        paymentMethodService.create(TenantContext.get(), request("30/60/90", true, parcelado3x()));
+
+        var resumo = paymentMethodService.list(null, null, null, PageRequest.of(0, 10)).getContent().get(0);
+
+        assertThat(resumo.installmentDays()).containsExactly(30, 60, 90);
+        assertThat(resumo.installmentsCount()).isEqualTo(3);
+        assertThat(resumo.maxInstallments()).isEqualTo(3);
+    }
+
+    @Test
+    void countsSplitsActiveAndInactive() {
+        setUpTenant("aurora-pm");
+        paymentMethodService.create(TenantContext.get(), request("30/60/90", true, parcelado3x()));
+        paymentMethodService.create(TenantContext.get(), request("À Vista", false, aVista()));
+
+        var counts = paymentMethodService.counts();
+
+        assertThat(counts.total()).isEqualTo(2);
+        assertThat(counts.active()).isEqualTo(1);
+        assertThat(counts.inactive()).isEqualTo(1);
     }
 
     @Test

@@ -1,79 +1,72 @@
 <template>
-  <AppShell :title="modoEdicao ? 'Editar Forma de Pagamento' : 'Nova Forma de Pagamento'">
+  <AppShell :title="modoEdicao ? 'Editar Forma de Recebimento' : 'Nova Forma de Recebimento'">
+    <PageHeader :title="modoEdicao ? 'Edição de Forma de Recebimento' : 'Cadastro de Forma de Recebimento'" />
+
     <form class="form" @submit.prevent="salvar">
       <section class="card">
-        <h2>Dados Gerais</h2>
+        <h2>Informações Gerais</h2>
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">Descrição *</label>
-            <input v-model="form.description" data-test="descricao" placeholder="Ex: 30/60/90" />
-            <p v-if="erros.description" class="field-error">{{ erros.description }}</p>
-          </div>
-          <div>
-            <label class="field-label">Status</label>
-            <div class="toggle-pair">
-              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': form.active }" @click="form.active = true">Ativo</button>
-              <button type="button" class="toggle-btn" :class="{ 'toggle-btn--ativo': !form.active }" @click="form.active = false">Inativo</button>
-            </div>
-          </div>
+          <TextField
+            v-model="form.description"
+            label="Nome da forma"
+            required
+            :error="erros.description"
+            placeholder="Ex: Cartão Crédito"
+            test-id="descricao"
+            @blur="validarNome"
+          />
+          <SelectField
+            v-model="form.type"
+            label="Tipo"
+            required
+            :error="erros.type"
+            test-id="tipo"
+          >
+            <option value="">Selecione o tipo...</option>
+            <option v-for="(rotulo, valor) in PAYMENT_METHOD_TYPE_LABEL" :key="valor" :value="valor">{{ rotulo }}</option>
+          </SelectField>
         </div>
+        <TextField
+          v-model="form.notes"
+          label="Descrição"
+          placeholder="Descrição opcional..."
+          test-id="observacao"
+        />
       </section>
 
       <section class="card">
-        <h2>Parcelas</h2>
-        <table class="tabela-parcelas">
-          <thead>
-            <tr>
-              <th>Parcela</th>
-              <th>Prazo (dias)</th>
-              <th>Percentual (%)</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(parcela, index) in parcelas" :key="index">
-              <td>{{ index + 1 }}</td>
-              <td>
-                <input
-                  v-model.number="parcela.daysDue"
-                  type="number"
-                  min="0"
-                  :data-test="`parcela-dias-${index}`"
-                />
-              </td>
-              <td>
-                <input
-                  v-model.number="parcela.percentage"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  :data-test="`parcela-percentual-${index}`"
-                />
-              </td>
-              <td>
-                <button
-                  type="button"
-                  class="btn-remover"
-                  :data-test="`remover-parcela-${index}`"
-                  :disabled="parcelas.length === 1"
-                  @click="removerParcela(index)"
-                >
-                  ✕
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" class="btn-add-parcela" data-test="adicionar-parcela" @click="adicionarParcela">+ Adicionar Parcela</button>
-        <p class="hint">Total: {{ totalPercentual.toFixed(2) }}%</p>
+        <h2>Condições</h2>
+        <div class="grid grid-3">
+          <div>
+            <label class="field-label">Máx. de parcelas<span class="required-mark">*</span></label>
+            <input v-model.number="form.maxInstallments" type="number" min="1" placeholder="Ex: 12" data-test="max-parcelas" />
+            <p v-if="erros.maxInstallments" class="field-error">⚠️ {{ erros.maxInstallments }}</p>
+          </div>
+          <div>
+            <label class="field-label">Taxa / juros (%)</label>
+            <input v-model.number="form.interestRate" type="number" step="0.01" min="0" placeholder="0,00%" data-test="taxa-juros" />
+          </div>
+          <div>
+            <label class="field-label">Prazo de compensação (dias)</label>
+            <input v-model.number="form.settlementDays" type="number" min="0" placeholder="Ex: 1" data-test="prazo-compensacao" />
+          </div>
+        </div>
+
+        <div class="status-bloco">
+          <label class="status-label">Status</label>
+          <SegmentedControl
+            :model-value="form.active ? 'ATIVO' : 'INATIVO'"
+            :options="statusOptions"
+            variant="status"
+            test-id="status"
+            @update:model-value="(v) => (form.active = v === 'ATIVO')"
+          />
+        </div>
       </section>
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
 
-      <div class="actions">
-        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
-        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Forma de Pagamento</button>
-      </div>
+      <FormActions :saving="salvando" save-label="Salvar Forma" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
@@ -82,12 +75,17 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import TextField from '@/components/TextField.vue'
+import SelectField from '@/components/SelectField.vue'
+import SegmentedControl, { type SegmentedOption } from '@/components/SegmentedControl.vue'
+import FormActions from '@/components/FormActions.vue'
 import {
   getPaymentMethod,
   createPaymentMethod,
   updatePaymentMethod,
+  PAYMENT_METHOD_TYPE_LABEL,
   type PaymentMethodRequest,
-  type PaymentMethodInstallmentInput,
 } from '@/api/paymentMethods'
 
 const route = useRoute()
@@ -95,34 +93,37 @@ const router = useRouter()
 
 const modoEdicao = computed(() => typeof route.params.id === 'string')
 
-function novoFormulario(): PaymentMethodRequest {
+const statusOptions: SegmentedOption[] = [
+  { value: 'ATIVO', label: 'Ativo' },
+  { value: 'INATIVO', label: 'Inativo' },
+]
+
+interface FormularioFormaRecebimento {
+  description: string
+  type: PaymentMethodRequest['type']
+  notes: string
+  active: boolean
+  maxInstallments: number
+  interestRate: number | null
+  settlementDays: number | null
+}
+
+function novoFormulario(): FormularioFormaRecebimento {
   return {
     description: '',
+    type: '',
+    notes: '',
     active: true,
-    installments: [],
+    maxInstallments: 1,
+    interestRate: null,
+    settlementDays: null,
   }
 }
 
-const form = reactive<PaymentMethodRequest>(novoFormulario())
-const parcelas = ref<PaymentMethodInstallmentInput[]>([{ daysDue: 0, percentage: 100 }])
-const erros = reactive<{ description?: string }>({})
+const form = reactive<FormularioFormaRecebimento>(novoFormulario())
+const erros = reactive<{ description?: string; type?: string; maxInstallments?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
-
-const totalPercentual = computed(() =>
-  parcelas.value.reduce((total, p) => total + (Number(p.percentage) || 0), 0),
-)
-
-function adicionarParcela() {
-  parcelas.value.push({ daysDue: 0, percentage: 0 })
-}
-
-function removerParcela(index: number) {
-  if (parcelas.value.length === 1) {
-    return
-  }
-  parcelas.value.splice(index, 1)
-}
 
 onMounted(async () => {
   const id = route.params.id
@@ -130,31 +131,38 @@ onMounted(async () => {
     try {
       const forma = await getPaymentMethod(id)
       form.description = forma.description
+      form.type = forma.type ?? ''
+      form.notes = forma.notes ?? ''
       form.active = forma.active
-      parcelas.value = forma.installments.map((i) => ({ daysDue: i.daysDue, percentage: i.percentage }))
+      form.maxInstallments = forma.maxInstallments
+      form.interestRate = forma.interestRate
+      form.settlementDays = forma.settlementDays
     } catch {
-      erroGeral.value = 'Não foi possível carregar os dados da forma de pagamento.'
+      erroGeral.value = 'Não foi possível carregar os dados da forma de recebimento.'
     }
   }
 })
 
-function validar(): boolean {
+function validarNome() {
   erros.description = form.description.trim() ? undefined : 'Campo obrigatório'
-  if (!erros.description && Math.abs(totalPercentual.value - 100) > 0.01) {
-    erroGeral.value = 'A soma dos percentuais das parcelas deve ser igual a 100%'
-    return false
-  }
-  return !erros.description
+}
+
+function validar(): boolean {
+  validarNome()
+  erros.type = form.type ? undefined : 'Campo obrigatório'
+  erros.maxInstallments = Number(form.maxInstallments) >= 1 ? undefined : 'Informe ao menos 1 parcela'
+  return !erros.description && !erros.type && !erros.maxInstallments
 }
 
 function paraPayload(): PaymentMethodRequest {
   return {
     description: form.description,
+    type: form.type,
+    notes: form.notes.trim() || undefined,
     active: form.active,
-    installments: parcelas.value.map(({ daysDue, percentage }) => ({
-      daysDue: Number(daysDue),
-      percentage: Number(percentage),
-    })),
+    maxInstallments: Number(form.maxInstallments),
+    interestRate: form.interestRate ?? null,
+    settlementDays: form.settlementDays ?? null,
   }
 }
 
@@ -172,10 +180,10 @@ async function salvar() {
     } else {
       await createPaymentMethod(payload)
     }
-    router.push({ name: 'formas-pagamento' })
+    router.push({ name: 'formas-recebimento' })
   } catch (err: any) {
     if (err?.response?.status === 409) {
-      erroGeral.value = 'Já existe uma forma de pagamento cadastrada com esta descrição.'
+      erroGeral.value = 'Já existe uma forma de recebimento cadastrada com este nome.'
     } else if (err?.response?.status === 403) {
       erroGeral.value = 'Você não tem permissão para executar esta ação.'
     } else if (err?.response?.status === 400) {
@@ -189,7 +197,7 @@ async function salvar() {
 }
 
 function cancelar() {
-  router.push({ name: 'formas-pagamento' })
+  router.push({ name: 'formas-recebimento' })
 }
 </script>
 
@@ -209,7 +217,7 @@ function cancelar() {
 }
 
 .card h2 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--pm-text-dark);
   margin: 0 0 12px;
@@ -218,22 +226,30 @@ function cancelar() {
 .grid {
   display: grid;
   gap: 0 14px;
-  margin-bottom: 10px;
 }
 
 .grid-2 {
   grid-template-columns: 1fr 1fr;
 }
 
+.grid-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .field-label {
   display: block;
   font-size: 12px;
-  color: var(--pm-text-mid);
+  font-weight: 600;
+  color: var(--pm-text-dark);
   margin-bottom: 4px;
 }
 
-input,
-select {
+.required-mark {
+  color: var(--pm-error);
+  margin-left: 2px;
+}
+
+input {
   width: 100%;
   box-sizing: border-box;
   background: var(--pm-white);
@@ -254,112 +270,17 @@ select {
 .error-geral {
   color: var(--pm-error);
   font-size: 14px;
+  margin: 0;
 }
 
-.toggle-pair {
-  display: flex;
-  gap: 6px;
+.status-bloco {
+  margin-top: 2px;
 }
 
-.toggle-btn {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.toggle-btn--ativo {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border-color: var(--pm-accent);
-}
-
-.tabela-parcelas {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  margin-bottom: 10px;
-}
-
-.tabela-parcelas th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--pm-text-mid);
-  background: var(--pm-bg);
-  padding: 6px 10px;
-}
-
-.tabela-parcelas td {
-  padding: 6px 10px;
-  border-top: 1px solid var(--pm-border-light);
-  color: var(--pm-text-dark);
-}
-
-.btn-remover {
-  border: none;
-  background: none;
-  color: var(--pm-error);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.btn-remover:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.btn-add-parcela {
-  background: none;
-  border: 1.5px dashed var(--pm-accent);
-  color: var(--pm-accent);
-  border-radius: 8px;
-  padding: 6px 14px;
+.status-label {
+  display: block;
   font-size: 12px;
-  cursor: pointer;
-}
-
-.hint {
-  font-size: 11px;
   color: var(--pm-text-muted);
-  margin: 8px 0 0;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.btn-primary,
-.btn-secondary {
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border: none;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border: 1px solid var(--pm-border-light);
+  margin-bottom: 5px;
 }
 </style>

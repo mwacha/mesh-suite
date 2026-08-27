@@ -1,6 +1,8 @@
 package com.meshsuite.paymentmethod.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
+import com.meshsuite.paymentmethod.domain.enums.PaymentMethodType;
+import com.meshsuite.paymentmethod.dto.PaymentMethodCountsResponse;
 import com.meshsuite.paymentmethod.dto.PaymentMethodRequest;
 import com.meshsuite.paymentmethod.dto.PaymentMethodResponse;
 import com.meshsuite.paymentmethod.dto.PaymentMethodSummaryResponse;
@@ -27,9 +29,15 @@ public class PaymentMethodController {
     @GetMapping
     public Page<PaymentMethodSummaryResponse> list(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) PaymentMethodType tipo,
             @RequestParam(required = false) Boolean ativo,
             @PageableDefault(size = 10, sort = "description") Pageable pageable) {
-        return paymentMethodService.list(busca, ativo, pageable);
+        return paymentMethodService.list(busca, tipo, ativo, pageable);
+    }
+
+    @GetMapping("/counts")
+    public PaymentMethodCountsResponse counts() {
+        return paymentMethodService.counts();
     }
 
     @GetMapping("/{id}")

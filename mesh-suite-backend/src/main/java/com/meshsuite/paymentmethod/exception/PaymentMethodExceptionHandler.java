@@ -17,6 +17,6 @@ public class PaymentMethodExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("mensagem", "Já existe uma forma de pagamento cadastrada com esta descrição"));
+                .body(Map.of("mensagem", "Já existe uma forma de recebimento cadastrada com este nome"));
     }
 }

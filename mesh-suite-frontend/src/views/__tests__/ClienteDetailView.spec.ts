@@ -52,21 +52,21 @@ describe('ClienteDetailView', () => {
     expect((wrapper.find('input[readonly]').element as HTMLInputElement).value).toBe('Mercado Silva Ltda')
   })
 
-  it('shows the linked forma de pagamento description', async () => {
+  it('shows the linked forma de recebimento description', async () => {
     vi.mocked(partnersApi.getPartner).mockResolvedValue({
       ...parceiroCompleto, paymentMethodId: 'pm-1', paymentMethodDescription: 'À Vista',
     })
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    expect((wrapper.find('[data-test="forma-pagamento"]').element as HTMLInputElement).value).toBe('À Vista')
+    expect((wrapper.find('[data-test="forma-recebimento"]').element as HTMLInputElement).value).toBe('À Vista')
   })
 
-  it('shows a placeholder when no forma de pagamento is linked', async () => {
+  it('shows a placeholder when no forma de recebimento is linked', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()
 
-    expect((wrapper.find('[data-test="forma-pagamento"]').element as HTMLInputElement).value).toBe('—')
+    expect((wrapper.find('[data-test="forma-recebimento"]').element as HTMLInputElement).value).toBe('—')
   })
 
   it('filters the rail search by customer role', async () => {

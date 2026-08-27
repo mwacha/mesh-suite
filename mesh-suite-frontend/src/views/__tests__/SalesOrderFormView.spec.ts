@@ -88,7 +88,7 @@ describe('SalesOrderFormView', () => {
       totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
     vi.mocked(paymentMethodsApi.listPaymentMethods).mockResolvedValue({
-      content: [{ id: 'pm1', description: 'À vista', active: true, installmentsCount: 1 }],
+      content: [{ id: 'pm1', description: 'À vista', type: 'CASH', active: true, maxInstallments: 1, installmentsCount: 1, installmentDays: [0] }],
       totalElements: 1, totalPages: 1, number: 0, size: 5,
     })
   })

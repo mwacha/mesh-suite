@@ -89,8 +89,8 @@
       <CollapsibleSection title="Condições Comerciais">
         <div class="grid grid-2">
           <div>
-            <label class="field-label">Forma de Pagamento</label>
-            <select v-model="form.paymentMethodId" data-test="forma-pagamento">
+            <label class="field-label">Forma de Recebimento</label>
+            <select v-model="form.paymentMethodId" data-test="forma-recebimento">
               <option :value="null">Selecione...</option>
               <option v-for="forma in formasPagamento" :key="forma.id" :value="forma.id">{{ forma.description }}</option>
             </select>

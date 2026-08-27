@@ -9,4 +9,5 @@ public interface PaymentMethodRepository
         extends JpaRepository<PaymentMethod, UUID>, JpaSpecificationExecutor<PaymentMethod> {
     boolean existsByDescription(String description);
     boolean existsByDescriptionAndIdNot(String description, UUID id);
+    long countByActive(boolean active);
 }
