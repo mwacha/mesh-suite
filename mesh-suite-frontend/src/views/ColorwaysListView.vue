@@ -28,14 +28,20 @@
           <div class="table-grid-col"></div>
         </div>
 
-        <div v-for="colorway in pagina.content" :key="colorway.id" class="table-grid-row" :data-test="`row-${colorway.id}`">
+        <div
+          v-for="colorway in pagina.content"
+          :key="colorway.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${colorway.id}`"
+          @click="editarCorEstampa(colorway.id)"
+        >
           <div class="table-grid-cell table-grid-cell-nome">{{ colorway.name }}</div>
           <div class="table-grid-cell">{{ formatarData(colorway.effectiveDate) }}</div>
           <div class="table-grid-cell">{{ colorway.linkedProducts }} produtos</div>
           <div class="table-grid-cell">
             <StatusBadge :label="colorway.active ? 'Ativo' : 'Inativo'" :color="colorway.active ? 'green' : 'red'" />
           </div>
-          <div class="table-grid-cell">
+          <div class="table-grid-cell" @click.stop>
             <ActionsMenu :items="acoesPara(colorway)" />
           </div>
         </div>
@@ -255,6 +261,15 @@ onMounted(() => {
 .table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
+}
+
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-grid-row-clickable:hover {
+  background: var(--pm-bg);
 }
 
 .table-grid-cell-nome {

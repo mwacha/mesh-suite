@@ -26,7 +26,13 @@
           <div class="table-grid-col"></div>
         </div>
 
-        <div v-for="user in pagina.content" :key="user.id" class="table-grid-row" :data-test="`row-${user.id}`">
+        <div
+          v-for="user in pagina.content"
+          :key="user.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${user.id}`"
+          @click="abrirDetalhe(user)"
+        >
           <div class="table-grid-cell table-grid-cell-nome">{{ user.name }}</div>
           <div class="table-grid-cell">
             <StatusBadge :label="user.permissionProfileName ?? '—'" color="blue" />
@@ -35,7 +41,7 @@
           <div class="table-grid-cell">
             <StatusBadge :label="user.active ? 'Ativo' : 'Inativo'" :color="user.active ? 'green' : 'red'" />
           </div>
-          <div class="table-grid-cell">
+          <div class="table-grid-cell" @click.stop>
             <button type="button" class="btn-permissoes" :data-test="`btn-permissoes-${user.id}`" @click="abrirDetalhe(user)">
               Permissões
             </button>
@@ -433,6 +439,15 @@ onMounted(() => {
 .table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
+}
+
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-grid-row-clickable:hover {
+  background: var(--pm-bg);
 }
 
 .table-grid-cell-nome {

@@ -23,7 +23,13 @@
           <div class="table-grid-col"></div>
         </div>
 
-        <div v-for="perfil in pagina.content" :key="perfil.id" class="table-grid-row">
+        <div
+          v-for="perfil in pagina.content"
+          :key="perfil.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${perfil.id}`"
+          @click="editarPerfil(perfil.id)"
+        >
           <div class="table-grid-cell table-grid-cell-perfil">
             <span class="perfil-icone">🔒</span>
             <span>{{ perfil.name }}</span>
@@ -31,7 +37,7 @@
           <div class="table-grid-cell">{{ perfil.description || '—' }}</div>
           <div class="table-grid-cell">{{ perfil.userCount }}</div>
           <div class="table-grid-cell">{{ perfil.moduleCount }} de 9 módulos</div>
-          <div class="table-grid-cell table-grid-cell-acoes">
+          <div class="table-grid-cell table-grid-cell-acoes" @click.stop>
             <ActionsMenu :items="acoesPara(perfil)" test-id="btn-acoes" trigger-label="Ações" />
           </div>
         </div>
@@ -197,6 +203,15 @@ onMounted(() => {
 .table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
+}
+
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-grid-row-clickable:hover {
+  background: var(--pm-bg);
 }
 
 .table-grid-cell-perfil {

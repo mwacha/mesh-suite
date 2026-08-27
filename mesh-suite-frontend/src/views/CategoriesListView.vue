@@ -28,14 +28,20 @@
           <div class="table-grid-col"></div>
         </div>
 
-        <div v-for="category in pagina.content" :key="category.id" class="table-grid-row" :data-test="`row-${category.id}`">
+        <div
+          v-for="category in pagina.content"
+          :key="category.id"
+          class="table-grid-row table-grid-row-clickable"
+          :data-test="`row-${category.id}`"
+          @click="editarCategoria(category.id)"
+        >
           <div class="table-grid-cell table-grid-cell-nome">{{ category.name }}</div>
           <div class="table-grid-cell">{{ category.parentName ?? '—' }}</div>
           <div class="table-grid-cell">{{ category.linkedProducts }} produtos</div>
           <div class="table-grid-cell">
             <StatusBadge :label="category.active ? 'Ativo' : 'Inativo'" :color="category.active ? 'green' : 'red'" />
           </div>
-          <div class="table-grid-cell">
+          <div class="table-grid-cell" @click.stop>
             <ActionsMenu :items="acoesPara(category)" />
           </div>
         </div>
@@ -250,6 +256,15 @@ onMounted(() => {
 .table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
+}
+
+.table-grid-row-clickable {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-grid-row-clickable:hover {
+  background: var(--pm-bg);
 }
 
 .table-grid-cell-nome {

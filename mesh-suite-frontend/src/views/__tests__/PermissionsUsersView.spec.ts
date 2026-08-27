@@ -88,6 +88,17 @@ describe('PermissionsUsersView', () => {
     expect((wrapper.find('[data-test="perm-CUSTOMER-CREATE"]').element as HTMLInputElement).checked).toBe(false)
   })
 
+  it('opens the Permissões side panel when the row itself is clicked', async () => {
+    const { wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-u1"]').trigger('click')
+    await flushPromises()
+
+    expect(usersApi.getUser).toHaveBeenCalledWith('u1')
+    expect(wrapper.find('[data-test="slide-over"]').exists()).toBe(true)
+  })
+
   it('toggling a checkbox in the panel updates its checked state', async () => {
     const { wrapper } = await mountWithRouter()
     await flushPromises()

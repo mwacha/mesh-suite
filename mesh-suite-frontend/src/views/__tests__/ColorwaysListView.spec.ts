@@ -108,6 +108,18 @@ describe('ColorwaysListView', () => {
     )
   })
 
+  it('navigates to the edit form when the row itself is clicked', async () => {
+    vi.mocked(colorwaysApi.listColorways).mockResolvedValue(paginaCom(colorwayExemplo))
+    const { router, wrapper } = await mountWithRouter()
+    await flushPromises()
+
+    await wrapper.find('[data-test="row-ce-1"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('cores-estampas-editar')
+    expect(router.currentRoute.value.params.id).toBe('ce-1')
+  })
+
   it('navigates to the new-cor-estampa route when the button is clicked', async () => {
     vi.mocked(colorwaysApi.listColorways).mockResolvedValue(paginaCom())
     const { router, wrapper } = await mountWithRouter()
