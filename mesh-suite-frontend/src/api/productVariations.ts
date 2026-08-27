@@ -33,7 +33,7 @@ export interface VariationAxis {
 export interface VariationParentRequest {
   name: string
   sku: string
-  brand: string
+  brandId: string | null
   categoryId: string | null
   salePrice: number
   status: ProductStatus
@@ -48,7 +48,8 @@ export interface VariationParentResponse {
   id: string
   name: string
   sku: string
-  brand: string
+  brandId: string | null
+  brandName: string | null
   categoryId: string | null
   categoryName: string | null
   salePrice: number

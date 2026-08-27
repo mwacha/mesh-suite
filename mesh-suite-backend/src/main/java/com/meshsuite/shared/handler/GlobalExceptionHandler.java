@@ -243,4 +243,22 @@ public class GlobalExceptionHandler {
             com.meshsuite.permissionprofile.exception.PermissionProfileValidationException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.brand.exception.BrandNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleBrandNotFound(
+            com.meshsuite.brand.exception.BrandNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.brand.exception.DuplicateBrandNameException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateBrandName(
+            com.meshsuite.brand.exception.DuplicateBrandNameException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.brand.exception.BrandInUseException.class)
+    public ResponseEntity<Map<String, String>> handleBrandInUse(
+            com.meshsuite.brand.exception.BrandInUseException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }

@@ -16,6 +16,8 @@ import ProductKitFormView from '@/views/ProductKitFormView.vue'
 import ProductVariationFormView from '@/views/ProductVariationFormView.vue'
 import CategoriesListView from '@/views/CategoriesListView.vue'
 import CategoryFormView from '@/views/CategoryFormView.vue'
+import BrandsListView from '@/views/BrandsListView.vue'
+import BrandFormView from '@/views/BrandFormView.vue'
 import ColorwaysListView from '@/views/ColorwaysListView.vue'
 import ColorwayFormView from '@/views/ColorwayFormView.vue'
 import PriceTablesListView from '@/views/PriceTablesListView.vue'
@@ -60,6 +62,9 @@ const router = createRouter({
     { path: '/categorias', name: 'categorias', component: CategoriesListView },
     { path: '/categorias/novo', name: 'categorias-novo', component: CategoryFormView },
     { path: '/categorias/:id/editar', name: 'categorias-editar', component: CategoryFormView },
+    { path: '/marcas', name: 'marcas', component: BrandsListView },
+    { path: '/marcas/novo', name: 'marcas-novo', component: BrandFormView },
+    { path: '/marcas/:id/editar', name: 'marcas-editar', component: BrandFormView },
     { path: '/cores-estampas', name: 'cores-estampas', component: ColorwaysListView },
     { path: '/cores-estampas/novo', name: 'cores-estampas-novo', component: ColorwayFormView },
     { path: '/cores-estampas/:id/editar', name: 'cores-estampas-editar', component: ColorwayFormView },

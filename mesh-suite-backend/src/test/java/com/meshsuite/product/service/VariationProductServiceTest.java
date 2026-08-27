@@ -80,7 +80,7 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
     }
 
     private VariationParentRequest request(String sku, List<VariationChildInput> children) {
-        return new VariationParentRequest("Camiseta Polo", sku, "Marca Alpha", null,
+        return new VariationParentRequest("Camiseta Polo", sku, null, null,
                 new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, children, null, null);
     }
 
@@ -115,7 +115,7 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
         VariationChildInput childInput = new VariationChildInput(
                 null, "V0001-P", null, new BigDecimal("79.90"), null, new BigDecimal("10"), null, null, "M", null,
                 new BigDecimal("2"), null);
-        VariationParentRequest request = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
+        VariationParentRequest request = new VariationParentRequest("Camiseta Polo", "V0001", null, null,
                 new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null, List.of(childInput),
                 new BigDecimal("5"), null);
 
@@ -131,7 +131,7 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
         var axes = List.of(
                 new com.meshsuite.product.dto.VariationAxisInput("Tamanho", List.of("P", "M")),
                 new com.meshsuite.product.dto.VariationAxisInput("Cor", List.of("Branco", "Vermelho")));
-        VariationParentRequest request = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
+        VariationParentRequest request = new VariationParentRequest("Camiseta Polo", "V0001", null, null,
                 new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null,
                 List.of(child(null, "V0001-P", "79.90")), null, axes);
 
@@ -160,7 +160,7 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
         VariationChildInput childInput = new VariationChildInput(null, "2408-40-VERMELHA", null,
                 new BigDecimal("28.25"), null, new BigDecimal("10"), null, null, "40", null, null,
                 List.of("40", "VERMELHA"));
-        VariationParentRequest request = new VariationParentRequest("Calcinha Conforto", "2408", "Linda Brasil", null,
+        VariationParentRequest request = new VariationParentRequest("Calcinha Conforto", "2408", null, null,
                 new BigDecimal("28.25"), ProductStatus.ACTIVE, "Descrição", null, List.of(childInput), null, axes);
 
         var created = variationProductService.create(tenantId, request);
@@ -194,13 +194,13 @@ class VariationProductServiceTest extends AbstractIntegrationTest {
     void updateReplacesTheStoredVariationAxes() {
         UUID tenantId = setUpTenant("aurora");
         var initialAxes = List.of(new com.meshsuite.product.dto.VariationAxisInput("Tamanho", List.of("P")));
-        VariationParentRequest initialRequest = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
+        VariationParentRequest initialRequest = new VariationParentRequest("Camiseta Polo", "V0001", null, null,
                 new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null,
                 List.of(child(null, "V0001-P", "79.90")), null, initialAxes);
         var created = variationProductService.create(tenantId, initialRequest);
 
         var novosAxes = List.of(new com.meshsuite.product.dto.VariationAxisInput("Tamanho", List.of("P", "M", "G")));
-        VariationParentRequest updateRequest = new VariationParentRequest("Camiseta Polo", "V0001", "Marca Alpha", null,
+        VariationParentRequest updateRequest = new VariationParentRequest("Camiseta Polo", "V0001", null, null,
                 new BigDecimal("89.90"), ProductStatus.ACTIVE, "Descrição", null,
                 List.of(child(null, "V0001-P", "79.90"), child(null, "V0001-M", "84.90"), child(null, "V0001-G", "89.90")),
                 null, novosAxes);

@@ -29,15 +29,15 @@ function mountWithRouter() {
 }
 
 const simples = {
-  id: 'p1', name: 'Camiseta Polo', sku: 'P0001', brand: 'Marca Alpha', type: 'PRODUCT' as const,
+  id: 'p1', name: 'Camiseta Polo', sku: 'P0001', brandName: 'Marca Alpha', type: 'PRODUCT' as const,
   salePrice: 59.9, stockQuantity: 10, status: 'ACTIVE' as const, children: [],
 }
 const kit = {
-  id: 'k1', name: 'Kit Combo', sku: 'KIT001', brand: '', type: 'PRODUCT_KIT' as const,
+  id: 'k1', name: 'Kit Combo', sku: 'KIT001', brandName: null, type: 'PRODUCT_KIT' as const,
   salePrice: 99.9, stockQuantity: 0, status: 'ACTIVE' as const, children: [],
 }
 const variacaoPai = {
-  id: 'v1', name: 'Camiseta com Variação', sku: 'V0001', brand: 'Marca Alpha', type: 'VARIATION_PARENT' as const,
+  id: 'v1', name: 'Camiseta com Variação', sku: 'V0001', brandName: 'Marca Alpha', type: 'VARIATION_PARENT' as const,
   salePrice: 79.9, stockQuantity: 0, status: 'ACTIVE' as const,
   children: [{ id: 'v1-p', name: 'Camiseta com Variação', sku: 'V0001-P', salePrice: 79.9, stockQuantity: 5 }],
 }

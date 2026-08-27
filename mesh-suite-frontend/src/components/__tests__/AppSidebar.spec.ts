@@ -201,17 +201,13 @@ describe('AppSidebar', () => {
     const { wrapper } = mountWithRouter()
 
     // items not yet backed by a screen still show, same route:null/inert
-    // pattern used by Empresa/Marcas/Tab. Preços/Permissões.
+    // pattern used by Empresa/Tab. Preços/Permissões.
     await wrapper.find('[data-test="group-catalogo"]').trigger('click')
-    for (const label of ['Marcas']) {
-      expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
-      expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).toContain('nav-item-inert')
-    }
-    // Categorias and Cores / Estampas now route to real screens (Task 3),
+    // Categorias, Marcas and Cores / Estampas now route to real screens,
     // so they're no longer inert. Checked here, while "catalogo" is still
     // the open group -- accordion behavior means opening "cadastros" below
     // would close it again.
-    for (const label of ['Categorias', 'Cores / Estampas']) {
+    for (const label of ['Categorias', 'Marcas', 'Cores / Estampas']) {
       expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
       expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).not.toContain('nav-item-inert')
     }

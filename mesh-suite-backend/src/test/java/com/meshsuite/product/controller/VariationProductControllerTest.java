@@ -81,7 +81,6 @@ class VariationProductControllerTest extends AbstractIntegrationTest {
                 {
                   "name": "Camiseta Polo",
                   "sku": "%s",
-                  "brand": "Marca Alpha",
                   "salePrice": 89.90,
                   "children": [
                     { "sku": "%s-P", "salePrice": 79.90, "size": "P" },
@@ -122,8 +121,7 @@ class VariationProductControllerTest extends AbstractIntegrationTest {
                                 {
                                   "name": "Camiseta Polo",
                                   "sku": "V0001",
-                                  "brand": "Marca Alpha",
-                                  "salePrice": 89.90,
+                                                  "salePrice": 89.90,
                                   "children": [
                                     { "id": "%s", "sku": "V0001-P", "salePrice": 82.90, "size": "P" },
                                     { "sku": "V0001-G", "salePrice": 89.90, "size": "G" }

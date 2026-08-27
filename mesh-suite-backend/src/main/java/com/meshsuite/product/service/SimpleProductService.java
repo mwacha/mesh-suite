@@ -3,6 +3,8 @@ package com.meshsuite.product.service;
 import com.meshsuite.auth.annotation.RequiresPermission;
 import com.meshsuite.auth.domain.enums.Action;
 import com.meshsuite.auth.domain.enums.Module;
+import com.meshsuite.brand.exception.BrandNotFoundException;
+import com.meshsuite.brand.repository.BrandRepository;
 import com.meshsuite.category.exception.CategoryNotFoundException;
 import com.meshsuite.category.repository.CategoryRepository;
 import com.meshsuite.colorway.exception.ColorwayNotFoundException;
@@ -36,13 +38,15 @@ public class SimpleProductService extends AbstractProductTypeService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ColorwayRepository colorwayRepository;
+    private final BrandRepository brandRepository;
 
     public SimpleProductService(ProductRepository productRepository, CategoryRepository categoryRepository,
-                                 ColorwayRepository colorwayRepository) {
+                                 ColorwayRepository colorwayRepository, BrandRepository brandRepository) {
         super(productRepository);
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.colorwayRepository = colorwayRepository;
+        this.brandRepository = brandRepository;
     }
 
     @Override
@@ -109,7 +113,9 @@ public class SimpleProductService extends AbstractProductTypeService {
         product.setName(request.name());
         product.setSku(request.sku());
         product.setBarcode(request.barcode());
-        product.setBrand(request.brand());
+        product.setBrand(request.brandId() != null
+                ? brandRepository.findById(request.brandId()).orElseThrow(BrandNotFoundException::new)
+                : null);
         product.setCategory(request.categoryId() != null
                 ? categoryRepository.findById(request.categoryId()).orElseThrow(CategoryNotFoundException::new)
                 : null);
@@ -134,12 +140,16 @@ public class SimpleProductService extends AbstractProductTypeService {
 
     private ProductListItemResponse toSummary(Product p) {
         return new ProductListItemResponse(
-                p.getId(), p.getName(), p.getSku(), p.getBrand(), p.getSalePrice(), p.getStockQuantity(), p.getStatus());
+                p.getId(), p.getName(), p.getSku(),
+                p.getBrand() != null ? p.getBrand().getName() : null,
+                p.getSalePrice(), p.getStockQuantity(), p.getStatus());
     }
 
     private ProductResponse toResponse(Product p) {
         return new ProductResponse(
-                p.getId(), p.getName(), p.getSku(), p.getBarcode(), p.getBrand(),
+                p.getId(), p.getName(), p.getSku(), p.getBarcode(),
+                p.getBrand() != null ? p.getBrand().getId() : null,
+                p.getBrand() != null ? p.getBrand().getName() : null,
                 p.getCategory() != null ? p.getCategory().getId() : null,
                 p.getCategory() != null ? p.getCategory().getName() : null,
                 p.getColorway() != null ? p.getColorway().getId() : null,

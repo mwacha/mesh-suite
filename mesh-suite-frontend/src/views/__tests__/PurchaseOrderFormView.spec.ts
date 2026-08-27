@@ -38,7 +38,7 @@ const fornecedorBase = {
 const compradorBase = { id: 'b1', name: 'Carlos Comprador' }
 
 const produtoBase = {
-  id: 'p1', name: 'Tecido Algodão', sku: 'P0001', brand: 'Marca Alpha',
+  id: 'p1', name: 'Tecido Algodão', sku: 'P0001',
   salePrice: 25.0, stockQuantity: 100, status: 'ACTIVE' as const,
 }
 

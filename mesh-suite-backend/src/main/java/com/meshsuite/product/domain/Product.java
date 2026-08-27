@@ -1,5 +1,6 @@
 package com.meshsuite.product.domain;
 
+import com.meshsuite.brand.domain.Brand;
 import com.meshsuite.category.domain.Category;
 import com.meshsuite.colorway.domain.Colorway;
 import com.meshsuite.fiscal.domain.FiscalRegistration;
@@ -43,8 +44,9 @@ public class Product {
     @Column(name = "barcode", length = 50)
     private String barcode;
 
-    @Column(length = 100)
-    private String brand;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private Brand brand;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")

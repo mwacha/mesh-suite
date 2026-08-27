@@ -9,7 +9,7 @@ public record ProductListItemResponse(
         UUID id,
         String name,
         String sku,
-        String brand,
+        String brandName,
         BigDecimal salePrice,
         BigDecimal stockQuantity,
         ProductStatus status) {

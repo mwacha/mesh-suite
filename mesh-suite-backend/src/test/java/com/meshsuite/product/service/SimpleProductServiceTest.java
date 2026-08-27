@@ -79,7 +79,7 @@ class SimpleProductServiceTest extends AbstractIntegrationTest {
 
     private ProductRequest request(String sku, BigDecimal salePrice) {
         return new ProductRequest(
-                "Camiseta Polo Masculina", sku, "7891234567890", "Marca Alpha", null, null,
+                "Camiseta Polo Masculina", sku, "7891234567890", null, null, null,
                 salePrice, new BigDecimal("25.00"), ProductStatus.ACTIVE, "Descrição de teste",
                 new BigDecimal("10"), MeasurementUnit.UN, new BigDecimal("2"), new BigDecimal("50"), "M",
                 new BigDecimal("0.300"), new BigDecimal("30"), new BigDecimal("20"), new BigDecimal("2"), null);
@@ -110,7 +110,7 @@ class SimpleProductServiceTest extends AbstractIntegrationTest {
     void createsProductWithAnExplicitSaleMultiple() {
         setUpTenant("aurora");
         ProductRequest request = new ProductRequest(
-                "Camiseta Polo Masculina", "P0001", "7891234567890", "Marca Alpha", null, null,
+                "Camiseta Polo Masculina", "P0001", "7891234567890", null, null, null,
                 new BigDecimal("59.90"), new BigDecimal("25.00"), ProductStatus.ACTIVE, "Descrição de teste",
                 new BigDecimal("10"), MeasurementUnit.UN, new BigDecimal("2"), new BigDecimal("50"), "M",
                 new BigDecimal("0.300"), new BigDecimal("30"), new BigDecimal("20"), new BigDecimal("2"),
