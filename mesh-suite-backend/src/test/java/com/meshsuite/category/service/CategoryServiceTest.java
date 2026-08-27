@@ -11,6 +11,7 @@ import com.meshsuite.product.domain.enums.MeasurementUnit;
 import com.meshsuite.category.dto.CategoryRequest;
 import com.meshsuite.category.exception.CategoryInUseException;
 import com.meshsuite.category.exception.CategoryNotFoundException;
+import com.meshsuite.category.exception.CategoryValidationException;
 import com.meshsuite.category.exception.DuplicateCategoryNameException;
 import com.meshsuite.category.service.CategoryService;
 import com.meshsuite.product.service.SimpleProductService;
@@ -68,7 +69,7 @@ class CategoryServiceTest extends AbstractIntegrationTest {
     }
 
     private CategoryRequest request(String nome) {
-        return new CategoryRequest(nome, "Descrição de teste", null);
+        return new CategoryRequest(nome, "Descrição de teste", null, null);
     }
 
     @Test
@@ -112,7 +113,7 @@ class CategoryServiceTest extends AbstractIntegrationTest {
         var criada = categoryService.create(TenantContext.get(), request("Camisas"));
 
         var atualizada = categoryService.update(criada.id(),
-                new CategoryRequest("Camisas", "Descrição nova", false));
+                new CategoryRequest("Camisas", "Descrição nova", false, null));
 
         assertThat(atualizada.description()).isEqualTo("Descrição nova");
         assertThat(atualizada.active()).isFalse();
@@ -148,10 +149,10 @@ class CategoryServiceTest extends AbstractIntegrationTest {
     @Transactional
     void listFiltersByActive() {
         setUpTenant("aurora-cat");
-        categoryService.create(TenantContext.get(), new CategoryRequest("Camisas", null, true));
-        categoryService.create(TenantContext.get(), new CategoryRequest("Descontinuada", null, false));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Camisas", null, true, null));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Descontinuada", null, false, null));
 
-        var ativas = categoryService.list(null, true, PageRequest.of(0, 10));
+        var ativas = categoryService.list(null, true, null, PageRequest.of(0, 10));
 
         assertThat(ativas.getContent()).extracting("name").containsExactly("Camisas");
     }
@@ -177,7 +178,7 @@ class CategoryServiceTest extends AbstractIntegrationTest {
                 new BigDecimal("119.90"), null, ProductStatus.ACTIVE, null,
                 new BigDecimal("10"), MeasurementUnit.UN, null, null, null, null, null, null, null, null));
 
-        var pagina = categoryService.list(null, null, PageRequest.of(0, 10));
+        var pagina = categoryService.list(null, null, null, PageRequest.of(0, 10));
 
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(camisas.id())).first()
@@ -188,5 +189,93 @@ class CategoryServiceTest extends AbstractIntegrationTest {
         assertThat(pagina.getContent())
                 .filteredOn(c -> c.id().equals(semProdutos.id())).first()
                 .satisfies(c -> assertThat(c.linkedProducts()).isEqualTo(0L));
+    }
+
+    @Test
+    @Transactional
+    void assignsARootCategoryAsParent() {
+        setUpTenant("aurora-cat");
+        var higiene = categoryService.create(TenantContext.get(), request("Higiene Pessoal"));
+
+        var beleza = categoryService.create(TenantContext.get(),
+                new CategoryRequest("Beleza", null, true, higiene.id()));
+
+        assertThat(beleza.parentId()).isEqualTo(higiene.id());
+        assertThat(beleza.parentName()).isEqualTo("Higiene Pessoal");
+    }
+
+    @Test
+    @Transactional
+    void rejectsACategoryAsItsOwnParent() {
+        setUpTenant("aurora-cat");
+        var categoria = categoryService.create(TenantContext.get(), request("Camisas"));
+
+        assertThatThrownBy(() -> categoryService.update(categoria.id(),
+                new CategoryRequest("Camisas", null, true, categoria.id())))
+                .isInstanceOf(CategoryValidationException.class);
+    }
+
+    @Test
+    @Transactional
+    void rejectsANonRootCategoryAsParent() {
+        setUpTenant("aurora-cat");
+        var higiene = categoryService.create(TenantContext.get(), request("Higiene Pessoal"));
+        var beleza = categoryService.create(TenantContext.get(),
+                new CategoryRequest("Beleza", null, true, higiene.id()));
+
+        assertThatThrownBy(() -> categoryService.create(TenantContext.get(),
+                new CategoryRequest("Maquiagem", null, true, beleza.id())))
+                .isInstanceOf(CategoryValidationException.class);
+    }
+
+    @Test
+    @Transactional
+    void rejectsAssigningAParentToACategoryThatAlreadyHasChildren() {
+        setUpTenant("aurora-cat");
+        var higiene = categoryService.create(TenantContext.get(), request("Higiene Pessoal"));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Beleza", null, true, higiene.id()));
+        var alimentos = categoryService.create(TenantContext.get(), request("Alimentos"));
+
+        assertThatThrownBy(() -> categoryService.update(higiene.id(),
+                new CategoryRequest("Higiene Pessoal", null, true, alimentos.id())))
+                .isInstanceOf(CategoryValidationException.class);
+    }
+
+    @Test
+    @Transactional
+    void rejectsDeletingACategoryWithSubcategories() {
+        setUpTenant("aurora-cat");
+        var higiene = categoryService.create(TenantContext.get(), request("Higiene Pessoal"));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Beleza", null, true, higiene.id()));
+
+        assertThatThrownBy(() -> categoryService.delete(higiene.id()))
+                .isInstanceOf(CategoryValidationException.class);
+    }
+
+    @Test
+    @Transactional
+    void countsTotalActiveAndInactiveCategories() {
+        setUpTenant("aurora-cat");
+        categoryService.create(TenantContext.get(), new CategoryRequest("Camisas", null, true, null));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Calças", null, true, null));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Descontinuada", null, false, null));
+
+        var contagens = categoryService.counts();
+
+        assertThat(contagens.total()).isEqualTo(3L);
+        assertThat(contagens.active()).isEqualTo(2L);
+        assertThat(contagens.inactive()).isEqualTo(1L);
+    }
+
+    @Test
+    @Transactional
+    void listFiltersOnlyRootCategories() {
+        setUpTenant("aurora-cat");
+        var higiene = categoryService.create(TenantContext.get(), request("Higiene Pessoal"));
+        categoryService.create(TenantContext.get(), new CategoryRequest("Beleza", null, true, higiene.id()));
+
+        var raizes = categoryService.list(null, null, true, PageRequest.of(0, 10));
+
+        assertThat(raizes.getContent()).extracting("name").containsExactly("Higiene Pessoal");
     }
 }

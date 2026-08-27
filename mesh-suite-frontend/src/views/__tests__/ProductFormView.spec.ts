@@ -148,7 +148,7 @@ describe('ProductFormView', () => {
     const categoriasApi = await import('@/api/categories')
     vi.mocked(categoriasApi.listCategories).mockResolvedValue({
       content: [
-        { id: 'cat-1', name: 'Camisas', description: null, active: true, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
+        { id: 'cat-1', name: 'Camisas', description: null, active: true, parentId: null, parentName: null, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })
@@ -173,7 +173,7 @@ describe('ProductFormView', () => {
     // (simulating it having been deactivated after the produto was linked to it).
     vi.mocked(categoriasApi.listCategories).mockResolvedValue({
       content: [
-        { id: 'cat-active', name: 'Camisas', description: null, active: true, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
+        { id: 'cat-active', name: 'Camisas', description: null, active: true, parentId: null, parentName: null, linkedProducts: 0, createdAt: '2026-01-01T00:00:00Z' },
       ],
       totalElements: 1, totalPages: 1, number: 0, size: 100,
     })

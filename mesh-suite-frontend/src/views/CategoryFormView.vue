@@ -1,48 +1,52 @@
 <template>
   <AppShell :title="modoEdicao ? 'Editar Categoria' : 'Nova Categoria'">
+    <PageHeader :title="modoEdicao ? 'Edição de Categoria' : 'Cadastro de Categoria'" />
+
     <form class="form" @submit.prevent="salvar">
       <section class="card">
         <h2>Informações Gerais</h2>
-        <div>
-          <label class="field-label">Nome *</label>
-          <input v-model="form.name" data-test="nome" placeholder="Ex: Camisas" />
-          <p v-if="erros.name" class="field-error">{{ erros.name }}</p>
-        </div>
-        <div>
-          <label class="field-label">Descrição</label>
-          <textarea v-model="form.description" data-test="descricao" rows="3" placeholder="Descrição opcional..."></textarea>
-        </div>
-        <div>
-          <label class="field-label">Status</label>
-          <div class="status-toggle">
-            <button
-              type="button"
-              class="status-btn"
-              :class="{ 'status-btn-active-ativo': form.active }"
-              data-test="status-ativo"
-              @click="form.active = true"
-            >
-              Ativo
-            </button>
-            <button
-              type="button"
-              class="status-btn"
-              :class="{ 'status-btn-active-inativo': !form.active }"
-              data-test="status-inativo"
-              @click="form.active = false"
-            >
-              Inativo
-            </button>
-          </div>
+        <TextField
+          v-model="form.name"
+          label="Nome da Categoria"
+          required
+          :error="erros.name"
+          placeholder="Ex: Higiene Pessoal"
+          test-id="nome"
+          @blur="validarNome"
+        />
+        <SearchSelect
+          v-model="form.parentId"
+          label="Categoria Pai"
+          :selected-label="parentLabel"
+          :items="parentResults"
+          placeholder="Nenhuma (categoria raiz)"
+          :empty-message="parentSearchError || undefined"
+          :empty-is-error="!!parentSearchError"
+          test-id="categoria-pai"
+          @search="searchCategoriaPai"
+          @select="selectParent"
+        />
+        <TextField
+          v-model="form.description"
+          label="Descrição"
+          placeholder="Descrição opcional da categoria..."
+          test-id="descricao"
+        />
+        <div class="status-bloco">
+          <label class="status-label">Status</label>
+          <SegmentedControl
+            :model-value="form.active ? 'ATIVO' : 'INATIVO'"
+            :options="statusOptions"
+            variant="status"
+            test-id="status"
+            @update:model-value="(v) => (form.active = v === 'ATIVO')"
+          />
         </div>
       </section>
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
 
-      <div class="actions">
-        <button type="button" class="btn-secondary" @click="cancelar">Cancelar</button>
-        <button type="submit" class="btn-primary" :disabled="salvando">Salvar Categoria</button>
-      </div>
+      <FormActions :saving="salvando" save-label="Salvar Categoria" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
@@ -51,10 +55,16 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import TextField from '@/components/TextField.vue'
+import SearchSelect, { type SearchSelectItem } from '@/components/SearchSelect.vue'
+import SegmentedControl, { type SegmentedOption } from '@/components/SegmentedControl.vue'
+import FormActions from '@/components/FormActions.vue'
 import {
   getCategory,
   createCategory,
   updateCategory,
+  listCategories,
   type CategoryRequest,
 } from '@/api/categories'
 
@@ -63,14 +73,35 @@ const router = useRouter()
 
 const modoEdicao = computed(() => typeof route.params.id === 'string')
 
-function novoFormulario(): CategoryRequest {
-  return { name: '', description: '', active: true }
+const statusOptions: SegmentedOption[] = [
+  { value: 'ATIVO', label: 'Ativo' },
+  { value: 'INATIVO', label: 'Inativo' },
+]
+
+interface FormularioCategoria {
+  name: string
+  description: string
+  active: boolean
+  parentId: string | null
 }
 
-const form = reactive<CategoryRequest>(novoFormulario())
+function novoFormulario(): FormularioCategoria {
+  return { name: '', description: '', active: true, parentId: null }
+}
+
+const form = reactive<FormularioCategoria>(novoFormulario())
 const erros = reactive<{ name?: string }>({})
 const erroGeral = ref('')
 const salvando = ref(false)
+
+const parentLabel = ref('')
+const parentResults = ref<SearchSelectItem[]>([])
+const parentSearchError = ref('')
+
+// Uma busca com erro e uma lista genuinamente vazia rendem a mesma lista
+// vazia -- sem isso a busca de categoria pai mostraria silenciosamente
+// "Nenhum resultado" quando a chamada falhou de verdade.
+const SEARCH_FAILED = 'Não foi possível buscar. Verifique sua conexão e tente novamente.'
 
 onMounted(async () => {
   const id = route.params.id
@@ -78,17 +109,53 @@ onMounted(async () => {
     try {
       const category = await getCategory(id)
       form.name = category.name
-      form.description = category.description
-      form.active = category.active
+      form.description = category.description ?? ''
+      form.active = category.active ?? true
+      form.parentId = category.parentId
+      parentLabel.value = category.parentName ?? ''
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados da categoria.'
     }
   }
 })
 
-function validar(): boolean {
+// O wireframe só lista categorias raiz como opção de pai: mantém a hierarquia
+// em dois níveis, e o backend rejeita uma categoria pai que já tenha pai.
+// Categorias raiz inativas continuam aparecendo (ex: "Limpeza" no wireframe).
+async function searchCategoriaPai(query: string) {
+  parentSearchError.value = ''
+  try {
+    const pagina = await listCategories({ busca: query || undefined, raiz: true, size: 20 })
+    parentResults.value = pagina.content
+      .filter((c) => c.id !== route.params.id)
+      .map((c) => ({ id: c.id, label: c.name }))
+  } catch {
+    parentResults.value = []
+    parentSearchError.value = SEARCH_FAILED
+  }
+}
+
+function selectParent(item: SearchSelectItem) {
+  form.parentId = item.id
+  parentLabel.value = item.label
+}
+
+function validarNome() {
   erros.name = form.name.trim() ? undefined : 'Campo obrigatório'
+}
+
+function validar(): boolean {
+  validarNome()
   return !erros.name
+}
+
+function paraPayload(): CategoryRequest {
+  return {
+    name: form.name,
+    description: form.description.trim() || null,
+    active: form.active,
+    parentId: form.parentId,
+  }
 }
 
 async function salvar() {
@@ -99,10 +166,11 @@ async function salvar() {
   salvando.value = true
   try {
     const id = route.params.id
+    const payload = paraPayload()
     if (typeof id === 'string') {
-      await updateCategory(id, form)
+      await updateCategory(id, payload)
     } else {
-      await createCategory(form)
+      await createCategory(payload)
     }
     router.push({ name: 'categorias' })
   } catch (err: any) {
@@ -141,102 +209,26 @@ function cancelar() {
 }
 
 .card h2 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--pm-text-dark);
   margin: 0 0 12px;
 }
 
-.field-label {
-  display: block;
-  font-size: 12px;
-  color: var(--pm-text-mid);
-  margin-bottom: 4px;
-}
-
-input,
-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  padding: 8px 10px;
-  color: var(--pm-text-dark);
-  font-size: 13px;
-  font-family: var(--pm-font);
-  margin-bottom: 10px;
-}
-
-.field-error {
-  color: var(--pm-error);
-  font-size: 12px;
-  margin: -6px 0 10px;
-}
-
-.status-toggle {
-  display: flex;
-  gap: 8px;
-}
-
-.status-btn {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border-radius: 999px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.status-btn-active-ativo {
-  border-color: var(--pm-success);
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.status-btn-active-inativo {
-  border-color: var(--pm-error);
-  background: var(--pm-error-bg);
-  color: var(--pm-error);
-}
-
 .error-geral {
   color: var(--pm-error);
   font-size: 14px;
+  margin: 0;
 }
 
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+.status-bloco {
+  margin-top: 2px;
 }
 
-.btn-primary,
-.btn-secondary {
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--pm-font);
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--pm-accent);
-  color: var(--pm-white);
-  border: none;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--pm-white);
-  color: var(--pm-text-dark);
-  border: 1px solid var(--pm-border-light);
+.status-label {
+  display: block;
+  font-size: 12px;
+  color: var(--pm-text-muted);
+  margin-bottom: 5px;
 }
 </style>

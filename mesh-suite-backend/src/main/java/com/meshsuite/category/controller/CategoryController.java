@@ -1,6 +1,7 @@
 package com.meshsuite.category.controller;
 
 import com.meshsuite.auth.service.AuthContextService;
+import com.meshsuite.category.dto.CategoryCountsResponse;
 import com.meshsuite.category.dto.CategoryRequest;
 import com.meshsuite.category.dto.CategoryResponse;
 import com.meshsuite.category.service.CategoryService;
@@ -27,8 +28,14 @@ public class CategoryController {
     public Page<CategoryResponse> list(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) Boolean ativo,
+            @RequestParam(required = false) Boolean raiz,
             @PageableDefault(size = 10, sort = "name") Pageable pageable) {
-        return categoryService.list(busca, ativo, pageable);
+        return categoryService.list(busca, ativo, raiz, pageable);
+    }
+
+    @GetMapping("/counts")
+    public CategoryCountsResponse counts() {
+        return categoryService.counts();
     }
 
     @GetMapping("/{id}")
