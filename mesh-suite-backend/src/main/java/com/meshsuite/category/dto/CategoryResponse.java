@@ -8,6 +8,8 @@ public record CategoryResponse(
         String name,
         String description,
         Boolean active,
+        UUID parentId,
+        String parentName,
         Long linkedProducts,
         Instant createdAt) {
 }

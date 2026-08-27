@@ -31,6 +31,13 @@ public class Category {
     @Column(nullable = false)
     private Boolean active = true;
 
+    // Only root categories (parent == null) may be chosen as a parent -- see
+    // CategoryService#applyParent. Keeps the hierarchy at two levels, matching the
+    // wireframe's "Categoria Pai" picker, which only ever lists root categories.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Category parent;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 }

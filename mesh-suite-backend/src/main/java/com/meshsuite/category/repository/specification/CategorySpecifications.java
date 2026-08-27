@@ -22,4 +22,11 @@ public final class CategorySpecifications {
         }
         return (root, query, cb) -> cb.equal(root.get("active"), active);
     }
+
+    public static Specification<Category> onlyRoot(Boolean root) {
+        if (root == null || !root) {
+            return null;
+        }
+        return (r, query, cb) -> cb.isNull(r.get("parent"));
+    }
 }

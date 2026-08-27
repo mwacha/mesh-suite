@@ -115,6 +115,15 @@ class CategoryControllerTest extends AbstractIntegrationTest {
                 """.formatted(name);
     }
 
+    private String categoryPayload(String name, String parentId) {
+        return """
+                {
+                  "name": "%s",
+                  "parentId": "%s"
+                }
+                """.formatted(name, parentId);
+    }
+
     @Test
     void createsListsUpdatesAndDeletesCategory() throws Exception {
         String token = loginAndGetCookie("aurora-cat", "marina@aurora.com.br", "11222333000144");
@@ -190,6 +199,55 @@ class CategoryControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(delete("/api/categories/" + categoryId).cookie(cookie))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void assignsAParentCategoryAndRejectsANonRootParent() throws Exception {
+        String token = loginAndGetCookie("aurora-cat", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
+
+        String higiene = mockMvc.perform(post("/api/categories").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(categoryPayload("Higiene Pessoal")))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String higieneId = com.jayway.jsonpath.JsonPath.read(higiene, "$.id");
+
+        String beleza = mockMvc.perform(post("/api/categories").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(categoryPayload("Beleza", higieneId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.parentId").value(higieneId))
+                .andExpect(jsonPath("$.parentName").value("Higiene Pessoal"))
+                .andReturn().getResponse().getContentAsString();
+        String belezaId = com.jayway.jsonpath.JsonPath.read(beleza, "$.id");
+
+        mockMvc.perform(post("/api/categories").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(categoryPayload("Maquiagem", belezaId)))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/categories").cookie(cookie).param("raiz", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].name").value("Higiene Pessoal"))
+                .andExpect(jsonPath("$.content.length()").value(1));
+    }
+
+    @Test
+    void reportsTotalActiveAndInactiveCounts() throws Exception {
+        String token = loginAndGetCookie("aurora-cat", "marina@aurora.com.br", "11222333000144");
+        Cookie cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, token);
+
+        mockMvc.perform(post("/api/categories").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(categoryPayload("Camisas")))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/categories/counts").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.active").value(1))
+                .andExpect(jsonPath("$.inactive").value(0));
     }
 
     @Test

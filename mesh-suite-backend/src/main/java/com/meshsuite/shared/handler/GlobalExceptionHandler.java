@@ -142,6 +142,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
 
+    @ExceptionHandler(com.meshsuite.category.exception.CategoryValidationException.class)
+    public ResponseEntity<Map<String, String>> handleCategoryValidation(
+            com.meshsuite.category.exception.CategoryValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
+
     @ExceptionHandler(com.meshsuite.colorway.exception.ColorwayNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleColorwayNotFound(
             com.meshsuite.colorway.exception.ColorwayNotFoundException e) {

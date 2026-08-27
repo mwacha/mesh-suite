@@ -2,70 +2,55 @@
   <AppShell title="Categorias">
     <p v-if="erro" class="error-geral">{{ erro }}</p>
 
-    <div class="toolbar">
-      <input
-        v-model="filtros.busca"
-        class="busca"
-        placeholder="Buscar categoria por nome..."
-        data-test="busca"
-        @input="carregar(0)"
-      />
-      <select v-model="filtros.ativo" data-test="filtro-status" @change="carregar(0)">
-        <option value="">Status</option>
-        <option value="true">Ativo</option>
-        <option value="false">Inativo</option>
-      </select>
+    <PageHeader title="Categorias" :count="countLabel">
       <button type="button" class="btn-primary" data-test="nova-categoria" @click="novaCategoria">+ Nova Categoria</button>
-    </div>
+    </PageHeader>
 
-    <section class="card">
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Descrição</th>
-            <th>Produtos</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="category in pagina.content" :key="category.id">
-            <td>{{ category.name }}</td>
-            <td>{{ category.description }}</td>
-            <td>{{ category.linkedProducts }} produtos</td>
-            <td><span class="badge" :class="category.active ? 'badge-ATIVO' : 'badge-INATIVO'">{{ category.active ? 'Ativo' : 'Inativo' }}</span></td>
-            <td class="acoes">
-              <button
-                type="button"
-                class="btn-acoes"
-                data-test="btn-acoes"
-                @click="toggleAcoes(category.id, $event)"
-              >
-                Ações
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <FilterBar
+      :search="filtros.busca"
+      search-placeholder="Buscar categoria por nome..."
+      :categories="['Status']"
+      :value-map="{ Status: ['Ativo', 'Inativo'] }"
+      @update:search="onBuscaChange"
+      @update:filters="onFiltrosChange"
+    />
 
-    <Teleport to="body">
-      <div
-        v-if="categoriaAcoesAtual"
-        class="dropdown-acoes"
-        :style="{ top: posicaoDropdown.top, left: posicaoDropdown.left }"
-      >
-        <div data-test="acao-editar" @click="editarCategoria(categoriaAcoesAtual.id)">Editar</div>
-        <div data-test="acao-excluir" class="acao-excluir" @click="excluir(categoriaAcoesAtual)">Excluir</div>
+    <ListCard title="Lista de Categorias" :stats="statsCard">
+      <div class="table-grid">
+        <div class="table-grid-header">
+          <div class="table-grid-col table-grid-col-sortable" data-test="col-nome" @click="toggleSort('name')">
+            Nome
+            <span class="table-grid-sort-icon" :class="{ 'table-grid-sort-icon-active': sortField === 'name' }">{{ sortIcon() }}</span>
+          </div>
+          <div class="table-grid-col">Categoria Pai</div>
+          <div class="table-grid-col">Produtos</div>
+          <div class="table-grid-col">Status</div>
+          <div class="table-grid-col"></div>
+        </div>
+
+        <div v-for="category in pagina.content" :key="category.id" class="table-grid-row" :data-test="`row-${category.id}`">
+          <div class="table-grid-cell table-grid-cell-nome">{{ category.name }}</div>
+          <div class="table-grid-cell">{{ category.parentName ?? '—' }}</div>
+          <div class="table-grid-cell">{{ category.linkedProducts }} produtos</div>
+          <div class="table-grid-cell">
+            <StatusBadge :label="category.active ? 'Ativo' : 'Inativo'" :color="category.active ? 'green' : 'red'" />
+          </div>
+          <div class="table-grid-cell">
+            <ActionsMenu :items="acoesPara(category)" />
+          </div>
+        </div>
       </div>
-    </Teleport>
+      <p v-if="!pagina.content.length" class="empty-state">Nenhuma categoria para exibir.</p>
+    </ListCard>
 
-    <div class="paginacao">
-      <button type="button" :disabled="pagina.number === 0" @click="carregar(pagina.number - 1)">‹</button>
-      <span>Página {{ pagina.number + 1 }} de {{ Math.max(pagina.totalPages, 1) }}</span>
-      <button type="button" :disabled="pagina.number + 1 >= pagina.totalPages" @click="carregar(pagina.number + 1)">›</button>
-    </div>
+    <Pagination
+      :number="pagina.number"
+      :total-pages="pagina.totalPages"
+      :total-elements="pagina.totalElements"
+      :size="pagina.size"
+      @update:page="carregar"
+      @update:size="onSizeChange"
+    />
   </AppShell>
 </template>
 
@@ -73,31 +58,72 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import FilterBar from '@/components/FilterBar.vue'
+import ListCard, { type ListCardStat } from '@/components/ListCard.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
+import ActionsMenu, { type ActionsMenuItem } from '@/components/ActionsMenu.vue'
+import Pagination from '@/components/Pagination.vue'
 import {
   listCategories,
+  getCategoryCounts,
   deleteCategory,
   type CategoryResponse,
+  type CategoryCounts,
   type Page as ApiPage,
 } from '@/api/categories'
 
 const router = useRouter()
 
-const filtros = reactive({ busca: '', ativo: '' })
+const filtros = reactive({ busca: '' })
+const filtrosAvancados = ref<Record<string, string[]>>({})
+const sortField = ref<'name' | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
 const pagina = ref<ApiPage<CategoryResponse>>({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 10 })
-const acoesAbertas = ref<string | null>(null)
-const posicaoDropdown = ref({ top: '0px', left: '0px' })
+const counts = ref<CategoryCounts | null>(null)
 const erro = ref('')
 
-const categoriaAcoesAtual = computed(() =>
-  pagina.value.content.find((c) => c.id === acoesAbertas.value) ?? null,
+const countLabel = computed(() => (counts.value ? `${counts.value.total} categorias cadastradas` : undefined))
+const statsCard = computed<ListCardStat[]>(() =>
+  counts.value
+    ? [
+        { value: counts.value.total, label: 'Total', color: 'dark' },
+        { value: counts.value.active, label: 'Ativas', color: 'green' },
+        { value: counts.value.inactive, label: 'Inativas', color: 'red' },
+      ]
+    : [],
 )
+
+function sortIcon() {
+  if (sortField.value !== 'name') {
+    return '⇅'
+  }
+  return sortDir.value === 'asc' ? '▲' : '▼'
+}
+
+function toggleSort(campo: 'name') {
+  if (sortField.value === campo) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = campo
+    sortDir.value = 'asc'
+  }
+  carregar(0)
+}
+
+function labelsFor(categoria: string): string[] {
+  return filtrosAvancados.value[categoria] ?? []
+}
 
 async function carregar(page: number) {
   erro.value = ''
+  const statusLabels = labelsFor('Status')
+  const ativo = statusLabels.length === 1 ? statusLabels[0] === 'Ativo' : undefined
   try {
     pagina.value = await listCategories({
       busca: filtros.busca || undefined,
-      ativo: filtros.ativo === '' ? undefined : filtros.ativo === 'true',
+      ativo,
+      sort: sortField.value ? `${sortField.value},${sortDir.value}` : undefined,
       page,
       size: pagina.value.size,
     })
@@ -106,44 +132,60 @@ async function carregar(page: number) {
   }
 }
 
+async function carregarContagens() {
+  try {
+    counts.value = await getCategoryCounts()
+  } catch {
+    // Pills de contagem são um complemento -- uma falha aqui não deve bloquear a listagem.
+  }
+}
+
+function onBuscaChange(valor: string) {
+  filtros.busca = valor
+  carregar(0)
+}
+
+function onFiltrosChange(filtrosNovos: Record<string, string[]>) {
+  filtrosAvancados.value = filtrosNovos
+  carregar(0)
+}
+
+function onSizeChange(novoSize: number) {
+  pagina.value.size = novoSize
+  carregar(0)
+}
+
 function novaCategoria() {
   router.push({ name: 'categorias-novo' })
 }
 
 function editarCategoria(id: string) {
-  acoesAbertas.value = null
   router.push({ name: 'categorias-editar', params: { id } })
 }
 
-function toggleAcoes(id: string, event: MouseEvent) {
-  if (acoesAbertas.value === id) {
-    acoesAbertas.value = null
-    return
-  }
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  posicaoDropdown.value = {
-    top: `${rect.bottom + 4}px`,
-    left: `${rect.right - 120}px`,
-  }
-  acoesAbertas.value = id
-}
-
 async function excluir(category: CategoryResponse) {
-  acoesAbertas.value = null
   if (!confirm(`Excluir a categoria "${category.name}"?`)) {
     return
   }
   erro.value = ''
   try {
     await deleteCategory(category.id)
-    await carregar(pagina.value.number)
+    await Promise.all([carregar(pagina.value.number), carregarContagens()])
   } catch (err: any) {
     erro.value = err?.response?.data?.mensagem ?? 'Não foi possível excluir a categoria.'
   }
 }
 
+function acoesPara(category: CategoryResponse): ActionsMenuItem[] {
+  return [
+    { label: 'Editar', action: () => editarCategoria(category.id), testId: 'acao-editar' },
+    { label: 'Excluir', action: () => excluir(category), danger: true, testId: 'acao-excluir' },
+  ]
+}
+
 onMounted(() => {
   carregar(0)
+  carregarContagens()
 })
 </script>
 
@@ -152,28 +194,6 @@ onMounted(() => {
   color: var(--pm-error);
   font-size: 14px;
   margin: 0 0 12px;
-}
-
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-family: var(--pm-font);
-}
-
-.busca {
-  flex: 1;
-}
-
-.toolbar input,
-.toolbar select {
-  border: 1px solid var(--pm-border-light);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: var(--pm-font);
-  color: var(--pm-text-dark);
-  background: var(--pm-white);
 }
 
 .btn-primary {
@@ -186,109 +206,63 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-}
-
-.card {
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.tabela {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
   font-family: var(--pm-font);
 }
 
-.tabela th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--pm-text-mid);
-  background: var(--pm-bg);
+.table-grid {
+  font-family: var(--pm-font);
+  font-size: 12px;
+}
+
+.table-grid-header,
+.table-grid-row {
+  display: grid;
+  grid-template-columns: 1fr 160px 130px 100px 72px;
+  gap: 8px;
+  align-items: center;
   padding: 8px 12px;
 }
 
-.tabela td {
-  padding: 8px 12px;
+.table-grid-header {
+  background: var(--pm-bg);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--pm-text-mid);
+  padding: 12px;
+}
+
+.table-grid-col-sortable {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.table-grid-sort-icon {
+  font-size: 9px;
+  color: var(--pm-text-muted);
+  margin-left: 2px;
+}
+
+.table-grid-sort-icon-active {
+  color: var(--pm-accent);
+}
+
+.table-grid-row {
   border-top: 1px solid var(--pm-border-light);
   color: var(--pm-text-dark);
 }
 
-.badge {
-  display: inline-flex;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
+.table-grid-cell-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
 }
 
-.badge-ATIVO {
-  background: var(--pm-success-bg);
-  color: var(--pm-success);
-}
-
-.badge-INATIVO {
-  background: var(--pm-error-bg);
-  color: var(--pm-error);
-}
-
-.btn-acoes {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.dropdown-acoes {
-  position: fixed;
-  background: var(--pm-white);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 6px;
-  min-width: 120px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 8px 28px rgba(0, 0, 0, 0.12);
-  z-index: 10;
-}
-
-.dropdown-acoes div {
-  padding: 8px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--pm-text-dark);
-}
-
-.acao-excluir {
-  color: var(--pm-error);
-}
-
-.paginacao {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 13px;
+.empty-state {
+  padding: 16px;
   color: var(--pm-text-mid);
-}
-
-.paginacao button {
-  border: 1px solid var(--pm-border-light);
-  background: var(--pm-white);
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-}
-
-.paginacao button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  font-size: 13px;
+  margin: 0;
 }
 </style>
