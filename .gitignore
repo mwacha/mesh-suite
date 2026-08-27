@@ -2,3 +2,5 @@
 mesh-suite-backend/target/
 mesh-suite-frontend/node_modules/
 mesh-suite-frontend/dist/
+mesh-suite-backend/target.old-root/
+node-compile-cache/
