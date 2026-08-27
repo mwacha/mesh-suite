@@ -80,6 +80,40 @@ class CompanyRepositoryTest extends AbstractIntegrationTest {
 
     @Test
     @Transactional
+    void savesAndReloadsDetailFields() {
+        Tenant tenant = createTenant("aurora");
+        setTenantContext(tenant.getId());
+
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName("Confecção Aurora Ltda");
+        company.setCnpj("11222333000144");
+        company.setTradeName("Confecção Aurora");
+        company.setStateRegistration("123456789");
+        company.setMunicipalRegistration("987654");
+        company.setPhone("(11) 3000-0000");
+        company.setEmail("contato@aurora.com.br");
+        company.setWebsite("www.aurora.com.br");
+        company.setZipCode("01310100");
+        company.setStreet("Av. Paulista");
+        company.setNumber("1000");
+        company.setComplement("Sala 10");
+        company.setNeighborhood("Bela Vista");
+        company.setCity("São Paulo");
+        company.setState("SP");
+
+        Company saved = companyRepository.saveAndFlush(company);
+        entityManager.clear();
+
+        Company reloaded = companyRepository.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getTradeName()).isEqualTo("Confecção Aurora");
+        assertThat(reloaded.getZipCode()).isEqualTo("01310100");
+        assertThat(reloaded.getCity()).isEqualTo("São Paulo");
+        assertThat(reloaded.getState()).isEqualTo("SP");
+    }
+
+    @Test
+    @Transactional
     void rlsHidesRowsWhenTenantContextUnset() {
         Tenant tenant = createTenant("aurora");
         setTenantContext(tenant.getId());

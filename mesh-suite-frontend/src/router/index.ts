@@ -18,6 +18,8 @@ import CategoriesListView from '@/views/CategoriesListView.vue'
 import CategoryFormView from '@/views/CategoryFormView.vue'
 import BrandsListView from '@/views/BrandsListView.vue'
 import BrandFormView from '@/views/BrandFormView.vue'
+import CompaniesListView from '@/views/CompaniesListView.vue'
+import CompanyFormView from '@/views/CompanyFormView.vue'
 import ColorwaysListView from '@/views/ColorwaysListView.vue'
 import ColorwayFormView from '@/views/ColorwayFormView.vue'
 import PriceTablesListView from '@/views/PriceTablesListView.vue'
@@ -92,6 +94,9 @@ const router = createRouter({
     { path: '/formas-recebimento', name: 'formas-recebimento', component: PaymentMethodsListView },
     { path: '/formas-recebimento/novo', name: 'formas-recebimento-novo', component: PaymentMethodFormView },
     { path: '/formas-recebimento/:id/editar', name: 'formas-recebimento-editar', component: PaymentMethodFormView },
+    { path: '/empresas', name: 'empresas', component: CompaniesListView },
+    { path: '/empresas/novo', name: 'empresas-novo', component: CompanyFormView },
+    { path: '/empresas/:id/editar', name: 'empresas-editar', component: CompanyFormView },
   ],
 })
 
