@@ -261,4 +261,22 @@ public class GlobalExceptionHandler {
             com.meshsuite.brand.exception.BrandInUseException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
     }
+
+    @ExceptionHandler(com.meshsuite.company.exception.CompanyNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleCompanyNotFound(
+            com.meshsuite.company.exception.CompanyNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.company.exception.DuplicateCnpjException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateCnpj(
+            com.meshsuite.company.exception.DuplicateCnpjException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(com.meshsuite.company.exception.CompanyIsLastForTenantException.class)
+    public ResponseEntity<Map<String, String>> handleCompanyIsLastForTenant(
+            com.meshsuite.company.exception.CompanyIsLastForTenantException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", e.getMessage()));
+    }
 }

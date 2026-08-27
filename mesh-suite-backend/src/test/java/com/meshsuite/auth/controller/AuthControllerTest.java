@@ -13,6 +13,7 @@ import com.meshsuite.user.domain.User;
 import com.meshsuite.user.domain.enums.Role;
 import com.meshsuite.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -77,6 +78,34 @@ class AuthControllerTest extends AbstractIntegrationTest {
         userRepository.saveAndFlush(user);
 
         entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
+    }
+
+    // Generic version of seedTenantWithUsuario, for the multi-account tests below
+    // where the same e-mail needs to exist under more than one tenant.
+    private Tenant seedTenantWithUser(String tenantCodigo, String email, String senhaPlano, String cnpj) {
+        Tenant tenant = new Tenant();
+        tenant.setCodigo(tenantCodigo);
+        tenant.setNome(tenantCodigo);
+        tenantRepository.saveAndFlush(tenant);
+
+        entityManager.createNativeQuery("SET LOCAL app.tenant_id = '" + tenant.getId() + "'").executeUpdate();
+
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName(tenantCodigo + " Ltda");
+        company.setCnpj(cnpj);
+        companyRepository.saveAndFlush(company);
+
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName(tenantCodigo);
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(senhaPlano));
+        user.setRole(Role.ADMIN);
+        userRepository.saveAndFlush(user);
+
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
+        return tenant;
     }
 
     private void seedTenantWithInactiveUsuario(String senhaPlano) {
@@ -151,7 +180,8 @@ class AuthControllerTest extends AbstractIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie(JwtAuthenticationFilter.COOKIE_NAME, token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome").value("Marina"))
-                .andExpect(jsonPath("$.papel").value("ADMIN"));
+                .andExpect(jsonPath("$.papel").value("ADMIN"))
+                .andExpect(jsonPath("$.nomeEmpresa").value("Aurora Ltda"));
     }
 
     @Test
@@ -219,5 +249,89 @@ class AuthControllerTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         org.assertj.core.api.Assertions.assertThat(inactiveTenantBody).isEqualTo(baselineBody);
+    }
+
+    @Test
+    void loginWithDifferentPasswordsPerTenantSkipsThePickerAndLogsStraightIn() throws Exception {
+        // Same e-mail, different accounts/passwords -- the password alone
+        // disambiguates which tenant, so no selection step should be needed.
+        seedTenantWithUser("aurora-multi-a", "marcus@aurora.com.br", "senhaAurora123", "11222333000144");
+        seedTenantWithUser("linda-brasil-multi-a", "marcus@aurora.com.br", "senhaLinda123", "22333444000155");
+
+        String body = mockMvc.perform(post("/api/auth/login")
+                        .with(remoteAddr("10.10.0.3"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"marcus@aurora.com.br","senha":"senhaLinda123","manterConectado":false}"""))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        org.assertj.core.api.Assertions.assertThat(body).contains("\"contas\":[]");
+    }
+
+    @Test
+    void loginWithSameEmailAndPasswordAcrossTenantsReturnsAccountsForSelection() throws Exception {
+        seedTenantWithUser("aurora-multi-b", "marcus@boreal.com.br", "senhaCompartilhada", "11222333000166");
+        Tenant lindaBrasil = seedTenantWithUser("linda-brasil-multi-b", "marcus@boreal.com.br", "senhaCompartilhada", "22333444000177");
+
+        var response = mockMvc.perform(post("/api/auth/login")
+                        .with(remoteAddr("10.10.0.4"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"marcus@boreal.com.br","senha":"senhaCompartilhada","manterConectado":false}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contas.length()").value(2))
+                .andReturn().getResponse();
+
+        String cookieHeader = response.getHeader("Set-Cookie");
+        org.assertj.core.api.Assertions.assertThat(cookieHeader).contains("mesh_pending_selection=");
+        org.assertj.core.api.Assertions.assertThat(cookieHeader).doesNotContain("mesh_token=");
+
+        String pendingToken = cookieHeader.split("mesh_pending_selection=")[1].split(";")[0];
+
+        String selectBody = mockMvc.perform(post("/api/auth/select-account")
+                        .cookie(new jakarta.servlet.http.Cookie("mesh_pending_selection", pendingToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tenantId\":\"" + lindaBrasil.getId() + "\",\"manterConectado\":false}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getHeader("Set-Cookie");
+
+        org.assertj.core.api.Assertions.assertThat(selectBody).contains("mesh_token=");
+        String sessionToken = selectBody.split("mesh_token=")[1].split(";")[0];
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/auth/me")
+                        .cookie(new jakarta.servlet.http.Cookie(JwtAuthenticationFilter.COOKIE_NAME, sessionToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("linda-brasil-multi-b"));
+    }
+
+    @Test
+    void selectAccountRejectsATenantIdNotAmongTheValidatedOptions() throws Exception {
+        seedTenantWithUser("aurora-multi-c", "marcus@sul.com.br", "senhaCompartilhada", "11222333000188");
+        seedTenantWithUser("linda-brasil-multi-c", "marcus@sul.com.br", "senhaCompartilhada", "22333444000199");
+        Tenant outroTenant = seedTenantWithUser("outro-tenant-multi-c", "alguem@outro.com.br", "outrasenha", "33444555000100");
+
+        String cookieHeader = mockMvc.perform(post("/api/auth/login")
+                        .with(remoteAddr("10.10.0.5"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"marcus@sul.com.br","senha":"senhaCompartilhada","manterConectado":false}"""))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getHeader("Set-Cookie");
+        String pendingToken = cookieHeader.split("mesh_pending_selection=")[1].split(";")[0];
+
+        mockMvc.perform(post("/api/auth/select-account")
+                        .cookie(new jakarta.servlet.http.Cookie("mesh_pending_selection", pendingToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tenantId\":\"" + outroTenant.getId() + "\",\"manterConectado\":false}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void selectAccountWithoutPendingCookieIsRejected() throws Exception {
+        mockMvc.perform(post("/api/auth/select-account")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tenantId\":\"" + UUID.randomUUID() + "\",\"manterConectado\":false}"))
+                .andExpect(status().isUnauthorized());
     }
 }

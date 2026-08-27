@@ -128,7 +128,7 @@ const navGroups: NavGroup[] = [
     key: 'configuracoes',
     title: 'CONFIGURAÇÕES',
     items: [
-      { icon: '🏢', label: 'Empresa', route: null },
+      { icon: '🏢', label: 'Empresa', route: '/empresas' },
       { icon: '👤', label: 'Usuários', route: '/usuarios' },
       { icon: '🔒', label: 'Permissões', route: '/permissoes' },
     ],

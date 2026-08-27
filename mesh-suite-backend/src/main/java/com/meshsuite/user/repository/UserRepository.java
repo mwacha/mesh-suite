@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
     Optional<User> findByEmail(String email);
+    List<User> findAllByEmail(String email);
     List<User> findByRoleOrderByName(Role role);
     long countByActive(boolean active);
     long countByPermissionProfileId(UUID permissionProfileId);

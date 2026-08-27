@@ -10,7 +10,7 @@
       </aside>
 
       <main class="login-main">
-        <div class="login-card">
+        <div class="login-card" v-if="!accountOptions">
           <h1>Entrar</h1>
           <p class="subtitle">Acesse o painel do seu PediMais</p>
 
@@ -64,6 +64,29 @@
             </span>
           </p>
         </div>
+
+        <div class="login-card" v-else>
+          <h1>Escolha a empresa</h1>
+          <p class="subtitle">Seu e-mail e senha dão acesso a mais de uma empresa</p>
+
+          <form @submit.prevent="onConfirmAccount">
+            <label class="field-label" for="empresa">Empresa</label>
+            <select id="empresa" v-model="selectedTenantId" data-test="account-select" required>
+              <option value="" disabled>Selecione...</option>
+              <option v-for="conta in accountOptions" :key="conta.tenantId" :value="conta.tenantId">
+                {{ conta.nomeEmpresa }}
+              </option>
+            </select>
+
+            <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+
+            <button type="submit" class="submit-button" :disabled="loading || !selectedTenantId">Entrar</button>
+          </form>
+
+          <button type="button" class="link back-link" data-test="back-to-login" @click="accountOptions = null">
+            Voltar
+          </button>
+        </div>
       </main>
     </div>
   </div>
@@ -72,7 +95,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login } from '@/api/auth'
+import { login, selectAccount, type AccountOption } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
 const email = ref('')
@@ -81,17 +104,28 @@ const manterConectado = ref(false)
 const showSenha = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
+const accountOptions = ref<AccountOption[] | null>(null)
+const selectedTenantId = ref('')
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+async function finishLogin() {
+  await authStore.checkSession()
+  router.push({ name: 'dashboard' })
+}
 
 async function onSubmit() {
   errorMessage.value = ''
   loading.value = true
   try {
-    await login({ email: email.value, senha: senha.value, manterConectado: manterConectado.value })
-    await authStore.checkSession()
-    router.push({ name: 'dashboard' })
+    const result = await login({ email: email.value, senha: senha.value, manterConectado: manterConectado.value })
+    if (result.status === 'select-account') {
+      accountOptions.value = result.contas
+      selectedTenantId.value = ''
+      return
+    }
+    await finishLogin()
   } catch (err: any) {
     if (err?.response?.status === 429) {
       errorMessage.value = 'Muitas tentativas, tente novamente em instantes'
@@ -100,6 +134,23 @@ async function onSubmit() {
     } else {
       errorMessage.value = 'Não foi possível conectar. Tente novamente em instantes.'
     }
+  } finally {
+    loading.value = false
+  }
+}
+
+async function onConfirmAccount() {
+  if (!selectedTenantId.value) {
+    return
+  }
+  errorMessage.value = ''
+  loading.value = true
+  try {
+    await selectAccount(selectedTenantId.value, manterConectado.value)
+    await finishLogin()
+  } catch {
+    errorMessage.value = 'Não foi possível entrar nessa empresa. Faça login novamente.'
+    accountOptions.value = null
   } finally {
     loading.value = false
   }
@@ -214,7 +265,8 @@ async function onSubmit() {
 
 input[type='email'],
 input[type='password'],
-input[type='text'] {
+input[type='text'],
+select {
   width: 100%;
   box-sizing: border-box;
   background: var(--pm-white);
@@ -313,5 +365,15 @@ input[type='text']::placeholder {
   margin-top: 24px;
   font-size: 13px;
   color: var(--pm-text-mid);
+}
+
+.back-link {
+  display: block;
+  margin: 20px auto 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  cursor: pointer;
 }
 </style>

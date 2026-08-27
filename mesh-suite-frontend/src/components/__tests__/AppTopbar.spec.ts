@@ -41,7 +41,7 @@ describe('AppTopbar', () => {
   it('logging out clears the auth store and navigates to /login', async () => {
     const { router, wrapper } = mountWithRouter()
     const authStore = useAuthStore()
-    authStore.usuario = { nome: 'Marina Aurora', papel: 'ADMINISTRADOR' }
+    authStore.usuario = { nome: 'Marina Aurora', papel: 'ADMINISTRADOR', nomeEmpresa: null }
     authStore.checked = true
 
     await wrapper.find('[data-test="avatar-button"]').trigger('click')
@@ -53,5 +53,20 @@ describe('AppTopbar', () => {
 
     expect(authStore.usuario).toBeNull()
     expect(router.currentRoute.value.name).toBe('login')
+  })
+
+  it('shows the logged-in company name in the badge', async () => {
+    const { wrapper } = mountWithRouter()
+    const authStore = useAuthStore()
+    authStore.usuario = { nome: 'Marcus Aurora', papel: 'ADMIN', nomeEmpresa: 'Linda Brasil' }
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[data-test="company-badge"]').text()).toBe('Linda Brasil')
+  })
+
+  it('hides the company badge when there is no company name yet', () => {
+    const { wrapper } = mountWithRouter()
+
+    expect(wrapper.find('[data-test="company-badge"]').exists()).toBe(false)
   })
 })
