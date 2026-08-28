@@ -59,10 +59,10 @@ describe('PurchaseInvoiceFormView', () => {
     expect(wrapper.find('[data-test="salvar"]').attributes('disabled')).toBeDefined()
 
     await wrapper.find('[data-test="parcela-adicionar"]').trigger('click')
-    await wrapper.find('[data-test="parcela-valor-0"]').setValue('100')
+    await wrapper.find('[data-test="parcela-valor-0"]').setValue('10000')
     await wrapper.find('[data-test="parcela-vencimento-0"]').setValue('2026-09-01')
     await wrapper.find('[data-test="parcela-adicionar"]').trigger('click')
-    await wrapper.find('[data-test="parcela-valor-1"]').setValue('100')
+    await wrapper.find('[data-test="parcela-valor-1"]').setValue('10000')
     await wrapper.find('[data-test="parcela-vencimento-1"]').setValue('2026-10-01')
 
     expect(wrapper.find('[data-test="salvar"]').attributes('disabled')).toBeUndefined()
@@ -79,7 +79,7 @@ describe('PurchaseInvoiceFormView', () => {
     await wrapper.find('[data-test="nota-data-emissao"]').setValue('2026-08-10')
     await wrapper.find('[data-test="nota-data-entrada"]').setValue('2026-08-12')
     await wrapper.find('[data-test="parcela-adicionar"]').trigger('click')
-    await wrapper.find('[data-test="parcela-valor-0"]').setValue('200')
+    await wrapper.find('[data-test="parcela-valor-0"]').setValue('20000')
     await wrapper.find('[data-test="parcela-vencimento-0"]').setValue('2026-09-10')
 
     await wrapper.find('[data-test="salvar"]').trigger('click')
@@ -107,7 +107,7 @@ describe('PurchaseInvoiceFormView', () => {
     await wrapper.find('[data-test="nota-data-emissao"]').setValue('2026-08-10')
     await wrapper.find('[data-test="nota-data-entrada"]').setValue('2026-08-12')
     await wrapper.find('[data-test="parcela-adicionar"]').trigger('click')
-    await wrapper.find('[data-test="parcela-valor-0"]').setValue('200')
+    await wrapper.find('[data-test="parcela-valor-0"]').setValue('20000')
     await wrapper.find('[data-test="parcela-vencimento-0"]').setValue('2026-09-10')
 
     await wrapper.find('[data-test="salvar"]').trigger('click')
@@ -129,7 +129,7 @@ describe('PurchaseInvoiceFormView', () => {
     await wrapper.find('[data-test="nota-data-emissao"]').setValue('2026-08-10')
     await wrapper.find('[data-test="nota-data-entrada"]').setValue('2026-08-12')
     await wrapper.find('[data-test="parcela-adicionar"]').trigger('click')
-    await wrapper.find('[data-test="parcela-valor-0"]').setValue('200')
+    await wrapper.find('[data-test="parcela-valor-0"]').setValue('20000')
     await wrapper.find('[data-test="parcela-vencimento-0"]').setValue('2026-09-10')
 
     await wrapper.find('[data-test="salvar"]').trigger('click')

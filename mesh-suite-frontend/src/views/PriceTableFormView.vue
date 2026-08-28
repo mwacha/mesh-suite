@@ -73,10 +73,7 @@
         </div>
 
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">Valor mínimo para venda (R$)</label>
-            <input v-model.number="form.minSalePrice" type="number" step="0.01" min="0" />
-          </div>
+          <MoneyField v-model="form.minSalePrice" label="Valor mínimo para venda" />
           <div>
             <label class="field-label">% de Comissão (padrão dos itens)</label>
             <input v-model.number="form.defaultCommissionPercentage" type="number" step="0.01" min="0" />
@@ -144,14 +141,7 @@
             <div>{{ item.productSku }}</div>
             <div class="itens-grid-col-preco">{{ formatarPreco(item.registeredPrice) }}</div>
             <div class="item-preco-cell">
-              <span class="item-preco-prefixo">R$</span>
-              <input
-                v-model.number="item.tablePrice"
-                type="number"
-                step="0.01"
-                min="0"
-                :data-test="`item-preco-${indexReal}`"
-              />
+              <MoneyField v-model="item.tablePrice" :test-id="`item-preco-${indexReal}`" />
               <button
                 type="button"
                 class="item-reset-btn"
@@ -237,6 +227,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import TextField from '@/components/TextField.vue'
+import MoneyField from '@/components/MoneyField.vue'
 import SelectField from '@/components/SelectField.vue'
 import SegmentedControl, { type SegmentedOption } from '@/components/SegmentedControl.vue'
 import FormActions from '@/components/FormActions.vue'
@@ -757,19 +748,10 @@ input {
   gap: 4px;
 }
 
-.item-preco-prefixo {
-  font-size: 11px;
-  color: var(--pm-text-muted);
-  background: var(--pm-bg);
-  border: 1px solid var(--pm-border-light);
-  border-radius: 4px;
-  padding: 5px 6px;
-  flex-shrink: 0;
-}
-
-.item-preco-cell input {
+.item-preco-cell :deep(.money-field) {
   flex: 1;
   min-width: 0;
+  margin-bottom: 0;
 }
 
 .item-reset-btn {

@@ -135,7 +135,7 @@
             <div><span>Subtotal</span><span>{{ formatPrice(subtotal) }}</span></div>
             <div>
               <span>Desconto</span>
-              <input v-model.number="form.discount" type="number" step="0.01" min="0" data-test="discount" />
+              <MoneyField v-model="discountModel" test-id="discount" />
             </div>
             <div class="total-final"><span>Total</span><span>{{ formatPrice(total) }}</span></div>
           </div>
@@ -157,6 +157,7 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import MoneyField from '@/components/MoneyField.vue'
 import SearchSelect, { type SearchSelectItem } from '@/components/SearchSelect.vue'
 import ProductPicker from '@/components/ProductPicker.vue'
 import { getSalesOrder, createSalesOrder, updateSalesOrder, type SalesOrderRequest, type SalesOrderItemRequest } from '@/api/salesOrders'
@@ -197,6 +198,15 @@ function newFormState(): FormState {
 }
 
 const form = reactive<FormState>(newFormState())
+
+// discount is required (never null), but MoneyField's v-model can emit null
+// when the user clears the field -- fall back to 0.
+const discountModel = computed({
+  get: () => form.discount,
+  set: (valor: number | null) => {
+    form.discount = valor ?? 0
+  },
+})
 const errors = reactive<{ customerId?: string; salespersonId?: string; items?: string }>({})
 const generalError = ref('')
 const saving = ref(false)

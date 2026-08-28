@@ -33,15 +33,8 @@
           </div>
         </div>
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">Preço de Venda *</label>
-            <input v-model.number="form.salePrice" type="number" step="0.01" min="0" data-test="preco-venda" />
-            <p v-if="erros.salePrice" class="field-error">{{ erros.salePrice }}</p>
-          </div>
-          <div>
-            <label class="field-label">Preço de Custo</label>
-            <input v-model.number="form.costPrice" type="number" step="0.01" min="0" data-test="preco-custo" />
-          </div>
+          <MoneyField v-model="salePriceModel" label="Preço de Venda" required :error="erros.salePrice" test-id="preco-venda" />
+          <MoneyField v-model="form.costPrice" label="Preço de Custo" test-id="preco-custo" />
         </div>
         <div class="grid grid-2">
           <TextField v-model="sizeModel" label="Tamanho" placeholder="Ex: M, 40, Único" test-id="tamanho" />
@@ -143,6 +136,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import TextField from '@/components/TextField.vue'
+import MoneyField from '@/components/MoneyField.vue'
 import FormActions from '@/components/FormActions.vue'
 import ProductTypeSelector from '@/components/ProductTypeSelector.vue'
 import {
@@ -205,6 +199,16 @@ const sizeModel = computed({
   get: () => form.size ?? '',
   set: (valor: string) => {
     form.size = valor
+  },
+})
+
+// salePrice is required (never null), but MoneyField's v-model can emit null
+// when the user clears the field -- fall back to 0 rather than let that leak
+// into a ProductRequest field that isn't supposed to be nullable.
+const salePriceModel = computed({
+  get: () => form.salePrice,
+  set: (valor: number | null) => {
+    form.salePrice = valor ?? 0
   },
 })
 

@@ -36,11 +36,7 @@
           </div>
         </div>
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">Preço de Venda *</label>
-            <input v-model.number="form.salePrice" type="number" step="0.01" min="0" data-test="preco-venda" />
-            <p v-if="erros.salePrice" class="field-error">{{ erros.salePrice }}</p>
-          </div>
+          <MoneyField v-model="salePriceModel" label="Preço de Venda" required :error="erros.salePrice" test-id="preco-venda" />
           <div>
             <label class="field-label">Preço de Custo</label>
             <input disabled placeholder="Definido por variante" />
@@ -199,15 +195,14 @@
 
       <CollapsibleSection title="Preços">
         <div class="grid grid-2">
-          <div>
-            <label class="field-label">Preço de Venda *</label>
-            <input v-model.number="draft.salePrice" type="number" step="0.01" min="0" data-test="variante-preco-venda" />
-            <p v-if="errosDraft.salePrice" class="field-error">{{ errosDraft.salePrice }}</p>
-          </div>
-          <div>
-            <label class="field-label">Preço de Custo</label>
-            <input v-model.number="draft.costPrice" type="number" step="0.01" min="0" />
-          </div>
+          <MoneyField
+            v-model="draftSalePriceModel"
+            label="Preço de Venda"
+            required
+            :error="errosDraft.salePrice"
+            test-id="variante-preco-venda"
+          />
+          <MoneyField v-model="draft.costPrice" label="Preço de Custo" />
         </div>
       </CollapsibleSection>
 
@@ -259,6 +254,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import TextField from '@/components/TextField.vue'
+import MoneyField from '@/components/MoneyField.vue'
 import FormActions from '@/components/FormActions.vue'
 import ProductTypeSelector from '@/components/ProductTypeSelector.vue'
 import SlideOver from '@/components/SlideOver.vue'
@@ -346,6 +342,16 @@ const salvando = ref(false)
 const categorias = ref<CategoryResponse[]>([])
 const coresEstampas = ref<ColorwayResponse[]>([])
 const marcas = ref<BrandResponse[]>([])
+
+// salePrice is required (never null) on both the parent form and a variant
+// draft, but MoneyField's v-model can emit null when cleared -- fall back to
+// 0 rather than let that leak into a field that isn't supposed to be nullable.
+const salePriceModel = computed({
+  get: () => form.salePrice,
+  set: (valor: number | null) => {
+    form.salePrice = valor ?? 0
+  },
+})
 
 const varTypes = ref<VarType[]>([])
 const addingValueTo = ref<number | null>(null)
@@ -531,6 +537,12 @@ const sizeDraftModel = computed({
   get: () => draft.size ?? '',
   set: (valor: string) => {
     draft.size = valor
+  },
+})
+const draftSalePriceModel = computed({
+  get: () => draft.salePrice,
+  set: (valor: number | null) => {
+    draft.salePrice = valor ?? 0
   },
 })
 

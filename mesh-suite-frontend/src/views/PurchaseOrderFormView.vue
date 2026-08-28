@@ -62,14 +62,7 @@
             placeholder="Qtd."
             data-test="item-quantidade"
           />
-          <input
-            v-model.number="itemForm.unitPrice"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Valor unit."
-            data-test="item-valor-unitario"
-          />
+          <MoneyField v-model="itemUnitPriceModel" test-id="item-valor-unitario" />
           <button type="button" class="btn-secondary" data-test="item-adicionar" @click="adicionarItem">+ Adicionar</button>
         </div>
         <p v-if="erros.items" class="field-error">{{ erros.items }}</p>
@@ -99,7 +92,7 @@
           <div><span>Subtotal</span><span>{{ formatarPreco(subtotal) }}</span></div>
           <div>
             <span>Desconto</span>
-            <input v-model.number="form.discount" type="number" step="0.01" min="0" data-test="desconto" />
+            <MoneyField v-model="discountModel" test-id="desconto" />
           </div>
           <div class="total-final"><span>Total</span><span>{{ formatarPreco(total) }}</span></div>
         </div>
@@ -119,6 +112,7 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import MoneyField from '@/components/MoneyField.vue'
 import {
   getPurchaseOrder,
   createPurchaseOrder,
@@ -171,6 +165,21 @@ const compradores = ref<Buyer[]>([])
 const produtoBusca = ref('')
 const resultadosProdutos = ref<ProductListItem[]>([])
 const itemForm = reactive({ productId: '', productName: '', quantity: 1, unitPrice: 0 })
+
+// discount/unitPrice are required (never null), but MoneyField's v-model can
+// emit null when the user clears the field -- fall back to 0.
+const discountModel = computed({
+  get: () => form.discount,
+  set: (valor: number | null) => {
+    form.discount = valor ?? 0
+  },
+})
+const itemUnitPriceModel = computed({
+  get: () => itemForm.unitPrice,
+  set: (valor: number | null) => {
+    itemForm.unitPrice = valor ?? 0
+  },
+})
 
 const subtotal = computed(() => form.items.reduce((soma, item) => soma + item.quantity * item.unitPrice, 0))
 const total = computed(() => subtotal.value - (Number(form.discount) || 0))

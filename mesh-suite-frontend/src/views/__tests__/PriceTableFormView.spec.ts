@@ -27,6 +27,12 @@ function mountWithRouter(path = '/tabelas-preco/novo') {
 
 const produtoAtivo = { id: 'prod-1', name: 'Camiseta Polo', sku: 'P0001', type: 'PRODUCT' as const, salePrice: 100, stockQuantity: 10, status: 'ACTIVE' as const, size: null, colorwayName: null }
 
+// item-preco-N is a MoneyField now (masked pt-BR display, ex: "1.234,56"),
+// not a raw number input -- Number(str) can't parse the comma decimal.
+function parseMoneyValue(displayValue: string): number {
+  return parseFloat(displayValue.replace(/\./g, '').replace(',', '.'))
+}
+
 async function adicionarProdutoViaModal(wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper']) {
   await wrapper.find('[data-test="adicionar-itens"]').trigger('click')
   await flushPromises()
@@ -83,7 +89,7 @@ describe('PriceTableFormView', () => {
     // default rule is AUTOMATIC/ADD/FIXED/adjustmentValue=0 -> preço = precoVenda
     expect(wrapper.text()).toContain('Camiseta Polo')
     const precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
-    expect(Number(precoInput.value)).toBeCloseTo(100, 2)
+    expect(parseMoneyValue(precoInput.value)).toBeCloseTo(100, 2)
   })
 
   it('recalculates the exceptions live when the ajuste rule changes in TODOS_PRODUTOS mode', async () => {
@@ -99,7 +105,7 @@ describe('PriceTableFormView', () => {
     await flushPromises()
 
     const precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
-    expect(Number(precoInput.value)).toBeCloseTo(150, 2) // produtoAtivo.salePrice=100, ADD+FIXED+50
+    expect(parseMoneyValue(precoInput.value)).toBeCloseTo(150, 2) // produtoAtivo.salePrice=100, ADD+FIXED+50
   })
 
   // SegmentedControl stamps its test-id on each option button, so the filter is probed
@@ -206,18 +212,20 @@ describe('PriceTableFormView', () => {
     })
     await adicionarProdutoViaModal(wrapper)
 
-    await wrapper.find('[data-test="item-preco-0"]').setValue('999')
+    // MoneyField masks calculator-style: typed digits fill in from the right,
+    // so "99900" (not "999") is what a user types to land on R$ 999,00.
+    await wrapper.find('[data-test="item-preco-0"]').setValue('99900')
     await wrapper.find('[data-test="valor-ajuste"]').setValue('20')
     await flushPromises()
 
     let precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
-    expect(Number(precoInput.value)).toBeCloseTo(999, 2)
+    expect(parseMoneyValue(precoInput.value)).toBeCloseTo(999, 2)
 
     await wrapper.find('[data-test="item-reset-0"]').trigger('click')
     await flushPromises()
 
     precoInput = wrapper.find('[data-test="item-preco-0"]').element as HTMLInputElement
-    expect(Number(precoInput.value)).toBeCloseTo(120, 2) // produtoAtivo.salePrice=100, ADD+FIXED+20
+    expect(parseMoneyValue(precoInput.value)).toBeCloseTo(120, 2) // produtoAtivo.salePrice=100, ADD+FIXED+20
   })
 
   it('removing an item in the modal removes it from the tabela', async () => {

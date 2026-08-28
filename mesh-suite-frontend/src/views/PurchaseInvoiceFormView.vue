@@ -71,7 +71,11 @@
         <tbody>
           <tr v-for="(parcela, index) in form.installments" :key="index">
             <td>
-              <input v-model.number="parcela.amount" type="number" step="0.01" min="0" :data-test="`parcela-valor-${index}`" />
+              <MoneyField
+                :model-value="parcela.amount"
+                @update:model-value="(v) => (parcela.amount = v ?? 0)"
+                :test-id="`parcela-valor-${index}`"
+              />
             </td>
             <td>
               <input v-model="parcela.dueDate" type="date" :data-test="`parcela-vencimento-${index}`" />
@@ -101,6 +105,7 @@
 import { computed, reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
+import MoneyField from '@/components/MoneyField.vue'
 import { getPurchaseOrder, type PurchaseOrderResponse } from '@/api/purchaseOrders'
 import { issuePurchaseInvoice, type InstallmentInput } from '@/api/purchaseInvoices'
 
