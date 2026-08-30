@@ -1,5 +1,5 @@
 <template>
-  <AppShell :title="modoEdicao ? 'Editar Fornecedor' : 'Novo Fornecedor'">
+  <AppShell :title="modoEdicao ? 'Editar Transportadora' : 'Nova Transportadora'">
     <form class="form" @submit.prevent="salvar">
       <section class="card">
         <h2>Dados Gerais</h2>
@@ -25,7 +25,7 @@
             v-model="form.tradeName"
             label="Nome Fantasia"
             required
-            placeholder="Ex: Tecidos Aurora"
+            placeholder="Ex: Transportes Rápido Ltda"
             :error="erros.nomeFantasia"
             test-id="nomeFantasia"
             @blur="validarNomeFantasia"
@@ -144,8 +144,9 @@
             </select>
           </div>
           <div>
-            <label class="field-label">Cidade</label>
-            <input v-model="form.city" data-test="cidade" />
+            <label class="field-label">Cidade *</label>
+            <input v-model="form.city" data-test="cidade" @blur="validarCidade" />
+            <p v-if="erros.cidade" class="field-error">{{ erros.cidade }}</p>
           </div>
           <div>
             <label class="field-label">Bairro</label>
@@ -191,12 +192,12 @@
 
       <section class="card">
         <h2>Observação</h2>
-        <textarea v-model="form.notes" rows="4" placeholder="Informações adicionais sobre o fornecedor..."></textarea>
+        <textarea v-model="form.notes" rows="4" placeholder="Informações adicionais sobre a transportadora..."></textarea>
       </section>
 
       <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
 
-      <FormActions :saving="salvando" save-label="Salvar Fornecedor" @cancel="cancelar" />
+      <FormActions :saving="salvando" save-label="Salvar Transportadora" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
@@ -238,7 +239,7 @@ function novoFormulario(): PartnerRequest {
     document: '',
     tradeName: '',
     legalName: '',
-    roles: ['SUPPLIER'],
+    roles: ['CARRIER'],
     billingEmails: '',
     whatsapp: '',
     taxIndicator: null,
@@ -273,6 +274,7 @@ const erros = reactive<{
   emailsCobranca?: string
   whatsapp?: string
   cep?: string
+  cidade?: string
 }>({})
 const errosContatos = ref<ErrosContato[]>([])
 const erroGeral = ref('')
@@ -287,7 +289,7 @@ onMounted(async () => {
       Object.assign(form, parceiro)
       errosContatos.value = form.contacts.map(() => ({}))
     } catch {
-      erroGeral.value = 'Não foi possível carregar os dados do fornecedor. Tente novamente em instantes.'
+      erroGeral.value = 'Não foi possível carregar os dados da transportadora. Tente novamente em instantes.'
     }
   }
 })
@@ -322,6 +324,7 @@ async function buscarCep() {
   form.neighborhood = endereco.bairro
   form.city = endereco.localidade
   form.state = endereco.uf
+  validarCidade()
 }
 
 function validarNomeFantasia() {
@@ -354,6 +357,13 @@ function validarCep() {
   erros.cep = !form.zipCode || cepValido(form.zipCode) ? undefined : 'CEP inválido'
 }
 
+// Município é obrigatório para Transportadora (diferente de Cliente/Fornecedor,
+// onde cidade é opcional) -- ver PRD-02 (Expedição/Logística), seção Fluxo —
+// Cadastro de Transportadora.
+function validarCidade() {
+  erros.cidade = form.city.trim() ? undefined : 'Campo obrigatório'
+}
+
 function validarContatoEmail(index: number) {
   const contato = form.contacts[index]
   errosContatos.value[index] = {
@@ -372,9 +382,7 @@ function validarContatoTelefone(index: number, campo: 'businessPhone' | 'mobileP
 }
 
 function validarPapeis() {
-  erros.papeis = form.roles.some((p) => p === 'CUSTOMER' || p === 'SUPPLIER')
-    ? undefined
-    : 'Selecione ao menos Cliente ou Fornecedor'
+  erros.papeis = form.roles.length > 0 ? undefined : 'Selecione ao menos um papel'
 }
 
 function validar(): boolean {
@@ -384,6 +392,7 @@ function validar(): boolean {
   validarEmailsCobranca()
   validarWhatsapp()
   validarCep()
+  validarCidade()
   validarPapeis()
   form.contacts.forEach((_, index) => {
     validarContatoEmail(index)
@@ -402,6 +411,7 @@ function validar(): boolean {
     !erros.emailsCobranca &&
     !erros.whatsapp &&
     !erros.cep &&
+    !erros.cidade &&
     semErroContatos
   )
 }
@@ -419,8 +429,8 @@ async function salvar() {
     } else {
       await createPartner(form)
     }
-    showToast('Fornecedor salvo com sucesso!')
-    router.push({ name: 'fornecedores' })
+    showToast('Transportadora salva com sucesso!')
+    router.push({ name: 'transportadoras' })
   } catch (err: any) {
     if (err?.response?.status === 409) {
       erroGeral.value = 'Já existe um parceiro cadastrado com este documento.'
@@ -437,7 +447,7 @@ async function salvar() {
 }
 
 function cancelar() {
-  router.push({ name: 'fornecedores' })
+  router.push({ name: 'transportadoras' })
 }
 </script>
 
@@ -532,7 +542,6 @@ textarea {
   font-size: 13px;
   color: var(--pm-text-dark);
 }
-
 
 .input-action {
   display: flex;
