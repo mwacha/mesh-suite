@@ -52,11 +52,8 @@
               <input type="checkbox" :checked="form.roles.includes('SUPPLIER')" @change="togglePapel('SUPPLIER')" />
               Fornecedor
             </label>
-            <label
-              class="checkbox-label checkbox-inert"
-              title="Pertence ao domínio Expedição/Logística, ainda não implementado"
-            >
-              <input type="checkbox" disabled />
+            <label class="checkbox-label">
+              <input type="checkbox" :checked="form.roles.includes('CARRIER')" @change="togglePapel('CARRIER')" />
               Transportadora
             </label>
           </div>
@@ -555,11 +552,6 @@ textarea {
   gap: 6px;
   font-size: 13px;
   color: var(--pm-text-dark);
-}
-
-.checkbox-inert {
-  cursor: not-allowed;
-  color: var(--pm-text-muted);
 }
 
 .input-action {

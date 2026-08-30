@@ -213,11 +213,9 @@ describe('AppSidebar', () => {
     }
 
     await wrapper.find('[data-test="group-cadastros"]').trigger('click')
-    // Fornecedores now routes to a real screen (this task), so it's no longer inert.
-    expect(wrapper.find('[data-test="nav-Fornecedores"]').classes()).not.toContain('nav-item-inert')
-    for (const label of ['Transportadoras']) {
-      expect(wrapper.find(`[data-test="nav-${label}"]`).exists()).toBe(true)
-      expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).toContain('nav-item-inert')
+    // Fornecedores and Transportadoras now route to real screens, so neither is inert anymore.
+    for (const label of ['Fornecedores', 'Transportadoras']) {
+      expect(wrapper.find(`[data-test="nav-${label}"]`).classes()).not.toContain('nav-item-inert')
     }
   })
 

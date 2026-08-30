@@ -10,6 +10,9 @@ import ClienteDetailView from '@/views/ClienteDetailView.vue'
 import FornecedoresListView from '@/views/FornecedoresListView.vue'
 import FornecedorFormView from '@/views/FornecedorFormView.vue'
 import FornecedorDetailView from '@/views/FornecedorDetailView.vue'
+import TransportadorasListView from '@/views/TransportadorasListView.vue'
+import TransportadoraFormView from '@/views/TransportadoraFormView.vue'
+import TransportadoraDetailView from '@/views/TransportadoraDetailView.vue'
 import ProductFormView from '@/views/ProductFormView.vue'
 import ProductsListView from '@/views/ProductsListView.vue'
 import ProductKitFormView from '@/views/ProductKitFormView.vue'
@@ -55,6 +58,10 @@ const router = createRouter({
     { path: '/fornecedores/novo', name: 'fornecedores-novo', component: FornecedorFormView },
     { path: '/fornecedores/:id/editar', name: 'fornecedores-editar', component: FornecedorFormView },
     { path: '/fornecedores/:id', name: 'fornecedores-detalhe', component: FornecedorDetailView },
+    { path: '/transportadoras', name: 'transportadoras', component: TransportadorasListView },
+    { path: '/transportadoras/novo', name: 'transportadoras-novo', component: TransportadoraFormView },
+    { path: '/transportadoras/:id/editar', name: 'transportadoras-editar', component: TransportadoraFormView },
+    { path: '/transportadoras/:id', name: 'transportadoras-detalhe', component: TransportadoraDetailView },
     { path: '/produtos', name: 'produtos', component: ProductsListView },
     { path: '/produtos/novo', name: 'produtos-novo', component: ProductFormView },
     { path: '/produtos/novo/kit', name: 'produtos-novo-kit', component: ProductKitFormView },
