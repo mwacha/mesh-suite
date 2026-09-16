@@ -1,11 +1,13 @@
 package com.meshsuite.auth.controller;
 
+import com.meshsuite.auth.dto.ConfirmSignupRequest;
 import com.meshsuite.auth.dto.ForgotPasswordRequest;
 import com.meshsuite.auth.dto.LoginRequest;
 import com.meshsuite.auth.dto.LoginResponse;
 import com.meshsuite.auth.dto.MeResponse;
 import com.meshsuite.auth.dto.ResetPasswordRequest;
 import com.meshsuite.auth.dto.SelectAccountRequest;
+import com.meshsuite.auth.dto.SignupRequest;
 import com.meshsuite.auth.exception.AuthException;
 import com.meshsuite.auth.exception.RateLimitExceededException;
 import com.meshsuite.auth.filter.JwtAuthenticationFilter;
@@ -14,6 +16,7 @@ import com.meshsuite.auth.service.AuthService;
 import com.meshsuite.auth.service.JwtService;
 import com.meshsuite.auth.service.PasswordResetService;
 import com.meshsuite.auth.service.RateLimiter;
+import com.meshsuite.auth.service.TenantSignupService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -39,16 +42,19 @@ public class AuthController {
     private final RateLimiter rateLimiter;
     private final AuthContextService authContextService;
     private final PasswordResetService passwordResetService;
+    private final TenantSignupService tenantSignupService;
     private final boolean cookieSecure;
 
     public AuthController(AuthService authService, JwtService jwtService, RateLimiter rateLimiter,
                            AuthContextService authContextService, PasswordResetService passwordResetService,
+                           TenantSignupService tenantSignupService,
                            @Value("${app.cookie-secure}") boolean cookieSecure) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.rateLimiter = rateLimiter;
         this.authContextService = authContextService;
         this.passwordResetService = passwordResetService;
+        this.tenantSignupService = tenantSignupService;
         this.cookieSecure = cookieSecure;
     }
 
@@ -136,6 +142,28 @@ public class AuthController {
         String nome = authContextService.userName(principal.usuarioId());
         String nomeEmpresa = authContextService.companyName(principal.tenantId());
         return new MeResponse(nome, principal.papel(), nomeEmpresa);
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<Void> signup(@Valid @RequestBody SignupRequest request, HttpServletRequest httpRequest) {
+        String ip = httpRequest.getRemoteAddr();
+        if (rateLimiter.isBlocked(ip, request.adminEmail())) {
+            throw new RateLimitExceededException();
+        }
+        try {
+            tenantSignupService.signup(request);
+            rateLimiter.recordSuccess(ip, request.adminEmail());
+            return ResponseEntity.accepted().build();
+        } catch (com.meshsuite.company.exception.DuplicateCnpjException e) {
+            rateLimiter.recordFailure(ip, request.adminEmail());
+            throw e;
+        }
+    }
+
+    @PostMapping("/confirm-signup")
+    public ResponseEntity<Void> confirmSignup(@Valid @RequestBody ConfirmSignupRequest request) {
+        tenantSignupService.confirmSignup(request.token());
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/forgot-password")
