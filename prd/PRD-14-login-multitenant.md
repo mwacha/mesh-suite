@@ -37,7 +37,6 @@ Objetivo deste PRD: ser a fundação de identidade e multi-inquilino (multitenan
 
 ### Fora de escopo (explicitamente)
 - Implementação das telas/APIs de negócio dos 13 domínios já documentados — este PRD entrega a fundação sobre a qual eles serão construídos, não os domínios em si.
-- Autoatendimento/signup público de novo tenant.
 - Seleção de tenant pós-login (um usuário pertence a um único tenant neste desenho).
 - Isolamento por schema ou banco de dados separado por tenant (rejeitado na decisão da seção 0).
 - Cobrança/planos/limites de uso por tenant (billing), SSO/login social, autenticação multifator — não mencionados pelo usuário, não presumidos. Se algum for necessário, tratar como PRD à parte.
@@ -92,6 +91,16 @@ Toda entidade de negócio que vier a ser criada pelos PRDs 01–13 no sistema no
 2. Cria a primeira `Empresa` (matriz) e o primeiro `Usuario` com papel administrador daquele tenant.
 3. Tenant fica ativo e o primeiro usuário pode logar imediatamente e convidar/criar os demais usuários do seu próprio tenant (fluxo de gestão de usuários dentro do tenant é do domínio Cadastro & Segurança, `PRD-09`, ao ser reimplementado — aqui só garantimos que o primeiro usuário existe).
 
+### Fluxo — Cadastro público de Tenant (autoatendimento)
+
+1. Visitante preenche um formulário público com os dados da `Empresa` (mesmos campos do cadastro interno: razão social, CNPJ, dados fiscais básicos, contato, endereço) e os dados do primeiro `Usuario` administrador (nome, e-mail, senha).
+2. Sistema cria o `Tenant` (código gerado automaticamente a partir do nome da empresa), a `Empresa` e o `Usuario` administrador — mas o `Tenant` nasce **inativo**.
+3. Sistema envia um e-mail de confirmação com link de validade de 24h.
+4. Enquanto o `Tenant` estiver inativo, nenhum dos seus usuários consegue logar (regra 8, já existente).
+5. Ao confirmar o e-mail, o `Tenant` é ativado e o usuário pode fazer login normalmente.
+6. Se o CNPJ informado já pertence a um `Tenant` ainda não confirmado (cadastro anterior abandonado), o sistema reenvia a confirmação para esse cadastro em vez de criar um novo — evita tanto duplicidade quanto um usuário ficar permanentemente bloqueado por ter perdido o e-mail original.
+7. Rate limiting por IP e por e-mail do administrador, reaproveitando o mesmo mecanismo do login.
+
 ### Fluxo — Migração do sisconf legado como primeiro tenant
 Diferente de um "script de ALTER TABLE" (que faria sentido numa extensão in-place do sistema atual), aqui é um projeto de **migração/ETL** de dados, já que o sistema novo tem schema próprio:
 1. Criar o tenant que representa a operação atual do sisconf legado.
@@ -108,6 +117,7 @@ Diferente de um "script de ALTER TABLE" (que faria sentido numa extensão in-pla
 6. **Controle de acesso por papel único** (role-based, um usuário tem um papel dentro do seu tenant) — decisão de simplificação em relação ao legado, que tinha dois mecanismos coexistentes sem relação clara documentada (`PRD-09`). Se o negócio precisar de permissões mais finas que um papel fixo permite (o que o legado tentava resolver com `Usuario_Permissao`), isso deve ser desenhado como extensão explícita do modelo de papéis, não reintroduzindo dois sistemas paralelos.
 7. **Hash de senha nunca em algoritmo fraco** (nada de MD5/SHA1 sem salt) — bcrypt, Argon2 ou PBKDF2 desde o primeiro usuário criado.
 8. **Tenant inativo bloqueia login de todos os seus usuários**, mesmo com credenciais corretas.
+9. **Cadastro público de tenant exige confirmação de e-mail antes de qualquer login ser permitido.** O tenant nasce inativo e só é ativado pela confirmação — não existe outro mecanismo de ativação.
 
 ## 6. Integrações e dependências
 
