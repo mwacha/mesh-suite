@@ -1956,7 +1956,7 @@ describe('ConfirmSignupView', () => {
     await flushPromises()
 
     expect(authApi.confirmSignup).toHaveBeenCalledWith('abc123')
-    expect(wrapper.text()).toContain('conta confirmada')
+    expect(wrapper.text()).toContain('confirmada com sucesso')
   })
 
   it('shows an invalid/expired message on 401', async () => {
