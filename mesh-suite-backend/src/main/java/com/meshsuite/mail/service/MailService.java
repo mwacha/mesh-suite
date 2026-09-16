@@ -25,4 +25,14 @@ public class MailService {
                 "\n\nSe você não solicitou isso, ignore este e-mail.");
         mailSender.send(message);
     }
+
+    public void sendSignupConfirmationEmail(String to, String confirmLink) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);
+        message.setTo(to);
+        message.setSubject("Confirme seu cadastro — Mesh Suite");
+        message.setText("Clique no link para confirmar seu cadastro e ativar sua conta: " + confirmLink +
+                "\n\nSe você não solicitou isso, ignore este e-mail.");
+        mailSender.send(message);
+    }
 }
