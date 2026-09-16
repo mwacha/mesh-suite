@@ -136,4 +136,28 @@ class CompanyRepositoryTest extends AbstractIntegrationTest {
 
         assertThat(count).isZero();
     }
+
+    @Test
+    @Transactional
+    void findByCnpjBypassesTenantScopingWhenBypassFlagIsSet() {
+        Tenant tenant = createTenant("aurora-findcnpj");
+        setTenantContext(tenant.getId());
+
+        Company company = new Company();
+        company.setTenantId(tenant.getId());
+        company.setLegalName("Aurora Ltda");
+        company.setCnpj("99888777000111");
+        companyRepository.saveAndFlush(company);
+
+        entityManager.createNativeQuery("RESET app.tenant_id").executeUpdate();
+
+        // No tenant context and no bypass flag: company_tenant_isolation hides the row.
+        assertThat(companyRepository.findByCnpj("99888777000111")).isEmpty();
+
+        // company_signup_lookup (Task 1) is a second PERMISSIVE policy gated by this
+        // flag, ORed with company_tenant_isolation for SELECT.
+        entityManager.createNativeQuery("SET LOCAL app.bypass_tenant_check = 'true'").executeUpdate();
+        assertThat(companyRepository.findByCnpj("99888777000111")).isPresent();
+        entityManager.createNativeQuery("RESET app.bypass_tenant_check").executeUpdate();
+    }
 }

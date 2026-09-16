@@ -200,4 +200,24 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         assertThat(result).extracting(User::getName)
                 .containsExactly("Breno Administrativo", "Duda Admin");
     }
+
+    @Test
+    @Transactional
+    void findFirstByTenantIdAndRoleFindsTheAdmin() {
+        Tenant tenant = createTenant("aurora-findadmin");
+        setTenantContext(tenant.getId());
+
+        User user = new User();
+        user.setTenantId(tenant.getId());
+        user.setName("Marina");
+        user.setEmail("marina@aurora-findadmin.com.br");
+        user.setPasswordHash("hash");
+        user.setRole(Role.ADMIN);
+        userRepository.saveAndFlush(user);
+
+        assertThat(userRepository.findFirstByTenantIdAndRole(tenant.getId(), Role.ADMIN))
+                .isPresent()
+                .get().extracting(User::getEmail).isEqualTo("marina@aurora-findadmin.com.br");
+        assertThat(userRepository.findFirstByTenantIdAndRole(tenant.getId(), Role.SALES_REP)).isEmpty();
+    }
 }

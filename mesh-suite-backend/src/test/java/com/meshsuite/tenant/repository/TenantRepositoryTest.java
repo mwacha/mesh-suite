@@ -41,4 +41,15 @@ class TenantRepositoryTest extends AbstractIntegrationTest {
                 org.springframework.dao.DataIntegrityViolationException.class,
                 () -> tenantRepository.saveAndFlush(b));
     }
+
+    @Test
+    void existsByCodigoReflectsWhatWasSaved() {
+        Tenant tenant = new Tenant();
+        tenant.setCodigo("boreal");
+        tenant.setNome("Confecção Boreal");
+        tenantRepository.saveAndFlush(tenant);
+
+        assertThat(tenantRepository.existsByCodigo("boreal")).isTrue();
+        assertThat(tenantRepository.existsByCodigo("nao-existe")).isFalse();
+    }
 }
