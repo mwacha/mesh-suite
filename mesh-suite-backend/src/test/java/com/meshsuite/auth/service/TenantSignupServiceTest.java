@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -90,6 +91,33 @@ class TenantSignupServiceTest {
                 && u.getPermissions().size() == 35));
         verify(tokenRepository).save(any(TenantSignupToken.class));
         verify(mailService).sendSignupConfirmationEmail(eq("marina@aurora.com.br"), any());
+        // A brand-new tenant has no prior token to invalidate -- invalidateAllForTenant
+        // is scoped to the resend branch only.
+        verify(tokenRepository, never()).invalidateAllForTenant(any());
+    }
+
+    @Test
+    void signupDeletesOrphanedTenantAndThrowsDuplicateCnpjOnRaceDuringCompanyCreation() {
+        when(companyRepository.findByCnpj("11222333000144")).thenReturn(Optional.empty());
+        when(tenantRepository.existsByCodigo(any())).thenReturn(false);
+        UUID tenantId = UUID.randomUUID();
+        when(tenantRepository.saveAndFlush(any(Tenant.class))).thenAnswer(inv -> {
+            Tenant t = inv.getArgument(0);
+            t.setId(tenantId);
+            return t;
+        });
+        // Simulates the genuine race described in the finding: another concurrent
+        // signup for the same CNPJ committed its Company row first, so this
+        // companyRepository.save(...) trips the DB's unique constraint.
+        when(companyRepository.save(any(Company.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint"));
+
+        assertThrows(DuplicateCnpjException.class, () -> service().signup(request("11222333000144")));
+
+        verify(tenantRepository).deleteById(tenantId);
+        verify(userRepository, never()).save(any());
+        verify(tokenRepository, never()).save(any());
+        verify(mailService, never()).sendSignupConfirmationEmail(any(), any());
     }
 
     @Test
@@ -128,6 +156,7 @@ class TenantSignupServiceTest {
 
         verify(companyRepository, never()).save(any());
         verify(userRepository, never()).save(any());
+        verify(tokenRepository).invalidateAllForTenant(tenantId);
         verify(tokenRepository).save(any(TenantSignupToken.class));
         verify(mailService).sendSignupConfirmationEmail(eq("marina@aurora.com.br"), any());
     }

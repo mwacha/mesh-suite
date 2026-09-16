@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,6 +84,10 @@ public class TenantSignupService {
             if (existing.tenantAtivo()) {
                 throw new DuplicateCnpjException();
             }
+            // Invalidate any prior unused token before issuing a new one -- a resend
+            // must supersede the earlier link, not just add a second valid one
+            // alongside it for the rest of its 24h life (spec §2 decision 5).
+            tokenRepository.invalidateAllForTenant(existing.tenantId());
             issueTokenAndSendEmail(existing.tenantId(), existing.adminEmail());
             return;
         }
@@ -96,6 +101,15 @@ public class TenantSignupService {
         TenantContext.set(tenant.getId());
         try {
             self.createCompanyAndAdmin(tenant.getId(), request);
+        } catch (DataIntegrityViolationException e) {
+            // Genuine race: two requests for the same CNPJ both passed
+            // findExistingSignup's dedup check before either committed. The Tenant
+            // row above is already committed (saveAndFlush in its own transaction),
+            // so clean it up here rather than leaving an orphaned ativo=false tenant
+            // with no Company/User behind it. Tenant has no RLS, so this delete needs
+            // no TenantContext/self. dance.
+            tenantRepository.deleteById(tenant.getId());
+            throw new DuplicateCnpjException();
         } finally {
             TenantContext.clear();
         }
