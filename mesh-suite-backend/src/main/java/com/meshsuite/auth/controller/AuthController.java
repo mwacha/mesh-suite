@@ -150,14 +150,13 @@ public class AuthController {
         if (rateLimiter.isBlocked(ip, request.adminEmail())) {
             throw new RateLimitExceededException();
         }
-        try {
-            tenantSignupService.signup(request);
-            rateLimiter.recordSuccess(ip, request.adminEmail());
-            return ResponseEntity.accepted().build();
-        } catch (com.meshsuite.company.exception.DuplicateCnpjException e) {
-            rateLimiter.recordFailure(ip, request.adminEmail());
-            throw e;
-        }
+        // Unlike /login, every attempt counts here, not just failures: signup abuse
+        // is about request volume (spinning up junk tenants), not credential
+        // guessing, so recordSuccess would let an attacker who varies CNPJ/e-mail on
+        // every request wipe their own bucket each time and never trip isBlocked.
+        rateLimiter.recordFailure(ip, request.adminEmail());
+        tenantSignupService.signup(request);
+        return ResponseEntity.accepted().build();
     }
 
     @PostMapping("/confirm-signup")
