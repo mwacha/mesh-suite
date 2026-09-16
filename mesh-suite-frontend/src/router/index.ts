@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vu
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/LoginView.vue'
 import SignupView from '@/views/SignupView.vue'
+import ConfirmSignupView from '@/views/ConfirmSignupView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import DashboardView from '@/views/DashboardView.vue'
@@ -49,6 +50,7 @@ const router = createRouter({
   routes: [
     { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
     { path: '/cadastro', name: 'signup', component: SignupView, meta: { public: true } },
+    { path: '/confirmar-cadastro', name: 'confirm-signup', component: ConfirmSignupView, meta: { public: true } },
     { path: '/esqueci-senha', name: 'forgot-password', component: ForgotPasswordView, meta: { public: true } },
     { path: '/redefinir-senha', name: 'reset-password', component: ResetPasswordView, meta: { public: true } },
     { path: '/', name: 'dashboard', component: DashboardView },
