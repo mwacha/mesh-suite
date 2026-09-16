@@ -127,21 +127,27 @@ public class TenantSignupService {
     @Transactional(readOnly = true)
     ExistingSignup findExistingSignup(String cnpj) {
         entityManager.createNativeQuery("SET LOCAL app.bypass_tenant_check = 'true'").executeUpdate();
-        Optional<Company> company = companyRepository.findByCnpj(cnpj);
-        if (company.isEmpty()) {
+        // try/finally so RESET always runs -- success, early return, or either
+        // orElseThrow below -- rather than relying on SET LOCAL's transaction-scoped
+        // auto-revert. Don't rely on this method's own @Transactional always opening a
+        // fresh physical transaction (true today only when called via `self.`).
+        try {
+            Optional<Company> company = companyRepository.findByCnpj(cnpj);
+            if (company.isEmpty()) {
+                return null;
+            }
+            UUID tenantId = company.get().getTenantId();
+            Tenant tenant = tenantRepository.findById(tenantId).orElseThrow(DuplicateCnpjException::new);
+            String adminEmail = null;
+            if (!tenant.isAtivo()) {
+                adminEmail = userRepository.findFirstByTenantIdAndRole(tenantId, Role.ADMIN)
+                        .map(User::getEmail)
+                        .orElseThrow(DuplicateCnpjException::new);
+            }
+            return new ExistingSignup(tenantId, tenant.isAtivo(), adminEmail);
+        } finally {
             entityManager.createNativeQuery("RESET app.bypass_tenant_check").executeUpdate();
-            return null;
         }
-        UUID tenantId = company.get().getTenantId();
-        Tenant tenant = tenantRepository.findById(tenantId).orElseThrow(DuplicateCnpjException::new);
-        String adminEmail = null;
-        if (!tenant.isAtivo()) {
-            adminEmail = userRepository.findFirstByTenantIdAndRole(tenantId, Role.ADMIN)
-                    .map(User::getEmail)
-                    .orElseThrow(DuplicateCnpjException::new);
-        }
-        entityManager.createNativeQuery("RESET app.bypass_tenant_check").executeUpdate();
-        return new ExistingSignup(tenantId, tenant.isAtivo(), adminEmail);
     }
 
     @Transactional
