@@ -59,9 +59,7 @@
 
           <p class="footer-text">
             Não tem conta?
-            <span class="link-inert" title="Provisionamento de tenant fora de escopo desta fatia">
-              Fale com o time comercial
-            </span>
+            <RouterLink to="/cadastro" class="link">Criar conta</RouterLink>
           </p>
         </div>
 
@@ -329,11 +327,6 @@ input[type='text']::placeholder {
 .link {
   color: var(--pm-accent);
   text-decoration: none;
-}
-
-.link-inert {
-  color: var(--pm-accent);
-  cursor: not-allowed;
 }
 
 .error {

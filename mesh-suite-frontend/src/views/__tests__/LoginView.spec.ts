@@ -14,6 +14,7 @@ function mountWithRouter() {
       { path: '/', name: 'dashboard', component: { template: '<div />' } },
       { path: '/login', name: 'login', component: LoginView },
       { path: '/esqueci-senha', name: 'forgot-password', component: { template: '<div />' } },
+      { path: '/cadastro', name: 'signup', component: { template: '<div />' } },
     ],
   })
   return mount(LoginView, { global: { plugins: [router] } })
@@ -160,5 +161,13 @@ describe('LoginView', () => {
 
     expect(wrapper.text()).toContain('Não foi possível entrar nessa empresa')
     expect(wrapper.find('input[type="email"]').exists()).toBe(true)
+  })
+
+  it('links to the public signup page', async () => {
+    const wrapper = mountWithRouter()
+
+    const link = wrapper.find('a[href="/cadastro"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toContain('Criar conta')
   })
 })
