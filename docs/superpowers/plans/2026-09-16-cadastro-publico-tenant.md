@@ -573,10 +573,12 @@ import com.meshsuite.user.domain.User;
 import com.meshsuite.user.domain.enums.Role;
 import com.meshsuite.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -593,6 +595,18 @@ class TenantSignupServiceTest {
     @Mock MailService mailService;
     @Mock PasswordEncoder passwordEncoder;
     @Mock EntityManager entityManager;
+    @Mock Query query;
+
+    @BeforeEach
+    void stubEntityManager() {
+        // findExistingSignup always calls entityManager.createNativeQuery(...).executeUpdate()
+        // (SET LOCAL / RESET on app.bypass_tenant_check) before any business logic runs. An
+        // unstubbed Mockito mock returns null for an unstubbed method returning an object type,
+        // so without this, .executeUpdate() NPEs on every signup() test. lenient() avoids a
+        // strict-stubbing UnnecessaryStubbingException on the confirmSignup tests, which never
+        // touch entityManager at all.
+        lenient().when(entityManager.createNativeQuery(anyString())).thenReturn(query);
+    }
 
     private TenantSignupService service() {
         TenantSignupService svc = new TenantSignupService(tenantRepository, companyRepository, userRepository,
