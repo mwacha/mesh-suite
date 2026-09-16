@@ -27,6 +27,10 @@ app:
   mail:
     from: ${MAIL_FROM:no-reply@meshsuite.local}
   frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  # Auth cookies are Secure by default (HTTPS-only) -- only set COOKIE_SECURE=false
+  # for a plain-HTTP deployment (e.g. a test env with no TLS/domain yet). Never
+  # disable this for anything reachable over the public internet with real data.
+  cookie-secure: ${COOKIE_SECURE:true}
 
 management:
   endpoints:

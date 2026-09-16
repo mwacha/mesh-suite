@@ -18,6 +18,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -38,14 +39,17 @@ public class AuthController {
     private final RateLimiter rateLimiter;
     private final AuthContextService authContextService;
     private final PasswordResetService passwordResetService;
+    private final boolean cookieSecure;
 
     public AuthController(AuthService authService, JwtService jwtService, RateLimiter rateLimiter,
-                           AuthContextService authContextService, PasswordResetService passwordResetService) {
+                           AuthContextService authContextService, PasswordResetService passwordResetService,
+                           @Value("${app.cookie-secure}") boolean cookieSecure) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.rateLimiter = rateLimiter;
         this.authContextService = authContextService;
         this.passwordResetService = passwordResetService;
+        this.cookieSecure = cookieSecure;
     }
 
     @PostMapping("/login")
@@ -64,7 +68,7 @@ public class AuthController {
             if (outcome instanceof AuthService.AuthOutcome.NeedsSelection needsSelection) {
                 ResponseCookie cookie = ResponseCookie.from(PENDING_SELECTION_COOKIE_NAME, needsSelection.pendingToken())
                         .httpOnly(true)
-                        .secure(true)
+                        .secure(cookieSecure)
                         .sameSite("Strict")
                         .path("/api/auth")
                         .maxAge(5 * 60)
@@ -100,7 +104,7 @@ public class AuthController {
 
         ResponseCookie clearPending = ResponseCookie.from(PENDING_SELECTION_COOKIE_NAME, "")
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieSecure)
                 .sameSite("Strict")
                 .path("/api/auth")
                 .maxAge(0)
@@ -119,7 +123,7 @@ public class AuthController {
         long maxAgeSeconds = manterConectado ? 30L * 24 * 3600 : 8L * 3600;
         ResponseCookie cookie = ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieSecure)
                 .sameSite("Strict")
                 .path("/")
                 .maxAge(maxAgeSeconds)
