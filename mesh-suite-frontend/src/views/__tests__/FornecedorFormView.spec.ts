@@ -4,7 +4,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import FornecedorFormView from '@/views/FornecedorFormView.vue'
 import * as partnersApi from '@/api/partners'
-import * as cepApi from '@/api/cep'
 import { useToast } from '@/composables/useToast'
 
 vi.mock('@/api/partners')

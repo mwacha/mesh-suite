@@ -12,7 +12,7 @@ describe('auth store session check', () => {
   })
 
   it('sets usuario on successful /me call', async () => {
-    vi.mocked(authApi.me).mockResolvedValue({ nome: 'Marina', papel: 'ADMINISTRADOR' })
+    vi.mocked(authApi.me).mockResolvedValue({ nome: 'Marina', papel: 'ADMINISTRADOR', nomeEmpresa: null })
 
     const store = useAuthStore()
     await store.checkSession()
@@ -45,7 +45,7 @@ describe('router navigation guard', () => {
   })
 
   it('allows authenticated access to a protected route', async () => {
-    vi.mocked(authApi.me).mockResolvedValue({ nome: 'Marina', papel: 'ADMINISTRADOR' })
+    vi.mocked(authApi.me).mockResolvedValue({ nome: 'Marina', papel: 'ADMINISTRADOR', nomeEmpresa: null })
 
     const result = await authGuard({ meta: {} })
 

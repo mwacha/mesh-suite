@@ -60,7 +60,7 @@ describe('DashboardView', () => {
 
   it('greets the logged-in user by name', async () => {
     const authStore = useAuthStore()
-    authStore.usuario = { nome: 'Marina Aurora', papel: 'ADMINISTRADOR' }
+    authStore.usuario = { nome: 'Marina Aurora', papel: 'ADMINISTRADOR', nomeEmpresa: null }
 
     const { wrapper } = await mountWithRouter()
 

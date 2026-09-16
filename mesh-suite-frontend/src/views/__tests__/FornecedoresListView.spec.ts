@@ -54,7 +54,7 @@ describe('FornecedoresListView', () => {
   })
 
   it('only lists Fornecedores, never Clientes/Transportadoras', async () => {
-    const { wrapper } = await mountWithRouter()
+    await mountWithRouter()
     await flushPromises()
 
     expect(partnersApi.listPartners).toHaveBeenLastCalledWith(expect.objectContaining({ papel: 'SUPPLIER' }))

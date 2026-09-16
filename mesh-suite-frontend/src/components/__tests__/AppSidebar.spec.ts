@@ -75,7 +75,7 @@ describe('AppSidebar', () => {
   it("shows the logged-in user's name and role in the footer", async () => {
     const { wrapper } = mountWithRouter()
     const authStore = useAuthStore()
-    authStore.usuario = { nome: 'Marina Aurora', papel: 'ADMINISTRADOR' }
+    authStore.usuario = { nome: 'Marina Aurora', papel: 'ADMINISTRADOR', nomeEmpresa: null }
     await wrapper.vm.$nextTick()
 
     expect(wrapper.text()).toContain('Marina Aurora')

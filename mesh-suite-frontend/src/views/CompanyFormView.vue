@@ -122,7 +122,25 @@ const router = useRouter()
 
 const editMode = computed(() => typeof route.params.id === 'string')
 
-function emptyForm(): CompanyRequest {
+interface CompanyFormModel {
+  legalName: string
+  cnpj: string
+  tradeName: string
+  stateRegistration: string
+  municipalRegistration: string
+  phone: string
+  email: string
+  website: string
+  zipCode: string
+  street: string
+  number: string
+  complement: string
+  neighborhood: string
+  city: string
+  state: string
+}
+
+function emptyForm(): CompanyFormModel {
   return {
     legalName: '',
     cnpj: '',
@@ -146,7 +164,7 @@ function emptyForm(): CompanyRequest {
 // null from the backend (nullable columns, no empty-string default), so
 // loading a company straight into `form` without this would hand null to
 // the mask helpers (maskCnpj/maskTelefone/maskCep) and crash their render.
-function toFormValues(company: CompanyResponse): CompanyRequest {
+function toFormValues(company: CompanyResponse): CompanyFormModel {
   return {
     legalName: company.legalName,
     cnpj: company.cnpj,
@@ -166,7 +184,7 @@ function toFormValues(company: CompanyResponse): CompanyRequest {
   }
 }
 
-const form = reactive<CompanyRequest>(emptyForm())
+const form = reactive<CompanyFormModel>(emptyForm())
 const errors = reactive<{ legalName?: string; cnpj?: string; email?: string; zipCode?: string }>({})
 const cepError = ref('')
 const generalError = ref('')
