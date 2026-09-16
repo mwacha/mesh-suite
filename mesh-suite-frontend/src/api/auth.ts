@@ -47,3 +47,32 @@ export async function forgotPassword(email: string): Promise<void> {
 export async function resetPassword(token: string, novaSenha: string): Promise<void> {
   await apiClient.post('/auth/reset-password', { token, novaSenha })
 }
+
+export interface SignupPayload {
+  legalName: string
+  cnpj: string
+  tradeName: string
+  stateRegistration: string
+  municipalRegistration: string
+  phone: string
+  email: string
+  website: string
+  zipCode: string
+  street: string
+  number: string
+  complement: string
+  neighborhood: string
+  city: string
+  state: string
+  adminName: string
+  adminEmail: string
+  senha: string
+}
+
+export async function signup(payload: SignupPayload): Promise<void> {
+  await apiClient.post('/auth/signup', payload)
+}
+
+export async function confirmSignup(token: string): Promise<void> {
+  await apiClient.post('/auth/confirm-signup', { token })
+}
