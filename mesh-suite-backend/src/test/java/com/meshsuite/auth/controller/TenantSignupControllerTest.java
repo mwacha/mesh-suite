@@ -3,6 +3,7 @@ package com.meshsuite.auth.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,6 +23,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -132,5 +134,109 @@ class TenantSignupControllerTest extends AbstractIntegrationTest {
                                 {"legalName":"Outra Ltda","cnpj":"22333444000155",
                                  "adminName":"Carlos","adminEmail":"carlos@outra.com.br","senha":"senha1234"}"""))
                 .andExpect(status().isConflict());
+    }
+
+    private static String tokenFromConfirmLink(String confirmLink) {
+        return confirmLink.split("\\?token=")[1];
+    }
+
+    @Test
+    void signupThenConfirmSignupWithTheRealEmailedTokenActivatesTheTenant() throws Exception {
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(remoteAddr("10.0.0.5"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"legalName":"Confecção Boreal Ltda","cnpj":"33444555000166",
+                                 "adminName":"Paula","adminEmail":"paula@boreal.com.br","senha":"senha1234"}"""))
+                .andExpect(status().isAccepted());
+
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mailService).sendSignupConfirmationEmail(eq("paula@boreal.com.br"), linkCaptor.capture());
+        String rawToken = tokenFromConfirmLink(linkCaptor.getValue());
+
+        mockMvc.perform(post("/api/auth/confirm-signup")
+                        .with(remoteAddr("10.0.0.5"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"" + rawToken + "\"}"))
+                .andExpect(status().isOk());
+
+        Company company = companyRepository.findAll().stream()
+                .filter(c -> c.getCnpj().equals("33444555000166"))
+                .findFirst().orElseThrow();
+        Tenant tenant = tenantRepository.findById(company.getTenantId()).orElseThrow();
+        assertThat(tenant.isAtivo()).isTrue();
+    }
+
+    @Test
+    void resendingSignupInvalidatesThePreviousTokenAndDoesNotDuplicateTheTenant() throws Exception {
+        String body = """
+                {"legalName":"Confecção Linda Ltda","cnpj":"44555666000177",
+                 "adminName":"Renata","adminEmail":"renata@linda.com.br","senha":"senha1234"}""";
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(remoteAddr("10.0.0.6"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isAccepted());
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(remoteAddr("10.0.0.7"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isAccepted());
+
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mailService, times(2)).sendSignupConfirmationEmail(eq("renata@linda.com.br"), linkCaptor.capture());
+        List<String> links = linkCaptor.getAllValues();
+        String firstToken = tokenFromConfirmLink(links.get(0));
+        String secondToken = tokenFromConfirmLink(links.get(1));
+
+        mockMvc.perform(post("/api/auth/confirm-signup")
+                        .with(remoteAddr("10.0.0.6"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"" + firstToken + "\"}"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/auth/confirm-signup")
+                        .with(remoteAddr("10.0.0.7"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"" + secondToken + "\"}"))
+                .andExpect(status().isOk());
+
+        List<Company> companies = companyRepository.findAll().stream()
+                .filter(c -> c.getCnpj().equals("44555666000177"))
+                .toList();
+        assertThat(companies).hasSize(1);
+        Tenant tenant = tenantRepository.findById(companies.get(0).getTenantId()).orElseThrow();
+        assertThat(tenant.isAtivo()).isTrue();
+    }
+
+    @Test
+    void sixthSignupAttemptFromSameIpAndEmailIsRateLimited() throws Exception {
+        String ip = "10.0.0.8";
+        String adminEmail = "rate-limit-signup@teste.com.br";
+        String[] cnpjs = {
+                "90000000000101", "90000000000102", "90000000000103",
+                "90000000000104", "90000000000105", "90000000000106"
+        };
+
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/signup")
+                            .with(remoteAddr(ip))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"legalName":"Empresa Rate Limit %d Ltda","cnpj":"%s",
+                                     "adminName":"Teste","adminEmail":"%s","senha":"senha1234"}"""
+                                    .formatted(i, cnpjs[i], adminEmail)))
+                    .andExpect(status().isAccepted());
+        }
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(remoteAddr(ip))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"legalName":"Empresa Rate Limit 6 Ltda","cnpj":"%s",
+                                 "adminName":"Teste","adminEmail":"%s","senha":"senha1234"}"""
+                                .formatted(cnpjs[5], adminEmail)))
+                .andExpect(status().isTooManyRequests());
     }
 }
