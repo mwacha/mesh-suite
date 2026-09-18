@@ -355,7 +355,7 @@ function cancel() {
 }
 
 .grid-cep {
-  grid-template-columns: 160px 1fr 100px;
+  grid-template-columns: 220px 1fr 100px;
 }
 
 .field-label {
@@ -393,6 +393,7 @@ input[type='password'] {
 
 .input-action :deep(.text-field) {
   flex: 1;
+  min-width: 90px;
 }
 
 .input-action button {
