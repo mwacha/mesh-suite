@@ -98,7 +98,11 @@ describe('FornecedorFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Já existe um parceiro cadastrado com este documento')
+    expect(
+      useToast().toasts.some(
+        (t) => t.type === 'error' && t.message === 'Já existe um parceiro cadastrado com este documento.',
+      ),
+    ).toBe(true)
   })
 
   it('loads existing parceiro data in edit mode', async () => {
@@ -120,10 +124,16 @@ describe('FornecedorFormView', () => {
   it('shows an error message when loading parceiro data fails in edit mode', async () => {
     vi.mocked(partnersApi.getPartner).mockRejectedValue(new Error('network error'))
 
-    const { wrapper } = await mountWithRouter('/fornecedores/abc-123/editar')
+    await mountWithRouter('/fornecedores/abc-123/editar')
     await flushPromises()
 
     expect(partnersApi.getPartner).toHaveBeenCalledWith('abc-123')
-    expect(wrapper.text()).toContain('Não foi possível carregar os dados do fornecedor')
+    expect(
+      useToast().toasts.some(
+        (t) =>
+          t.type === 'error' &&
+          t.message === 'Não foi possível carregar os dados do fornecedor. Tente novamente em instantes.',
+      ),
+    ).toBe(true)
   })
 })

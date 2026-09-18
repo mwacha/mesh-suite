@@ -37,10 +37,10 @@ public class Partner {
     @Column(nullable = false, length = 14)
     private String document;
 
-    @Column(name = "trade_name", nullable = false)
+    @Column(name = "trade_name", nullable = false, length = 100)
     private String tradeName;
 
-    @Column(name = "legal_name")
+    @Column(name = "legal_name", length = 150)
     private String legalName;
 
     @Enumerated(EnumType.STRING)
@@ -75,12 +75,13 @@ public class Partner {
     @Column(length = 8)
     private String zipCode;
 
+    @Column(length = 100)
     private String street;
 
-    @Column(length = 20)
+    @Column(length = 10)
     private String number;
 
-    @Column(length = 100)
+    @Column(length = 60)
     private String neighborhood;
 
     @Column(length = 100)
@@ -89,7 +90,7 @@ public class Partner {
     @Column(length = 2)
     private String state;
 
-    @Column(length = 100)
+    @Column(length = 60)
     private String city;
 
     @Column(columnDefinition = "TEXT")

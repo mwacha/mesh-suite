@@ -5,6 +5,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import PriceTableFormView from '@/views/PriceTableFormView.vue'
 import * as tabelasPrecoApi from '@/api/priceTables'
 import * as produtosApi from '@/api/products'
+import { useToast } from '@/composables/useToast'
 
 vi.mock('@/api/priceTables')
 vi.mock('@/api/products')
@@ -46,6 +47,7 @@ describe('PriceTableFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    useToast().toasts.splice(0, useToast().toasts.length)
   })
 
   it('shows required-field errors when nome/inicioVigencia are blank on submit', async () => {
@@ -328,7 +330,11 @@ describe('PriceTableFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Já existe uma tabela de preço cadastrada com este nome')
+    expect(
+      useToast().toasts.some(
+        (t) => t.type === 'error' && t.message === 'Já existe uma tabela de preço cadastrada com este nome.',
+      ),
+    ).toBe(true)
   })
 
   it('loads existing tabela data in edit mode', async () => {
@@ -354,9 +360,13 @@ describe('PriceTableFormView', () => {
   it('shows an error message when loading tabela data fails in edit mode', async () => {
     vi.mocked(tabelasPrecoApi.getPriceTable).mockRejectedValue(new Error('network error'))
 
-    const { wrapper } = await mountWithRouter('/tabelas-preco/tp-1/editar')
+    await mountWithRouter('/tabelas-preco/tp-1/editar')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Não foi possível carregar os dados da tabela de preço.')
+    expect(
+      useToast().toasts.some(
+        (t) => t.type === 'error' && t.message === 'Não foi possível carregar os dados da tabela de preço.',
+      ),
+    ).toBe(true)
   })
 })

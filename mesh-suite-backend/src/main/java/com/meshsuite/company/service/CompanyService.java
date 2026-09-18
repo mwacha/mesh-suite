@@ -105,6 +105,14 @@ public class CompanyService {
         }
     }
 
+    // CEP chega do frontend com a máscara usual (hífen, ex: "00000-000", 9
+    // caracteres) -- a coluna zip_code é VARCHAR(8), então persistir sem
+    // remover a máscara sempre falha com "value too long". Campo opcional:
+    // nulo/vazio permanece como está.
+    private static String normalizeZipCode(String zipCode) {
+        return zipCode == null || zipCode.isBlank() ? zipCode : zipCode.replaceAll("\\D", "");
+    }
+
     private void apply(Company company, CompanyRequest request) {
         company.setLegalName(request.legalName());
         company.setCnpj(request.cnpj());
@@ -114,7 +122,7 @@ public class CompanyService {
         company.setPhone(request.phone());
         company.setEmail(request.email());
         company.setWebsite(request.website());
-        company.setZipCode(request.zipCode());
+        company.setZipCode(normalizeZipCode(request.zipCode()));
         company.setStreet(request.street());
         company.setNumber(request.number());
         company.setComplement(request.complement());

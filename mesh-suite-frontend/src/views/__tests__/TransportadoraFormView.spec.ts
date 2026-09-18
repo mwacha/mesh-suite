@@ -4,10 +4,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import TransportadoraFormView from '@/views/TransportadoraFormView.vue'
 import * as partnersApi from '@/api/partners'
+import * as municipalitiesApi from '@/api/municipalities'
 import { useToast } from '@/composables/useToast'
 
 vi.mock('@/api/partners')
 vi.mock('@/api/cep')
+vi.mock('@/api/municipalities')
 
 function mountWithRouter(path = '/transportadoras/novo') {
   const router = createRouter({
@@ -21,8 +23,19 @@ function mountWithRouter(path = '/transportadoras/novo') {
   router.push(path)
   return router.isReady().then(() => ({
     router,
-    wrapper: mount(TransportadoraFormView, { global: { plugins: [router] } }),
+    // Cidade's SearchSelect teleports its panel to <body> -- stub it so it
+    // renders in place, keeping wrapper.find() queries working.
+    wrapper: mount(TransportadoraFormView, { global: { plugins: [router], stubs: { teleport: true } } }),
   }))
+}
+
+async function selectCidade(
+  wrapper: Awaited<ReturnType<typeof mountWithRouter>>['wrapper'],
+  name = 'São Paulo',
+) {
+  await wrapper.find('[data-test="cidade"]').trigger('click')
+  await flushPromises()
+  await wrapper.find(`[data-test="cidade-option-${name}"]`).trigger('click')
 }
 
 describe('TransportadoraFormView', () => {
@@ -30,6 +43,7 @@ describe('TransportadoraFormView', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     useToast().toasts.splice(0, useToast().toasts.length)
+    vi.mocked(municipalitiesApi.listMunicipalities).mockResolvedValue(['São Paulo', 'Campinas'])
   })
 
   it('defaults the Transportadora role checkbox to checked and Cliente/Fornecedor to unchecked', async () => {
@@ -86,7 +100,7 @@ describe('TransportadoraFormView', () => {
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Transportes Rápido Ltda')
     await wrapper.find('[data-test="razaoSocial"]').setValue('Transportes Rápido Comércio LTDA')
     await wrapper.find('[data-test="documento"]').setValue('11222333000144')
-    await wrapper.find('[data-test="cidade"]').setValue('São Paulo')
+    await selectCidade(wrapper)
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
@@ -110,11 +124,15 @@ describe('TransportadoraFormView', () => {
     await wrapper.find('[data-test="nomeFantasia"]').setValue('Transportes Rápido Ltda')
     await wrapper.find('[data-test="razaoSocial"]').setValue('Transportes Rápido Comércio LTDA')
     await wrapper.find('[data-test="documento"]').setValue('11222333000144')
-    await wrapper.find('[data-test="cidade"]').setValue('São Paulo')
+    await selectCidade(wrapper)
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Já existe um parceiro cadastrado com este documento')
+    expect(
+      useToast().toasts.some(
+        (t) => t.type === 'error' && t.message === 'Já existe um parceiro cadastrado com este documento.',
+      ),
+    ).toBe(true)
   })
 
   it('loads existing parceiro data in edit mode', async () => {
@@ -136,10 +154,16 @@ describe('TransportadoraFormView', () => {
   it('shows an error message when loading parceiro data fails in edit mode', async () => {
     vi.mocked(partnersApi.getPartner).mockRejectedValue(new Error('network error'))
 
-    const { wrapper } = await mountWithRouter('/transportadoras/abc-123/editar')
+    await mountWithRouter('/transportadoras/abc-123/editar')
     await flushPromises()
 
     expect(partnersApi.getPartner).toHaveBeenCalledWith('abc-123')
-    expect(wrapper.text()).toContain('Não foi possível carregar os dados da transportadora')
+    expect(
+      useToast().toasts.some(
+        (t) =>
+          t.type === 'error' &&
+          t.message === 'Não foi possível carregar os dados da transportadora. Tente novamente em instantes.',
+      ),
+    ).toBe(true)
   })
 })

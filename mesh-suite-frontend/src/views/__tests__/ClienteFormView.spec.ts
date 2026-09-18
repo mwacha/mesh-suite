@@ -205,7 +205,11 @@ describe('ClienteFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Já existe um parceiro cadastrado com este documento')
+    expect(
+      useToast().toasts.some(
+        (t) => t.type === 'error' && t.message === 'Já existe um parceiro cadastrado com este documento.',
+      ),
+    ).toBe(true)
   })
 
   it('shows a permission-denied message on 403', async () => {
@@ -218,7 +222,11 @@ describe('ClienteFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Você não tem permissão para executar esta ação')
+    expect(
+      useToast().toasts.some(
+        (t) => t.type === 'error' && t.message === 'Você não tem permissão para executar esta ação.',
+      ),
+    ).toBe(true)
   })
 
   it('fills address fields when CEP lookup succeeds', async () => {
@@ -232,7 +240,8 @@ describe('ClienteFormView', () => {
     await flushPromises()
 
     expect((wrapper.find('[data-test="logradouro"]').element as HTMLInputElement).value).toBe('Av. Paulista')
-    expect((wrapper.find('[data-test="cidade"]').element as HTMLInputElement).value).toBe('São Paulo')
+    // Cidade is a SearchSelect now -- the looked-up value shows on its trigger.
+    expect(wrapper.find('[data-test="cidade"]').text()).toContain('São Paulo')
   })
 
   it('shows an error message when CEP lookup fails, without blocking manual entry', async () => {
@@ -265,10 +274,16 @@ describe('ClienteFormView', () => {
   it('shows an error message when loading parceiro data fails in edit mode', async () => {
     vi.mocked(partnersApi.getPartner).mockRejectedValue(new Error('network error'))
 
-    const { wrapper } = await mountWithRouter('/clientes/abc-123/editar')
+    await mountWithRouter('/clientes/abc-123/editar')
     await flushPromises()
 
     expect(partnersApi.getPartner).toHaveBeenCalledWith('abc-123')
-    expect(wrapper.text()).toContain('Não foi possível carregar os dados do cliente')
+    expect(
+      useToast().toasts.some(
+        (t) =>
+          t.type === 'error' &&
+          t.message === 'Não foi possível carregar os dados do cliente. Tente novamente em instantes.',
+      ),
+    ).toBe(true)
   })
 })
