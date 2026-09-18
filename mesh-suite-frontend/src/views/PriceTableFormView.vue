@@ -206,8 +206,6 @@
         </div>
       </CollapsibleSection>
 
-      <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
-
       <FormActions :saving="salvando" save-label="Salvar Tabela" @cancel="cancelar" />
     </form>
 
@@ -448,6 +446,7 @@ onMounted(async () => {
       }))
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados da tabela de preço.'
+      showToast(erroGeral.value, 'error')
     }
   }
 })
@@ -500,6 +499,7 @@ async function salvar() {
     } else {
       erroGeral.value = 'Não foi possível salvar. Tente novamente em instantes.'
     }
+    showToast(erroGeral.value, 'error')
   } finally {
     salvando.value = false
   }
@@ -802,8 +802,4 @@ input {
   text-align: center;
 }
 
-.error-geral {
-  color: var(--pm-error);
-  font-size: 14px;
-}
 </style>

@@ -5,6 +5,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import CompanyFormView from '@/views/CompanyFormView.vue'
 import * as companiesApi from '@/api/companies'
 import * as cepApi from '@/api/cep'
+import * as municipalitiesApi from '@/api/municipalities'
+import { useToast } from '@/composables/useToast'
+
+vi.mock('@/api/municipalities')
 
 vi.mock('@/api/companies', async (importOriginal) => {
   const original = await importOriginal<typeof companiesApi>()
@@ -64,6 +68,8 @@ describe('CompanyFormView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    useToast().toasts.splice(0, useToast().toasts.length)
+    vi.mocked(municipalitiesApi.listMunicipalities).mockResolvedValue(['São Paulo', 'Campinas'])
   })
 
   it('shows required-field errors when legalName and cnpj are blank on submit', async () => {
@@ -89,6 +95,7 @@ describe('CompanyFormView', () => {
       expect.objectContaining({ legalName: 'Confecção Aurora Ltda', cnpj: '11222333000144' }),
     )
     expect(router.currentRoute.value.name).toBe('empresas')
+    expect(useToast().toasts.some((t) => t.message === 'Empresa salva com sucesso!')).toBe(true)
   })
 
   it('shows a conflict message on duplicate cnpj (409)', async () => {
@@ -100,7 +107,11 @@ describe('CompanyFormView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Já existe uma empresa cadastrada com este CNPJ')
+    expect(
+      useToast().toasts.some(
+        (t) => t.type === 'error' && t.message === 'Já existe uma empresa cadastrada com este CNPJ.',
+      ),
+    ).toBe(true)
   })
 
   it('loads existing company data in edit mode', async () => {
@@ -116,10 +127,14 @@ describe('CompanyFormView', () => {
   it('shows an error message when loading company data fails in edit mode', async () => {
     vi.mocked(companiesApi.getCompany).mockRejectedValue(new Error('network error'))
 
-    const { wrapper } = await mountWithRouter('/empresas/company-1/editar')
+    await mountWithRouter('/empresas/company-1/editar')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Não foi possível carregar os dados da empresa.')
+    expect(
+      useToast().toasts.some(
+        (t) => t.type === 'error' && t.message === 'Não foi possível carregar os dados da empresa.',
+      ),
+    ).toBe(true)
   })
 
   it('fills the address fields from the CEP lookup', async () => {
@@ -133,6 +148,42 @@ describe('CompanyFormView', () => {
     await flushPromises()
 
     expect((wrapper.find('[data-test="street"]').element as HTMLInputElement).value).toBe('Av. Paulista')
-    expect((wrapper.find('[data-test="city"]').element as HTMLInputElement).value).toBe('São Paulo')
+    // Cidade is a SearchSelect now -- the looked-up value shows on its trigger.
+    expect(wrapper.find('[data-test="city"]').text()).toContain('São Paulo')
+  })
+
+  it('loads the municipality list only when the cidade dropdown opens, scoped to the chosen UF', async () => {
+    const { wrapper } = await mountWithRouter()
+
+    // Fetching ~5.5k IBGE rows on mount would be wasted traffic.
+    expect(municipalitiesApi.listMunicipalities).not.toHaveBeenCalled()
+
+    await wrapper.find('[data-test="state"]').setValue('SP')
+    await wrapper.find('[data-test="city"]').trigger('click')
+    await flushPromises()
+
+    expect(municipalitiesApi.listMunicipalities).toHaveBeenCalledWith({ uf: 'SP' })
+    await wrapper.find('[data-test="city-option-Campinas"]').trigger('click')
+    expect(wrapper.find('[data-test="city"]').text()).toContain('Campinas')
+  })
+
+  it('reloads the municipality list when the UF changes', async () => {
+    const { wrapper } = await mountWithRouter()
+    const cidade = () => wrapper.find('[data-test="city"]')
+
+    await wrapper.find('[data-test="state"]').setValue('SP')
+    await cidade().trigger('click') // abre -> carrega SP
+    await flushPromises()
+    await cidade().trigger('click') // fecha
+    await cidade().trigger('click') // reabre -> lista de SP vem do cache
+    await flushPromises()
+    expect(municipalitiesApi.listMunicipalities).toHaveBeenCalledTimes(1)
+
+    await cidade().trigger('click') // fecha
+    await wrapper.find('[data-test="state"]').setValue('RJ')
+    await cidade().trigger('click') // abre -> cache invalidado pela troca de UF
+    await flushPromises()
+
+    expect(municipalitiesApi.listMunicipalities).toHaveBeenLastCalledWith({ uf: 'RJ' })
   })
 })

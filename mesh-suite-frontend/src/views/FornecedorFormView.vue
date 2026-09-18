@@ -26,6 +26,7 @@
             label="Nome Fantasia"
             required
             placeholder="Ex: Tecidos Aurora"
+            :maxlength="100"
             :error="erros.nomeFantasia"
             test-id="nomeFantasia"
             @blur="validarNomeFantasia"
@@ -35,6 +36,7 @@
           v-model="form.legalName"
           label="Razão Social"
           required
+          :maxlength="150"
           :error="erros.razaoSocial"
           test-id="razaoSocial"
           @blur="validarRazaoSocial"
@@ -67,6 +69,7 @@
             v-model="form.billingEmails"
             label="E-mail(s)"
             placeholder="email@exemplo.com.br"
+            :maxlength="500"
             :error="erros.emailsCobranca"
             @blur="validarEmailsCobranca"
           />
@@ -96,21 +99,21 @@
           </div>
           <div>
             <label class="field-label">Inscrição Estadual</label>
-            <input v-model="form.stateRegistration" />
+            <input v-model="form.stateRegistration" maxlength="20" />
           </div>
           <div>
             <label class="field-label">Inscrição Municipal</label>
-            <input v-model="form.municipalRegistration" />
+            <input v-model="form.municipalRegistration" maxlength="20" />
           </div>
           <div>
             <label class="field-label">Inscrição Suframa</label>
-            <input v-model="form.suframaRegistration" />
+            <input v-model="form.suframaRegistration" maxlength="20" />
           </div>
         </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="Endereço">
-        <div class="grid grid-3">
+        <div class="grid grid-cep">
           <div>
             <label class="field-label">CEP</label>
             <div class="input-action">
@@ -128,11 +131,11 @@
           </div>
           <div>
             <label class="field-label">Endereço</label>
-            <input v-model="form.street" data-test="logradouro" />
+            <input v-model="form.street" data-test="logradouro" maxlength="100" />
           </div>
           <div>
             <label class="field-label">Número</label>
-            <input v-model="form.number" />
+            <input v-model="form.number" maxlength="10" />
           </div>
         </div>
         <div class="grid grid-4">
@@ -143,27 +146,36 @@
               <option v-for="estado in UFS" :key="estado" :value="estado">{{ estado }}</option>
             </select>
           </div>
-          <div>
-            <label class="field-label">Cidade</label>
-            <input v-model="form.city" data-test="cidade" />
-          </div>
+          <SearchSelect
+            v-model="form.city"
+            label="Cidade"
+            :selected-label="form.city"
+            :items="cityOptions"
+            :loading="loadingCities"
+            :empty-message="citiesFailed ? 'Não foi possível carregar as cidades' : 'Nenhuma cidade encontrada'"
+            :empty-is-error="citiesFailed"
+            filter-locally
+            test-id="cidade"
+            @open="loadCities"
+          />
           <div>
             <label class="field-label">Bairro</label>
-            <input v-model="form.neighborhood" />
+            <input v-model="form.neighborhood" maxlength="60" />
           </div>
           <div>
             <label class="field-label">Complemento</label>
-            <input v-model="form.complement" />
+            <input v-model="form.complement" maxlength="100" />
           </div>
         </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="Outros Contatos">
         <div v-for="(contato, index) in form.contacts" :key="index" class="grid grid-contato">
-          <input v-model="contato.name" placeholder="Nome" />
+          <input v-model="contato.name" placeholder="Nome" maxlength="100" />
           <TextField
             v-model="contato.email"
             placeholder="email@exemplo.com"
+            :maxlength="254"
             :error="errosContatos[index]?.email"
             @blur="validarContatoEmail(index)"
           />
@@ -183,7 +195,7 @@
             :error="errosContatos[index]?.mobilePhone"
             @blur="validarContatoTelefone(index, 'mobilePhone')"
           />
-          <input v-model="contato.jobTitle" placeholder="Ex: Financeiro" />
+          <input v-model="contato.jobTitle" placeholder="Ex: Financeiro" maxlength="60" />
           <button type="button" class="btn-remove" @click="removerContato(index)">🗑</button>
         </div>
         <button type="button" class="btn-add-contato" @click="adicionarContato">+ Adicionar Contato</button>
@@ -194,18 +206,17 @@
         <textarea v-model="form.notes" rows="4" placeholder="Informações adicionais sobre o fornecedor..."></textarea>
       </section>
 
-      <p v-if="erroGeral" class="error-geral">{{ erroGeral }}</p>
-
       <FormActions :saving="salvando" save-label="Salvar Fornecedor" @cancel="cancelar" />
     </form>
   </AppShell>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, toRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import TextField from '@/components/TextField.vue'
+import SearchSelect from '@/components/SearchSelect.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import FormActions from '@/components/FormActions.vue'
 import {
@@ -219,6 +230,7 @@ import { buscarEnderecoPorCep } from '@/api/cep'
 import { maskTelefone, maskCep, maskDocumento } from '@/utils/masks'
 import { emailValido, emailsValidos, telefoneValido, documentoValido, cepValido } from '@/utils/validacao'
 import { useToast } from '@/composables/useToast'
+import { useCityOptions } from '@/composables/useCityOptions'
 
 const { showToast } = useToast()
 
@@ -265,6 +277,12 @@ interface ErrosContato {
 }
 
 const form = reactive<PartnerRequest>(novoFormulario())
+const {
+  items: cityOptions,
+  loading: loadingCities,
+  failed: citiesFailed,
+  load: loadCities,
+} = useCityOptions(toRef(form, 'state'))
 const erros = reactive<{
   nomeFantasia?: string
   razaoSocial?: string
@@ -288,6 +306,7 @@ onMounted(async () => {
       errosContatos.value = form.contacts.map(() => ({}))
     } catch {
       erroGeral.value = 'Não foi possível carregar os dados do fornecedor. Tente novamente em instantes.'
+      showToast(erroGeral.value, 'error')
     }
   }
 })
@@ -414,10 +433,11 @@ async function salvar() {
   salvando.value = true
   try {
     const id = route.params.id
+    const payload = { ...form, zipCode: form.zipCode.replace(/\D/g, '') }
     if (typeof id === 'string') {
-      await updatePartner(id, form)
+      await updatePartner(id, payload)
     } else {
-      await createPartner(form)
+      await createPartner(payload)
     }
     showToast('Fornecedor salvo com sucesso!')
     router.push({ name: 'fornecedores' })
@@ -431,6 +451,7 @@ async function salvar() {
     } else {
       erroGeral.value = 'Não foi possível salvar. Tente novamente em instantes.'
     }
+    showToast(erroGeral.value, 'error')
   } finally {
     salvando.value = false
   }
@@ -475,6 +496,10 @@ function cancelar() {
 
 .grid-3 {
   grid-template-columns: 200px 1fr 1fr;
+}
+
+.grid-cep {
+  grid-template-columns: 220px 1fr 1fr;
 }
 
 .grid-4 {
@@ -578,8 +603,4 @@ textarea {
   cursor: pointer;
 }
 
-.error-geral {
-  color: var(--pm-error);
-  font-size: 14px;
-}
 </style>

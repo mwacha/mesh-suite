@@ -4,13 +4,30 @@ import com.meshsuite.auth.exception.AuthException;
 import com.meshsuite.auth.exception.PermissionDeniedException;
 import com.meshsuite.auth.exception.RateLimitExceededException;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    // Bean Validation (@Size/@NotBlank/...) failing on a @Valid request body.
+    // Each field's own annotation carries a specific, actionable message (e.g.
+    // "Número deve ter no máximo 10 caracteres") -- surface that instead of a
+    // generic "dados inválidos" so the user knows exactly what to fix.
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException e) {
+        String mensagem = e.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("Verifique os dados informados.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensagem", mensagem));
+    }
 
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<Map<String, String>> handleAuth(AuthException e) {

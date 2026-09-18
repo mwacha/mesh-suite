@@ -147,6 +147,14 @@ public class PartnerService {
         return document.replaceAll("\\D", "");
     }
 
+    // CEP chega do frontend com a máscara usual (hífen, ex: "00000-000", 9
+    // caracteres) -- a coluna zip_code é VARCHAR(8), então persistir sem
+    // remover a máscara sempre falha com "value too long". Campo opcional:
+    // nulo/vazio permanece como está.
+    private static String normalizeZipCode(String zipCode) {
+        return zipCode == null || zipCode.isBlank() ? zipCode : zipCode.replaceAll("\\D", "");
+    }
+
     private void apply(Partner partner, PartnerRequest request) {
         partner.setPersonType(request.personType());
         partner.setDocument(normalizeDocument(request.document()));
@@ -159,7 +167,7 @@ public class PartnerService {
         partner.setStateRegistration(request.stateRegistration());
         partner.setMunicipalRegistration(request.municipalRegistration());
         partner.setSuframaRegistration(request.suframaRegistration());
-        partner.setZipCode(request.zipCode());
+        partner.setZipCode(normalizeZipCode(request.zipCode()));
         partner.setStreet(request.street());
         partner.setNumber(request.number());
         partner.setNeighborhood(request.neighborhood());

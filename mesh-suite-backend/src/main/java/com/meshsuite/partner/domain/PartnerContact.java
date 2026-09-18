@@ -22,7 +22,7 @@ public class PartnerContact {
     @JoinColumn(name = "partner_id", nullable = false)
     private Partner partner;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
     private String email;
@@ -33,6 +33,6 @@ public class PartnerContact {
     @Column(name = "mobile_phone", length = 20)
     private String mobilePhone;
 
-    @Column(length = 100)
+    @Column(length = 60)
     private String jobTitle;
 }

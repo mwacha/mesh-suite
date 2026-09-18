@@ -14,11 +14,12 @@
               label="Razão Social"
               required
               placeholder="Ex: Mercado Silva Ltda"
+              :maxlength="150"
               :error="errors.legalName"
               test-id="legal-name"
               @blur="validateLegalName"
             />
-            <TextField v-model="form.tradeName" label="Nome Fantasia" placeholder="Ex: Mercado Silva" test-id="trade-name" />
+            <TextField v-model="form.tradeName" label="Nome Fantasia" placeholder="Ex: Mercado Silva" :maxlength="100" test-id="trade-name" />
           </div>
           <div class="grid grid-3-even">
             <TextField
@@ -32,8 +33,8 @@
               test-id="cnpj"
               @blur="validateCnpj"
             />
-            <TextField v-model="form.stateRegistration" label="Inscrição Estadual" placeholder="000.000.000.000" />
-            <TextField v-model="form.municipalRegistration" label="Inscrição Municipal" placeholder="000000" />
+            <TextField v-model="form.stateRegistration" label="Inscrição Estadual" placeholder="000.000.000.000" :maxlength="20" />
+            <TextField v-model="form.municipalRegistration" label="Inscrição Municipal" placeholder="000000" :maxlength="20" />
           </div>
         </section>
 
@@ -44,11 +45,12 @@
               v-model="form.email"
               label="E-mail Comercial"
               placeholder="contato@empresa.com.br"
+              :maxlength="254"
               :error="errors.email"
               test-id="company-email"
               @blur="validateCompanyEmail"
             />
-            <TextField v-model="form.website" label="Site" placeholder="www.empresa.com.br" />
+            <TextField v-model="form.website" label="Site" placeholder="www.empresa.com.br" :maxlength="255" />
           </div>
         </CollapsibleSection>
 
@@ -69,12 +71,23 @@
               </div>
               <p v-if="cepError" class="field-error">{{ cepError }}</p>
             </div>
-            <TextField v-model="form.street" label="Logradouro" placeholder="Rua, Av., Alameda..." test-id="street" />
-            <TextField v-model="form.number" label="Número" placeholder="123" />
+            <TextField v-model="form.street" label="Logradouro" placeholder="Rua, Av., Alameda..." :maxlength="100" test-id="street" />
+            <TextField v-model="form.number" label="Número" placeholder="123" :maxlength="10" />
           </div>
           <div class="grid grid-4">
-            <TextField v-model="form.neighborhood" label="Bairro" placeholder="Ex: Centro" />
-            <TextField v-model="form.city" label="Cidade" placeholder="Ex: São Paulo" test-id="city" />
+            <TextField v-model="form.neighborhood" label="Bairro" placeholder="Ex: Centro" :maxlength="60" />
+            <SearchSelect
+              v-model="form.city"
+              label="Cidade"
+              :selected-label="form.city"
+              :items="cityOptions"
+              :loading="loadingCities"
+              :empty-message="citiesFailed ? 'Não foi possível carregar as cidades' : 'Nenhuma cidade encontrada'"
+              :empty-is-error="citiesFailed"
+              filter-locally
+              test-id="city"
+              @open="loadCities"
+            />
             <div>
               <label class="field-label">UF</label>
               <select v-model="form.state" data-test="state">
@@ -82,7 +95,7 @@
                 <option v-for="uf in UFS" :key="uf" :value="uf">{{ uf }}</option>
               </select>
             </div>
-            <TextField v-model="form.complement" label="Complemento" placeholder="Sala, Andar, Bloco..." />
+            <TextField v-model="form.complement" label="Complemento" placeholder="Sala, Andar, Bloco..." :maxlength="100" />
           </div>
         </CollapsibleSection>
 
@@ -142,11 +155,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import TextField from '@/components/TextField.vue'
+import SearchSelect from '@/components/SearchSelect.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import FormActions from '@/components/FormActions.vue'
+import { useCityOptions } from '@/composables/useCityOptions'
 import { signup, type SignupPayload } from '@/api/auth'
 import { buscarEnderecoPorCep } from '@/api/cep'
 import { maskCnpj, maskTelefone, maskCep } from '@/utils/masks'
@@ -166,6 +181,12 @@ function emptyForm(): SignupPayload {
 }
 
 const form = reactive<SignupPayload>(emptyForm())
+const {
+  items: cityOptions,
+  loading: loadingCities,
+  failed: citiesFailed,
+  load: loadCities,
+} = useCityOptions(toRef(form, 'state'))
 const confirmarSenha = ref('')
 const errors = reactive<{
   legalName?: string; cnpj?: string; email?: string; zipCode?: string
@@ -253,7 +274,7 @@ async function save() {
 
   saving.value = true
   try {
-    await signup({ ...form, cnpj: form.cnpj.replace(/\D/g, '') })
+    await signup({ ...form, cnpj: form.cnpj.replace(/\D/g, ''), zipCode: form.zipCode.replace(/\D/g, '') })
     submitted.value = true
   } catch (err: any) {
     if (err?.response?.status === 409) {
@@ -355,7 +376,7 @@ function cancel() {
 }
 
 .grid-cep {
-  grid-template-columns: 160px 1fr 100px;
+  grid-template-columns: 220px 1fr 100px;
 }
 
 .field-label {

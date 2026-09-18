@@ -21,13 +21,13 @@ public class Company {
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
 
-    @Column(name = "legal_name", nullable = false)
+    @Column(name = "legal_name", nullable = false, length = 150)
     private String legalName;
 
     @Column(nullable = false, unique = true, length = 14)
     private String cnpj;
 
-    @Column(name = "trade_name")
+    @Column(name = "trade_name", length = 100)
     private String tradeName;
 
     @Column(name = "state_registration", length = 20)
@@ -48,19 +48,19 @@ public class Company {
     @Column(name = "zip_code", length = 8)
     private String zipCode;
 
-    @Column(length = 255)
+    @Column(length = 100)
     private String street;
 
-    @Column(length = 20)
+    @Column(length = 10)
     private String number;
 
     @Column(length = 100)
     private String complement;
 
-    @Column(length = 100)
+    @Column(length = 60)
     private String neighborhood;
 
-    @Column(length = 100)
+    @Column(length = 60)
     private String city;
 
     @Column(length = 2)
