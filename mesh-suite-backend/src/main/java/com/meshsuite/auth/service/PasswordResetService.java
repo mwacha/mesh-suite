@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class PasswordResetService {
     private final AuthService authService;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
+    private final String frontendOrigin;
     private final SecureRandom secureRandom = new SecureRandom();
 
     // Field injection (not constructor), specifically so PasswordResetServiceTest
@@ -41,12 +43,14 @@ public class PasswordResetService {
     PasswordResetService self;
 
     public PasswordResetService(PasswordResetTokenRepository tokenRepository, UserRepository userRepository,
-                                 AuthService authService, MailService mailService, PasswordEncoder passwordEncoder) {
+                                 AuthService authService, MailService mailService, PasswordEncoder passwordEncoder,
+                                 @Value("${app.frontend-origin}") String frontendOrigin) {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         this.authService = authService;
         this.mailService = mailService;
         this.passwordEncoder = passwordEncoder;
+        this.frontendOrigin = frontendOrigin;
     }
 
     // User lookups pre-tenant-context always go through AuthService, the one
@@ -76,7 +80,7 @@ public class PasswordResetService {
         token.setExpiraEm(Instant.now().plus(1, ChronoUnit.HOURS));
         tokenRepository.save(token); // PasswordResetToken has no RLS -- no tenant context needed here
 
-        String resetLink = "https://app.meshsuite.local/redefinir-senha?token=" + rawToken;
+        String resetLink = frontendOrigin + "/redefinir-senha?token=" + rawToken;
         mailService.sendPasswordResetEmail(email, resetLink);
     }
 

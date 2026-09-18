@@ -30,7 +30,8 @@ class PasswordResetServiceTest {
 
     private PasswordResetService service() {
         PasswordResetService svc = new PasswordResetService(tokenRepository, userRepository, authService,
-                mailService, org.mockito.Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class));
+                mailService, org.mockito.Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class),
+                "http://localhost:5173");
         // Plain Mockito test, no Spring proxy in play: `self` (package-private,
         // @Autowired @Lazy in production -- see PasswordResetService) is simulated
         // by pointing it back at the same instance. These tests cover business

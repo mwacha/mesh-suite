@@ -55,7 +55,7 @@ class TenantSignupServiceTest {
 
     private TenantSignupService service() {
         TenantSignupService svc = new TenantSignupService(tenantRepository, companyRepository, userRepository,
-                tokenRepository, mailService, passwordEncoder, entityManager);
+                tokenRepository, mailService, passwordEncoder, entityManager, "http://localhost:5173");
         // Same rationale as PasswordResetServiceTest: plain Mockito test, no Spring
         // proxy, so `self` is pointed back at the same instance to simulate it.
         svc.self = svc;

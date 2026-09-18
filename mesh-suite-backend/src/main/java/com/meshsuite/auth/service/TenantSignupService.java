@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -54,6 +55,7 @@ public class TenantSignupService {
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
+    private final String frontendOrigin;
     private final SecureRandom secureRandom = new SecureRandom();
 
     // Field injection (not constructor), same reason as PasswordResetService.self:
@@ -68,7 +70,8 @@ public class TenantSignupService {
     public TenantSignupService(TenantRepository tenantRepository, CompanyRepository companyRepository,
                                 UserRepository userRepository, TenantSignupTokenRepository tokenRepository,
                                 MailService mailService, PasswordEncoder passwordEncoder,
-                                EntityManager entityManager) {
+                                EntityManager entityManager,
+                                @Value("${app.frontend-origin}") String frontendOrigin) {
         this.tenantRepository = tenantRepository;
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
@@ -76,6 +79,7 @@ public class TenantSignupService {
         this.mailService = mailService;
         this.passwordEncoder = passwordEncoder;
         this.entityManager = entityManager;
+        this.frontendOrigin = frontendOrigin;
     }
 
     public void signup(SignupRequest request) {
@@ -213,7 +217,7 @@ public class TenantSignupService {
         token.setExpiraEm(Instant.now().plus(24, ChronoUnit.HOURS));
         tokenRepository.save(token);
 
-        String confirmLink = "https://app.meshsuite.local/confirmar-cadastro?token=" + rawToken;
+        String confirmLink = frontendOrigin + "/confirmar-cadastro?token=" + rawToken;
         mailService.sendSignupConfirmationEmail(adminEmail, confirmLink);
     }
 
